@@ -1,0 +1,154 @@
+/// Main builder
+pub fn build_fix_message( msg_type: &str, flds: &Vec<FieldVal> ) -> FixMessage { 
+
+  match msg_type {
+    {{~ #each flatmessages as |m| }}
+      "{{ m.msg_type }}" => {
+          let mut consumer = FixConsumer::new(flds);
+          let fields = parse_message_{{snake m.rust_type }}( &mut consumer );
+          FixMessage::{{ m.name }}(Box::new( fields ))
+      },
+    {{/each }}
+    _ => {
+			    FixMessage::UndefinedMessage // replace by some error message?
+		}
+  }
+
+}
+
+{{#*inline "init"}}
+  {{~#if f.parent ~}}
+  {{~>init f=f.parent ~}}
+  {{~/if }}
+        if {{chainvname f }}.is_none() { {{chainvname f }} = Some( {{ f.rust_type }} { .. Default::default() } ); }
+{{~/inline}}
+
+{{#each flatmessages as |m| }}
+fn parse_message_{{snake m.rust_type }}( consumer : &mut FixConsumer  ) -> {{m.rust_type }} {
+  // fields:
+  {{~#each m.fields as |f| ~}}
+    {{~#if f.is_top_level ~}}
+      {{~#if f.is_simple }}
+  let mut {{ f.vname }} : Option<{{ f.rust_type }}> = None;
+      {{~/if ~}}
+      {{~#if f.is_component }}
+  let mut {{ f.vname }} : Option<{{ f.rust_type }}> = None; // {{ f.rust_type }} { .. Default::default() };
+      {{~/if ~}}
+      {{~#if f.is_group }}
+  let mut {{ f.vname }} : Option<{{ f.rust_type }}> = None;
+      {{~/if ~}}
+    {{~/if ~}}
+  {{~/each}}
+
+  // loop
+  while let Some(fld) = consumer.next() { 
+    match fld {
+      {{~#each m.fields as |f| }}
+      {{~#if f.is_component ~}}
+      {{~else }}
+      &FieldVal { id: FIELD_{{upper f.name }}, val: v } => { 
+        {{#if f.parent ~}}
+        {{>init f=f.parent }}
+        {{~/if }}
+        {{#if f.is_simple ~}}
+          {{mutchainvname f }} = Some( {{ f.rust_type_converter }} );
+        {{~/if ~}}
+        {{#if f.is_group ~}}
+          // group
+          let size = usize::from_str(v).unwrap();
+          let subgroup = build_{{ f.group_builder_fn_name }}(consumer, size);
+          {{mutchainvname f }} = Some(subgroup);
+        {{~/if }}
+      },
+      {{~/if ~}}
+      {{/each }}
+      _ => {
+        // unknown field? why? should it be added raw to some list?
+      }
+    }
+  }
+
+  // construction
+  {{m.name }}Fields {
+    {{~#each m.fields as |f| ~}}
+    {{~#if f.is_top_level }}
+      {{ f.vname }}: {{f.vname }}{{#if f.is_required }}.unwrap() /* better error hdl? */ {{/if}},
+    {{~/if ~}}
+    {{~/each }}
+  }
+}
+
+{{/each }}
+
+
+{{#each flatgroups as |g| }}
+fn build_group_{{snake g.rust_type }}(consumer: &mut FixConsumer, size: usize) -> Vec<{{g.rust_type }}> {
+  let mut items : Vec<{{g.rust_type }}> = Vec::with_capacity(size);
+
+  for _ in 0..size {
+		let party = build_group_{{snake g.rust_type }}_line( consumer );
+		items.push(party);
+	}
+
+	items
+}
+
+fn build_group_{{snake g.rust_type }}_line(consumer: &mut FixConsumer) -> {{g.rust_type }} {
+  // fields
+  {{~#each g.fields as |f| ~}}
+    {{~#if f.is_top_level ~}}
+      {{~#if f.is_simple }}
+  let mut {{ f.vname }} : Option<{{ f.rust_type }}> = None;
+      {{~/if ~}}
+      {{~#if f.is_component }}
+  let mut {{ f.vname }} : Option<{{ f.rust_type }}> = None; // Some( {{ f.rust_type }} { .. Default::default() } ) ;
+      {{~/if ~}}
+      {{~#if f.is_group }}
+  let mut {{ f.vname }} : Option<{{ f.rust_type }}> = None;
+      {{~/if ~}}
+    {{~/if ~}}
+  {{~/each}}
+
+  // loop
+  while let Some(fld) = consumer.peek() {  
+    match fld {
+      {{~#each g.fields as |f| }}
+      {{~#if f.is_component ~}}
+      {{~else }}
+      &FieldVal { id: FIELD_{{upper f.name }}, val: v } => { 
+        {{#if f.parent ~}}
+        {{>init f=f.parent }}
+        {{~/if}}
+        if {{mutchainvname f }}.is_some() { break; }
+
+        {{#if f.is_simple ~}}
+          {{mutchainvname f }} = Some( {{ f.rust_type_converter }} );
+        {{~/if ~}}
+        {{#if f.is_group ~}}
+          let size = usize::from_str(v).unwrap();
+          let items = build_{{ f.group_builder_fn_name }}(consumer, size);
+          {{mutchainvname f }} = Some(items);
+          continue;
+        {{~/if }}
+      },
+      {{~/if}}
+      {{/each }}
+
+			_ => { break; }
+		};
+    // consume only if recognized
+    consumer.next(); 
+  }
+
+  // construction
+  {{g.rust_type }} {
+    {{~#each g.fields as |f| ~}}
+    {{~#if f.is_top_level }}
+      {{ f.vname }}: {{f.vname }}{{#if f.is_required }}.unwrap() {{/if}},
+    {{~/if ~}}
+    {{~/each }}
+  }
+}
+
+{{/each }}
+

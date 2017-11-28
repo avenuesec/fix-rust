@@ -1,0 +1,270 @@
+// Generated file.
+// Structs, enums to support parsing/generation of fix messages
+
+#![ignore(unused_imports)]
+#![ignore(dead_code)]
+
+use std::str::{FromStr};
+use std::{io, str, char, i32};
+use std::default::{Default};
+
+use chrono::prelude::*;  // DateTime
+use serde::{Serialize,Deserialize,Deserializer,Serializer};
+use serde::de::{self, Visitor};
+
+
+use frame::{FieldVal};
+use fixmessage::*;
+
+
+use std::fmt::{Debug, Formatter, Display, Error};
+
+#[derive(Serialize,Deserialize)]
+pub struct UtcDateTime(DateTime<Utc>);
+
+impl UtcDateTime {
+	pub fn new(dt: DateTime<Utc>) -> UtcDateTime {
+		UtcDateTime( dt )
+	}
+}
+
+impl Default for UtcDateTime {
+    fn default() -> Self {
+		UtcDateTime(Utc::now())
+	}
+}
+impl PartialEq for UtcDateTime {
+    fn eq(&self, other: &Self) -> bool{
+		self.0.eq( &other.0 )
+	}
+}
+impl Debug for UtcDateTime {
+	fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
+		write!(f, "{}", self.0)
+	}
+}
+impl FromStr for UtcDateTime {
+    type Err = OurParserError;
+	fn from_str(s: &str) -> Result<Self, Self::Err> {
+        // TODO: more robust impl
+		// Fix data type YYYYMMDD-HH:MM:SS.sss 
+		Ok( UtcDateTime( Utc.datetime_from_str(s, "%Y%m%d-%H:%M:%S%.3f").unwrap() ))
+	}
+}
+impl Display for UtcDateTime {
+  fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
+    write!(f, "{}", self.0.format("%Y%m%d-%H:%M:%S%.3f")) // prob not efficient
+    
+  }
+}
+
+#[derive(Serialize,Deserialize)]
+pub struct UtcDate(DateTime<Utc>);
+
+impl UtcDate {
+	pub fn new(dt: DateTime<Utc>) -> UtcDate {
+		UtcDate( dt )
+	}
+}
+
+impl Default for UtcDate {
+    fn default() -> Self {
+		UtcDate(Utc::now())
+	}
+}
+impl PartialEq for UtcDate {
+    fn eq(&self, other: &Self) -> bool{
+		self.0.date().eq( &other.0.date() )
+	}
+}
+impl Debug for UtcDate {
+	fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
+		write!(f, "{}", self.0.date())
+	}
+}
+impl FromStr for UtcDate {
+    type Err = OurParserError;
+	fn from_str(s: &str) -> Result<Self, Self::Err> {
+        // TODO: more robust impl
+		// Fix data type: YYYYMMDD
+		Ok( UtcDate( Utc.datetime_from_str(s, "%Y%m%d").unwrap() ) )
+	}
+}
+impl Display for UtcDate {
+  fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
+    write!(f, "{}", self.0.format("%Y%m%d"))
+  }
+}
+
+#[derive(Serialize,Deserialize)]
+pub struct UtcTime(DateTime<Utc>);
+
+impl Default for UtcTime {
+    fn default() -> Self {
+		UtcTime(Utc::now())
+	}
+}
+impl PartialEq for UtcTime {
+    fn eq(&self, other: &Self) -> bool{
+		self.0.eq( &other.0 )
+	}
+}
+impl Debug for UtcTime {
+	fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
+		write!(f, "{}", self.0)
+	}
+}
+impl FromStr for UtcTime {
+    type Err = OurParserError;
+	fn from_str(s: &str) -> Result<Self, Self::Err> {
+        // TODO: more robust impl
+		// Fix data type: either HH:MM:SS (whole seconds) or HH:MM:SS.sss (milliseconds) format
+		Ok( UtcTime( Utc.datetime_from_str(s, "%H:%M:%S%.3f").unwrap() ) )
+	}
+}
+impl Display for UtcTime {
+  fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
+    write!(f, "{}", self.0.format("%H:%M:%S%.3f"))
+  }
+}
+
+fn boolconv(v: &str) -> bool {
+	v == "Y"
+}
+fn to_boolconv(val: &bool) -> &'static str {
+	if *val {
+		"Y"
+	} else {
+		"N"
+	}
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct OurParserError {
+	unregonized_val : String,
+}
+
+// size of enum = tag + size of largest message, so we box the fields
+#[derive(PartialEq,Debug,Serialize,Deserialize)]
+pub enum FixMessage { 
+	{{#each flatmessages as |msg|}}
+    // type: {{msg.msg_type}} 
+    {{msg.name}}(Box<{{msg.rust_type}}>),
+	{{~/each}}
+    // fixed, for when the parser can't figure out the message type
+    UndefinedMessage,
+}
+
+// message struct Fields
+
+{{#each flatmessages as |msg|}}
+
+#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
+pub struct {{msg.rust_type}} {
+    {{#each msg.fields as |f| ~}}
+    {{#if f.is_top_level ~}}
+    pub {{ f.vname }} : {{#if f.is_required }}{{ f.rust_type }}{{else }}Option<{{ f.rust_type }}>{{/if}}, // FIELD_{{upper f.name }} {{f.fld_tag }}
+    {{/if ~}}
+    {{/each}}
+}
+
+{{/each}}
+
+
+// components struct Fields
+
+{{#each components as |c|}}
+
+#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
+pub struct {{c.rust_type}} {
+    {{#each c.fields as |f| ~}}
+    {{#if f.is_top_level ~}}
+    pub {{ f.vname }} : {{#if f.is_required }}{{ f.rust_type }}{{else }}Option<{{ f.rust_type }}>{{/if}}, // FIELD_{{upper f.name }} {{f.fld_tag }}
+    {{/if ~}}
+    {{/each}}
+}
+
+{{/each}}
+
+
+
+// groups struct Fields
+
+{{#each flatgroups as |c|}}
+
+#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
+pub struct {{c.rust_type}} {
+    {{#each c.fields as |f| ~}}
+    {{#if f.is_top_level ~}}
+    pub {{ f.vname }} : {{#if f.is_required }}{{ f.rust_type }}{{else }}Option<{{ f.rust_type }}>{{/if}}, // FIELD_{{upper f.name }} {{f.fld_tag }}
+    {{/if ~}}
+    {{/each}}
+}
+
+{{/each}}
+
+
+
+
+
+
+// Fields Constants / enums
+
+{{#each fields as |f| ~}}
+const FIELD_{{upper f.name  }} : u32 = {{ f.tag }}; // {{f.fld_type}}
+{{#if f.is_enum ~}}
+
+#[derive(PartialEq,Debug,Serialize,Deserialize)]
+pub enum Field_{{f.name }}_Enum {
+    {{#each f.enum_vals as |v| ~}}
+        {{v.description}}, // = "{{v.enum_val}}"
+    {{/each}}
+    Undefined
+}
+
+impl FromStr for Field_{{f.name }}_Enum {
+    type Err = OurParserError;
+	fn from_str(s: &str) -> Result<Self, Self::Err> {
+		match s {
+			{{#each f.enum_vals as |v| ~}}
+            "{{v.enum_val}}" => Ok(Field_{{f.name }}_Enum::{{v.description}}),
+            {{/each}}
+			_ => {
+				Err(OurParserError { unregonized_val: s.to_string() })
+			}
+		}
+	}
+}
+
+impl Display for Field_{{f.name }}_Enum {
+  fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
+    match self {
+		{{#each f.enum_vals as |v| ~}}
+		&Field_{{f.name }}_Enum::{{v.description}} => {
+			f.write_str( "{{v.enum_val}}" )
+		}, 
+		{{/each}}
+		_ => {
+			Err(Error { })
+		}
+	}
+  }
+}
+
+impl Default for Field_{{f.name }}_Enum {
+    fn default() -> Self {
+		Field_{{f.name }}_Enum::Undefined
+	}
+}
+{{~/if}}
+{{/each}}
+// TODO impl of ToString trait for the enum. Is std::fmt::Display an alternative for less allocs?
+// TODO impl of FromStr trait for the enum. 
+// TODO: If type=Mulstring needs to impl trait BitOr as well
+
+
+
+
+
+
+

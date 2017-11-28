@@ -1,0 +1,115 @@
+
+use bytes::{BytesMut, BufMut};
+use std::io::{Write};
+use std::result::{Result};
+
+struct WriteWrapper<'a> {
+  buf: &'a mut BytesMut
+}
+
+// impl of the Write trait so we can use format! and/or write! 
+// directly without string allocs
+impl <'a> io::Write for WriteWrapper<'a> {
+
+  fn write(&mut self, buf: &[u8]) -> Result<usize, io::Error> {
+    let len = buf.len();
+    self.buf.reserve( len );
+    self.buf.extend( buf );
+
+    Ok( len )
+  }
+
+  fn flush(&mut self) -> Result<(), io::Error> {
+    // nothing to do
+    Ok( () )
+  }
+}
+
+
+
+pub fn write_fix_message(msg: &FixMessage, ts: &UtcDateTime, seq: u32, sender: &str, target: &str, sep: char, buf: &mut BytesMut) -> Result<(), io::Error> {
+
+  match msg {
+    {{#each flatmessages as |msg|}}
+    // type: {{msg.msg_type}} 
+    &FixMessage::{{msg.name}}(ref box_flds) => {
+      let mut writer_wrapper = WriteWrapper { buf: buf };
+      write!(writer_wrapper, "35={{msg.msg_type}}{sep}34={seq}{sep}49={sender}{sep}52={ts}{sep}56={target}{sep}", 
+        ts= ts, seq= seq, sender= sender, target= target, sep= sep )?;
+      write_{{snake msg.rust_type }}(box_flds, &mut writer_wrapper)?;
+      Ok ( () )
+    },
+
+	  {{~/each}}
+    _ => { 
+      // say what?
+      Err(io::Error::new(io::ErrorKind::Other, "should never happen"))
+    }
+  }
+}
+
+{{#*inline "fields"}}
+  {{~#each flds as |f| ~}}
+    {{~#if f.is_top_level ~}}
+      {{~#if f.is_required }}
+  {
+      let val = &flds.{{ f.vname }};
+      {{ else }}
+    if flds.{{ f.vname }}.is_some() {
+      let val = flds.{{ f.vname }}.as_ref().unwrap();
+      {{/if}}
+
+      {{~#if f.is_simple }}
+      write!(output, "{{f.fld_tag}}={}\u{01}", {{f.fix_type_converter }} )?; // FIELD_{{upper f.name }}
+      {{~/if ~}}
+      {{~#if f.is_component }}
+      write_component_{{ f.vname }}_fields( val, output )?;
+      {{~/if ~}}
+      {{~#if f.is_group }}
+      write_{{ f.group_builder_fn_name }}( val, output )?;
+      {{~/if }}
+    }
+    {{~/if ~}}
+  {{~/each}}
+{{~/inline}}
+
+
+{{#each flatmessages as |msg|}}
+fn write_{{snake msg.rust_type }}(flds: &{{msg.rust_type}}, output: &mut Write) -> Result<(), io::Error> {
+{{> fields flds=msg.fields }}
+  Ok( () )
+}
+
+{{/each}}
+
+
+{{#each components as |c|}}
+
+fn write_component_{{snake c.rust_type}}( flds: &{{c.rust_type}}, output: &mut Write ) -> Result<(), io::Error> {
+{{> fields flds=c.fields }}
+
+  Ok( () )
+}
+
+{{/each}}
+
+{{#each flatgroups as |c|}}
+
+fn write_group_{{snake c.rust_type}}( group: &Vec<{{c.rust_type}}>, output: &mut Write ) -> Result<(), io::Error> {
+  let len = group.len();
+  write!(output, "{}={}\u{01}", FIELD_{{upper c.name }}, len )?;
+
+  for g in group {
+    write_group_{{snake c.rust_type}}_line( g, output )?;
+  }
+
+  Ok( () )
+}
+
+fn write_group_{{snake c.rust_type}}_line( flds: &{{c.rust_type}}, output: &mut Write) -> Result<(), io::Error> {
+{{> fields flds=c.fields }}
+
+  Ok( () )
+}
+
+{{/each}}
