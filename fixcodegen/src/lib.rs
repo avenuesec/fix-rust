@@ -588,20 +588,6 @@ pub fn camel_case(name: &str) -> String {
     })
 }
 
-pub fn cap_case(name: &str) -> String {
-    let mut new_word = true;
-    name.chars().fold("".to_string(), |mut result, ch| {
-        if ch == '-' || ch == '_' || ch == ' ' {
-            new_word = true;
-            result
-        } else {
-            result.push(if new_word { ch.to_ascii_uppercase() } else { ch });
-            new_word = false;
-            result
-        }
-    })
-}
-
 pub fn snake_case(name: &str) -> String {
     match name {
         "type"   => "type_".to_string(),

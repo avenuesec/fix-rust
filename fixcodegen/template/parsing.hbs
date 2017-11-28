@@ -10,8 +10,8 @@ pub fn build_fix_message( msg_type: &str, flds: &Vec<FieldVal> ) -> FixMessage {
       },
     {{/each }}
     _ => {
-			    FixMessage::UndefinedMessage // replace by some error message?
-		}
+          FixMessage::UndefinedMessage // replace by some error message?
+    }
   }
 
 }
@@ -86,11 +86,11 @@ fn build_group_{{snake g.rust_type }}(consumer: &mut FixConsumer, size: usize) -
   let mut items : Vec<{{g.rust_type }}> = Vec::with_capacity(size);
 
   for _ in 0..size {
-		let party = build_group_{{snake g.rust_type }}_line( consumer );
-		items.push(party);
-	}
+        let party = build_group_{{snake g.rust_type }}_line( consumer );
+        items.push(party);
+    }
 
-	items
+    items
 }
 
 fn build_group_{{snake g.rust_type }}_line(consumer: &mut FixConsumer) -> {{g.rust_type }} {
@@ -134,8 +134,8 @@ fn build_group_{{snake g.rust_type }}_line(consumer: &mut FixConsumer) -> {{g.ru
       {{~/if}}
       {{/each }}
 
-			_ => { break; }
-		};
+            _ => { break; }
+        };
     // consume only if recognized
     consumer.next(); 
   }

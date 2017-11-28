@@ -2,6 +2,11 @@
 name = "fixcodegen"
 version = "0.1.0"
 authors = ["hammett <hammett@gmail.com>"]
+repository = "https://github.com/avenuesec/fix-rust"
+readme = "README.md"
+keywords = ["fix"]
+categories = ["finance"]
+license = "ASL"
 
 [dependencies]
 handlebars = "^0.27"

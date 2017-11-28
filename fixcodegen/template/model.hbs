@@ -2,6 +2,7 @@
 // Structs, enums to support parsing/generation of fix messages
 
 #![ignore(unused_imports)]
+#![ignore(unused_variables)]
 #![ignore(dead_code)]
 
 use std::str::{FromStr};
@@ -23,33 +24,33 @@ use std::fmt::{Debug, Formatter, Display, Error};
 pub struct UtcDateTime(DateTime<Utc>);
 
 impl UtcDateTime {
-	pub fn new(dt: DateTime<Utc>) -> UtcDateTime {
-		UtcDateTime( dt )
-	}
+    pub fn new(dt: DateTime<Utc>) -> UtcDateTime {
+        UtcDateTime( dt )
+    }
 }
 
 impl Default for UtcDateTime {
     fn default() -> Self {
-		UtcDateTime(Utc::now())
-	}
+        UtcDateTime(Utc::now())
+    }
 }
 impl PartialEq for UtcDateTime {
     fn eq(&self, other: &Self) -> bool{
-		self.0.eq( &other.0 )
-	}
+        self.0.eq( &other.0 )
+    }
 }
 impl Debug for UtcDateTime {
-	fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
-		write!(f, "{}", self.0)
-	}
+    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
+        write!(f, "{}", self.0)
+    }
 }
 impl FromStr for UtcDateTime {
     type Err = OurParserError;
-	fn from_str(s: &str) -> Result<Self, Self::Err> {
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         // TODO: more robust impl
-		// Fix data type YYYYMMDD-HH:MM:SS.sss 
-		Ok( UtcDateTime( Utc.datetime_from_str(s, "%Y%m%d-%H:%M:%S%.3f").unwrap() ))
-	}
+        // Fix data type YYYYMMDD-HH:MM:SS.sss 
+        Ok( UtcDateTime( Utc.datetime_from_str(s, "%Y%m%d-%H:%M:%S%.3f").unwrap() ))
+    }
 }
 impl Display for UtcDateTime {
   fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
@@ -62,33 +63,33 @@ impl Display for UtcDateTime {
 pub struct UtcDate(DateTime<Utc>);
 
 impl UtcDate {
-	pub fn new(dt: DateTime<Utc>) -> UtcDate {
-		UtcDate( dt )
-	}
+    pub fn new(dt: DateTime<Utc>) -> UtcDate {
+        UtcDate( dt )
+    }
 }
 
 impl Default for UtcDate {
     fn default() -> Self {
-		UtcDate(Utc::now())
-	}
+        UtcDate(Utc::now())
+    }
 }
 impl PartialEq for UtcDate {
     fn eq(&self, other: &Self) -> bool{
-		self.0.date().eq( &other.0.date() )
-	}
+        self.0.date().eq( &other.0.date() )
+    }
 }
 impl Debug for UtcDate {
-	fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
-		write!(f, "{}", self.0.date())
-	}
+    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
+        write!(f, "{}", self.0.date())
+    }
 }
 impl FromStr for UtcDate {
     type Err = OurParserError;
-	fn from_str(s: &str) -> Result<Self, Self::Err> {
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         // TODO: more robust impl
-		// Fix data type: YYYYMMDD
-		Ok( UtcDate( Utc.datetime_from_str(s, "%Y%m%d").unwrap() ) )
-	}
+        // Fix data type: YYYYMMDD
+        Ok( UtcDate( Utc.datetime_from_str(s, "%Y%m%d").unwrap() ) )
+    }
 }
 impl Display for UtcDate {
   fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
@@ -101,26 +102,26 @@ pub struct UtcTime(DateTime<Utc>);
 
 impl Default for UtcTime {
     fn default() -> Self {
-		UtcTime(Utc::now())
-	}
+        UtcTime(Utc::now())
+    }
 }
 impl PartialEq for UtcTime {
     fn eq(&self, other: &Self) -> bool{
-		self.0.eq( &other.0 )
-	}
+        self.0.eq( &other.0 )
+    }
 }
 impl Debug for UtcTime {
-	fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
-		write!(f, "{}", self.0)
-	}
+    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
+        write!(f, "{}", self.0)
+    }
 }
 impl FromStr for UtcTime {
     type Err = OurParserError;
-	fn from_str(s: &str) -> Result<Self, Self::Err> {
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         // TODO: more robust impl
-		// Fix data type: either HH:MM:SS (whole seconds) or HH:MM:SS.sss (milliseconds) format
-		Ok( UtcTime( Utc.datetime_from_str(s, "%H:%M:%S%.3f").unwrap() ) )
-	}
+        // Fix data type: either HH:MM:SS (whole seconds) or HH:MM:SS.sss (milliseconds) format
+        Ok( UtcTime( Utc.datetime_from_str(s, "%H:%M:%S%.3f").unwrap() ) )
+    }
 }
 impl Display for UtcTime {
   fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
@@ -129,28 +130,28 @@ impl Display for UtcTime {
 }
 
 fn boolconv(v: &str) -> bool {
-	v == "Y"
+    v == "Y"
 }
 fn to_boolconv(val: &bool) -> &'static str {
-	if *val {
-		"Y"
-	} else {
-		"N"
-	}
+    if *val {
+        "Y"
+    } else {
+        "N"
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OurParserError {
-	unregonized_val : String,
+    unregonized_val : String,
 }
 
 // size of enum = tag + size of largest message, so we box the fields
 #[derive(PartialEq,Debug,Serialize,Deserialize)]
 pub enum FixMessage { 
-	{{#each flatmessages as |msg|}}
+    {{#each flatmessages as |msg|}}
     // type: {{msg.msg_type}} 
     {{msg.name}}(Box<{{msg.rust_type}}>),
-	{{~/each}}
+    {{~/each}}
     // fixed, for when the parser can't figure out the message type
     UndefinedMessage,
 }
@@ -224,37 +225,37 @@ pub enum Field_{{f.name }}_Enum {
 
 impl FromStr for Field_{{f.name }}_Enum {
     type Err = OurParserError;
-	fn from_str(s: &str) -> Result<Self, Self::Err> {
-		match s {
-			{{#each f.enum_vals as |v| ~}}
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            {{#each f.enum_vals as |v| ~}}
             "{{v.enum_val}}" => Ok(Field_{{f.name }}_Enum::{{v.description}}),
             {{/each}}
-			_ => {
-				Err(OurParserError { unregonized_val: s.to_string() })
-			}
-		}
-	}
+            _ => {
+                Err(OurParserError { unregonized_val: s.to_string() })
+            }
+        }
+    }
 }
 
 impl Display for Field_{{f.name }}_Enum {
   fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
     match self {
-		{{#each f.enum_vals as |v| ~}}
-		&Field_{{f.name }}_Enum::{{v.description}} => {
-			f.write_str( "{{v.enum_val}}" )
-		}, 
-		{{/each}}
-		_ => {
-			Err(Error { })
-		}
-	}
+        {{#each f.enum_vals as |v| ~}}
+        &Field_{{f.name }}_Enum::{{v.description}} => {
+            f.write_str( "{{v.enum_val}}" )
+        }, 
+        {{/each}}
+        _ => {
+            Err(Error { })
+        }
+    }
   }
 }
 
 impl Default for Field_{{f.name }}_Enum {
     fn default() -> Self {
-		Field_{{f.name }}_Enum::Undefined
-	}
+        Field_{{f.name }}_Enum::Undefined
+    }
 }
 {{~/if}}
 {{/each}}

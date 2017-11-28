@@ -40,7 +40,7 @@ pub fn write_fix_message(msg: &FixMessage, ts: &UtcDateTime, seq: u32, sender: &
       Ok ( () )
     },
 
-	  {{~/each}}
+    {{~/each}}
     _ => { 
       // say what?
       Err(io::Error::new(io::ErrorKind::Other, "should never happen"))
