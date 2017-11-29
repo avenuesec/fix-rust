@@ -21,4 +21,5 @@ time = "^0.1"
 serde = "1.0"
 serde_derive = "1.0"
 env_logger = "^0.4"
+iovec = "0.1"
 fix = {version = "^0.1", path = "../fix"}

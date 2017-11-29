@@ -1,0 +1,19 @@
+[package]
+name = "testclient"
+version = "0.1.0"
+authors = ["hammett <hammett@gmail.com>"]
+
+[dependencies]
+chrono      = { version = "0.4", features = ["serde"] }   # datetime lib
+nom         = "^3.0"     # comb parser
+mio         = "0.6"      # network
+mio-more    = "0.1" # evented channel + evented timer
+slab        = "0.3"     # experimenting with pre-allocation
+bytes       = "^0.4"
+log         = "^0.3"
+time        = "^0.1"
+serde       = "1.0"
+fix         = { version = "^0.1", path = "../fix" }
+fixclient   = { version = "^0.1", path = "../fixclient" }
+env_logger  = "^0.4"
+serde_derive = "1.0"

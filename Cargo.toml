@@ -1,2 +1,2 @@
 [workspace]
-members = ["fixcodegen/", "fix/", "fixclient/"]
+members = ["fixcodegen/", "fix/", "fixclient/", "testclient/"]

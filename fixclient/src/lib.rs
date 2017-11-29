@@ -10,9 +10,8 @@ extern crate mio;
 extern crate mio_more;
 extern crate slab;
 extern crate bytes;
-// extern crate byteorder;
-// extern crate serde;
 extern crate fix;
+extern crate iovec;
 
 use std::{io, str};
 use std::net::SocketAddr;

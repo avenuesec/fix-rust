@@ -5,6 +5,7 @@ use std::net::{SocketAddr};
 use mio::{Token, Ready};
 use mio::tcp::{TcpStream};
 use bytes::{BytesMut, BufMut};
+use iovec::IoVec;
 
 use fix::frame;
 use nom::IResult;
@@ -111,7 +112,33 @@ impl<T : FixHandler> Conn<T> {
             }
 
             let r = unsafe {
-                let mut bufs: [_; 16] = Default::default();
+                // let mut bufs: [_; 16] = Default::default();
+
+                // The `IoVec` type can't have a 0-length size, so we create a bunch
+                // of dummy versions on the stack with 1 length which we'll quickly
+                // overwrite.
+                let b1: &mut [u8] = &mut [0];
+                let b2: &mut [u8] = &mut [0];
+                let b3: &mut [u8] = &mut [0];
+                let b4: &mut [u8] = &mut [0];
+                let b5: &mut [u8] = &mut [0];
+                let b6: &mut [u8] = &mut [0];
+                let b7: &mut [u8] = &mut [0];
+                let b8: &mut [u8] = &mut [0];
+                let b9: &mut [u8] = &mut [0];
+                let b10: &mut [u8] = &mut [0];
+                let b11: &mut [u8] = &mut [0];
+                let b12: &mut [u8] = &mut [0];
+                let b13: &mut [u8] = &mut [0];
+                let b14: &mut [u8] = &mut [0];
+                let b15: &mut [u8] = &mut [0];
+                let b16: &mut [u8] = &mut [0];
+                let mut bufs: [&mut IoVec; 16] = [
+                    b1.into(), b2.into(), b3.into(), b4.into(),
+                    b5.into(), b6.into(), b7.into(), b8.into(),
+                    b9.into(), b10.into(), b11.into(), b12.into(),
+                    b13.into(), b14.into(), b15.into(), b16.into(),
+                ];
                 let n = self.inbound.bytes_vec_mut(&mut bufs);
                 self.socket.read_bufs(&mut bufs[..n])
             };
