@@ -1,8 +1,8 @@
 use nom::*;
 use std::str::{FromStr,from_utf8_unchecked};
 use std::{io, str};
+use std::borrow::Cow;
 use chrono::prelude::*; 
-// use fixmessage::*;
 use fixmessagegen::*;
 use bytes::{BytesMut, BufMut};
 use serde::{Serialize,Deserialize};
@@ -23,6 +23,7 @@ pub struct RawFixFrame<'a> {
 
 #[derive(PartialEq,Debug,Serialize,Deserialize)]
 pub struct FixFrame {
+	pub begin_string : Cow<'static, str>, // &'static str,
 	pub sending  : DateTime<Utc>, // field 52
 	pub seq : u32,  // field 34
 	pub sender_comp_id: String, // 49
@@ -38,14 +39,15 @@ const FIX_MESSAGE_DELIMITER: char = '\u{1}';
 
 impl FixFrame {
 
-	pub fn new(seq: u32, sender: &str, target: &str, message: FixMessage) -> FixFrame {
+	pub fn new(seq: u32, sender: &str, target: &str, begin_str: &'static str, message: FixMessage) -> FixFrame {
 		let ts = Utc::now();
 		FixFrame {
+            begin_string: Cow::from(begin_str),
 			sending: ts,
-			seq: seq,
+			seq,
 			sender_comp_id: sender.to_string(),
 			target_comp_id: target.to_string(),
-			message: message 
+			message
 		}
 	}
 
@@ -53,9 +55,10 @@ impl FixFrame {
 		// message content
 		let mut temp_buf = BytesMut::new(); // ::new() ::with_capacity(1024) -  experiment with initial capacity here 
 		//delegates to code gen
-		write_fix_message(&self.message, &UtcDateTime::new(self.sending), self.seq, &self.sender_comp_id, &self.target_comp_id, &mut temp_buf)?;
+		write_fix_message(&self.message, &UtcDateTime::new(self.sending), self.seq,
+                          &self.sender_comp_id, &self.target_comp_id, &mut temp_buf)?;
 		
-		let prelude = format!("8={version}\u{1}9={len}\u{1}", len= temp_buf.len(), version=FIX_BEGIN );
+		let prelude = format!("8={version}\u{1}9={len}\u{1}", len= temp_buf.len(), version=self.begin_string );
 		let mut message_builder = BytesMut::with_capacity(prelude.len() + temp_buf.len());
 		message_builder.put( prelude ); // buffer copy 1 - sad!
 		message_builder.extend_from_slice( &temp_buf.freeze()[..] ); // buffer copy 2 - sad!
@@ -189,7 +192,8 @@ pub fn parse(buffer: &[u8]) -> IResult<&[u8], FixFrame> {
 		}
 	}
 
-	let fixframe = FixFrame { 
+	let fixframe = FixFrame {
+        begin_string: Cow::from(FIX_BEGIN),
 		sending  : snd_time.unwrap(),
 		seq : msg_seq.unwrap(),
 		sender_comp_id: sender.unwrap(),

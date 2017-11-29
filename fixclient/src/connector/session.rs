@@ -1,4 +1,5 @@
 use std::io;
+use std::borrow::Cow;
 use super::SessionState;
 
 use chrono::{Utc, DateTime};
@@ -32,6 +33,7 @@ pub struct SessionStateImpl <Store>
     recv_timeout: Option<timer::Timeout>,
     hearbeat_in_ms: u32, // heartbeat in milliseconds
     config_heartbeat: u32, // original config, unless server overrides it
+    begin_string: Cow<'static, str>,
 }
 
 impl <Store> SessionStateImpl <Store>
@@ -52,6 +54,7 @@ impl <Store> SessionStateImpl <Store>
             recv_timeout: None,
             config_heartbeat: cfg.heart_beat,
             hearbeat_in_ms: (cfg.heart_beat as f32 * 1000.0 * 0.8) as u32, // converts it to ms and also lowers it a bit
+            begin_string: Cow::from(cfg.begin_string.to_owned()),
         }
     }
 
@@ -139,6 +142,7 @@ impl <Store> SessionState for SessionStateImpl <Store> where Store : MessageStor
             sending: Utc::now(),
             sender_comp_id: self.sender_comp_id.to_owned(),
             target_comp_id: self.target_comp_id.to_owned(),
+            begin_string: self.begin_string.clone(),
         };
         Ok ( frame )
     }

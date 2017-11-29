@@ -45,18 +45,19 @@ impl DayTime {
 
 // #[derive(Default)]
 pub struct FixSessionConfig {
-    pub qualifier: String,
-    pub sender_comp: String,
-    pub target_comp: String,
-    pub hostname: String,
-    pub port: u32,
-    pub heart_beat: u32,
-    pub log_dir   : String,
-    pub store_dir : String,
-    pub reset_seq_num: bool,
-    pub use_local_time: bool, // start/end should be interpret as local time instead of UTC
+    pub qualifier     : String,
+    pub sender_comp   : String,
+    pub target_comp   : String,
+    pub hostname      : String,
+    pub port          : u32,
+    pub heart_beat    : u32,
+    pub log_dir       : String,
+    pub store_dir     : String,
+    pub reset_seq_num : bool,
+    pub use_local_time: bool,  // start/end should be interpret as local time instead of UTC
     pub session_start : DayTime,
     pub session_end   : DayTime,
+    pub begin_string  : String,  // eg FIX.4.2
 }
 
 use mio::{Poll, Token};
@@ -88,7 +89,8 @@ impl FixSessionConfig {
             reset_seq_num: false,
             use_local_time: false,
             session_start: DayTime::new(0, 01, 0, None),   // 1 min past   midnight
-            session_end:   DayTime::new(23, 59, 0, None),  // 1 min before midnight
+            session_end:   DayTime::new(23, 59, 0, None),  // 1 min before midnight,
+            begin_string:  "FIX.4.2".to_owned(),
         }
     }
 }

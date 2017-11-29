@@ -84,8 +84,7 @@ impl <State,UserF> DefaultHandler <State,UserF>
 }
 
 impl <State,UserF> FixHandler for DefaultHandler <State,UserF>
-    where //Store : MessageStore,
-          State : SessionState, 
+    where State : SessionState,
           UserF : UserHandlerFactory {
 
     // cancelled with a timeout has been set on the timer

@@ -68,6 +68,7 @@ impl FixHandlerFactory for FixCustomHandlerFactory {
             use_local_time: true,
             session_end:   DayTime::new(  0,  0, 0, None ),
             session_start: DayTime::new( 23, 59, 0, None ),
+            begin_string : "FIX.4.2".to_owned(),
         };
 
         let fsstore = FSMessageStore::new( &settings ).unwrap(); // Better error handling here
