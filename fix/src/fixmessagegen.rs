@@ -2285,11 +2285,11 @@ const FIELD_AVGPX : u32 = 6; // PRICE
 
 const FIELD_BEGINSEQNO : u32 = 7; // INT
 
-const FIELD_BEGINSTRING : u32 = 8; // STRING
-
-const FIELD_BODYLENGTH : u32 = 9; // INT
-
-const FIELD_CHECKSUM : u32 = 10; // STRING
+//const FIELD_BEGINSTRING : u32 = 8; // STRING
+//
+//const FIELD_BODYLENGTH : u32 = 9; // INT
+//
+//const FIELD_CHECKSUM : u32 = 10; // STRING
 
 const FIELD_CLORDID : u32 = 11; // STRING
 
@@ -2939,9 +2939,11 @@ const FIELD_LASTSHARES : u32 = 32; // QTY
 
 const FIELD_LINESOFTEXT : u32 = 33; // INT
 
-const FIELD_MSGSEQNUM : u32 = 34; // INT
+//const FIELD_MSGSEQNUM : u32 = 34; // INT
 
-const FIELD_MSGTYPE : u32 = 35; // STRING
+// const FIELD_MSGTYPE : u32 = 35; // STRING
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize)]
 pub enum FieldMsgTypeEnum {
     Heartbeat, // = "0"

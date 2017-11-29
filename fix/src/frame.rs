@@ -5,7 +5,6 @@ use std::borrow::Cow;
 use chrono::prelude::*; 
 use fixmessagegen::*;
 use bytes::{BytesMut, BufMut};
-// use serde::{Serialize,Deserialize};
 
 
 #[derive(PartialEq,Debug)]
@@ -16,9 +15,9 @@ pub struct FieldVal<'a> {
 
 #[derive(PartialEq,Debug)]
 pub struct RawFixFrame<'a> {
-    // ts  : DateTime<Utc>,
+    begin_str: &'static str,
     len : usize,
-    flds: Vec<FieldVal<'a>>, // TODO checksum
+    flds: Vec<FieldVal<'a>>,
 }
 
 #[derive(PartialEq,Debug,Serialize,Deserialize)]
@@ -33,9 +32,14 @@ pub struct FixFrame {
     pub message : FixMessage,
 }
 
-const FIX_BEGIN : &str= "FIX.4.4";
+const FIX_BEGIN_42   : &str= "FIX.4.2";
+const FIX_BEGIN_44   : &str= "FIX.4.4";
+
+const FIX_BEGIN_42_B : &[u8]= b"FIX.4.2";
+const FIX_BEGIN_44_B : &[u8]= b"FIX.4.4";
+
 const FIX_MESSAGE_DELIMITER: char = '\u{1}';
-// const FIX_EQUAL: char = '=';
+
 
 impl FixFrame {
 
@@ -101,9 +105,9 @@ named!(timestamp<DateTime<Utc>>,
         m: apply!(to_u32_sized, 2) >> 
         d: apply!(to_u32_sized, 2) >> 
         tag!(b"-") >> 
-        h: apply!(to_u32_sized, 2) >> tag!(b":") >> 
+        h: apply!(to_u32_sized, 2)  >> tag!(b":") >>
         mm: apply!(to_u32_sized, 2) >> tag!(b":") >> 
-        s: apply!(to_u32_sized, 2) >> tag!(b".") >> 
+        s: apply!(to_u32_sized, 2)  >> tag!(b".") >>
         ms: apply!(to_u32_sized, 3) >> 
         // assembles with parsed pieces:
         ( Utc.ymd(y as i32, m, d).and_hms_milli(h, mm, s, ms) )
@@ -113,12 +117,12 @@ named!(fieldid, take_while1!(is_digit));
 named!(fieldval, take_until!( "\x01" )); // consume all up to SOH
 named!(field<FieldVal>, do_parse!(
      id:  fieldid >> 
-           tag!(b"=") >> 
+          tag!(b"=") >>
      val: fieldval >> 
-           tag!("\x01") >> 
+          tag!("\x01") >>
      ( FieldVal { 
-             id:  buf_to_u32_2(id), 
-            val: to_string_2(val),
+         id:  buf_to_u32_2(id),
+         val: to_string_2(val),
     } )
 ) ); 
 named!(fields <Vec<FieldVal>>, many1!( field ) );
@@ -128,6 +132,12 @@ named!(fld_value_usize<usize>, do_parse!(
         buf_to_u32_2(raw) as usize
     )
 ));
+named!(pub begin_string<&'static str>, do_parse!(
+    // eg: 8=FIX.4.4
+    tag!(b"8=") >>
+    bstr : fieldval >>
+    ( to_fix_version(bstr) )
+));
 
 // raw parser entry point
 // 20170627-19:06:54.551 : 8=FIX.4.4 | 9=98 | 35=A | 34=1 | 49=CCLRA301 | 52=20170627-19:06:54.522 | 56=OE101C | 95=6 | 96=YWEKNJ | 98=0 | 108=20 | 141=Y | 35002=0 | 10=111 | 
@@ -135,17 +145,17 @@ named!(fld_value_usize<usize>, do_parse!(
 const CHECKSUM_SIZE : usize = 7; // 10=012\u{1}
 named!(raw_frame<RawFixFrame>,
   do_parse!(
-              tag!(b"8=FIX.4.2\x019=") >>
+      bstr  : begin_string >>
+              tag!("\x01") >>
+              // tag!(b"8=FIX.4.2\x019=") >>
       lenw  : fld_value_usize >> 
               tag!("\x01") >>
               call!(ensure_size, lenw + CHECKSUM_SIZE) >> // is there enough bytes to consume given the msg length?
       flds  : fields >> // ideally should not parse checksum field..
-                // line_ending >> 
-    (RawFixFrame { 
-        // ts: ts,
-        len: lenw,
-        flds: flds
-        // ..Default::default()
+    (RawFixFrame {
+        begin_str: bstr,
+        len      : lenw,
+        flds     : flds
     })
   )
 );
@@ -192,7 +202,7 @@ pub fn parse(buffer: &[u8]) -> IResult<&[u8], FixFrame> {
     }
 
     let fixframe = FixFrame {
-        begin_string: Cow::from(FIX_BEGIN),
+        begin_string: Cow::from(raw.begin_str),
         sending  : snd_time.unwrap(),
         seq : msg_seq.unwrap(),
         sender_comp_id: sender.unwrap(),
@@ -228,6 +238,20 @@ fn to_u32_sized(input: &[u8], size: usize) -> IResult<&[u8], u32> {
 fn to_string_2(s: &[u8]) -> &str {
     unsafe { from_utf8_unchecked(s) }
 }
+
+#[inline(always)]
+fn to_fix_version(s: &[u8]) -> &'static str {
+
+    if s == FIX_BEGIN_42_B {
+        FIX_BEGIN_42
+    } else if s == FIX_BEGIN_44_B {
+        FIX_BEGIN_44
+    } else {
+        panic!("unsupported version");
+    }
+
+}
+
 // #[inline(always)]
 // fn to_i32_2(s: &str) -> i32 {
 //     FromStr::from_str(s).unwrap()
@@ -286,10 +310,28 @@ mod tests {
     }
 
     #[test]
+    fn rawframe_parsing_42() {
+        let res = raw_frame( b"8=FIX.4.2\x019=57\x0135=0\x0134=3\x0149=RCLRA310\x0152=20170627-14:24:14.804\x0156=OE103C\x0110=082\x01" ) ;
+        // println!("rawframe_parsing {:?}", res);
+        let expected_frame = RawFixFrame {
+            begin_str: "FIX.4.2",
+            len: 57,
+            flds: vec![ FieldVal { id: 35, val: "0" },
+                        FieldVal { id: 34, val: "3" },
+                        FieldVal { id: 49, val: "RCLRA310" },
+                        FieldVal { id: 52, val: "20170627-14:24:14.804" },
+                        FieldVal { id: 56, val: "OE103C" },
+                        FieldVal { id: 10, val: "082" }]
+        };
+        assert_eq!(res, IResult::Done(&b""[..], expected_frame));
+    }
+
+    #[test]
     fn rawframe_parsing() {
         let res = raw_frame( b"8=FIX.4.4\x019=57\x0135=0\x0134=3\x0149=RCLRA310\x0152=20170627-14:24:14.804\x0156=OE103C\x0110=082\x01" ) ;
         // println!("rawframe_parsing {:?}", res);
-        let expected_frame = RawFixFrame { 
+        let expected_frame = RawFixFrame {
+            begin_str: "FIX.4.4",
             len: 57, 
             flds: vec![ FieldVal { id: 35, val: "0" }, 
                         FieldVal { id: 34, val: "3" }, 
@@ -303,15 +345,20 @@ mod tests {
 
     #[test]
     fn rawframe_parsing_failure1() {
-        let res =  raw_frame( b"8=FIX.4.4\x01" ) ;
-        // println!("rawframe_parsing_failure1 {:?}", res);
+        let res = raw_frame( b"8=FIX.4.4\x01" ) ;
+        assert_eq!(res, IResult::Incomplete(Needed::Size(12)));
+    }
+
+    #[test]
+    fn rawframe_parsing_failure2() {
+        let res = raw_frame( b"8=FIX.4.2\x01" );
+        println!("result {:?}", res);
         assert_eq!(res, IResult::Incomplete(Needed::Size(12)));
     }
 
     #[test]
     fn field_parsing() {
         let res =  field( b"9=98\x0110=something" ) ;
-        // println!("field_parsing {:?}", res);
         assert_eq!(res, IResult::Done(&b"10=something"[..], FieldVal { id: 9, val: "98" }));
     }
 

@@ -4,6 +4,7 @@ extern crate chrono;
 extern crate bytes;
 
 use std::default::{Default};
+use std::borrow::Cow;
 
 use chrono::prelude::*; 
 use bytes::{BytesMut, BufMut};
@@ -16,6 +17,7 @@ use fix::fixmessagegen::*;
 #[test]
 fn test_build_heartbeat() {
     let frame = FixFrame {
+        begin_string: Cow::from("FIX.4.4"),
         sending: Utc.ymd(2017, 08, 09).and_hms_milli(11, 48, 59, 413),
         seq: 479,
         sender_comp_id: "XPOMS".to_string(),
@@ -32,13 +34,41 @@ fn test_build_heartbeat() {
     };
     // original:  8=FIX.4.4|9=55|35=0|34=479|49=XPOMS|52=20170809-11:48:59.413|56=CLEAR|10=086| 
     // generated: 8=FIX.4.4|9=55|35=0|34=479|49=XPOMS|52=20170809-11:48:59.413|56=CLEAR|10=086|
-    assert_eq!("8=FIX.4.4|9=55|35=0|34=479|49=XPOMS|52=20170809-11:48:59.413|56=CLEAR|10=086|", 
+    assert_eq!("8=FIX.4.2|9=55|35=0|34=479|49=XPOMS|52=20170809-11:48:59.413|56=CLEAR|10=086|",
         message.replace("\u{1}", "|"));
 }
 
 #[test]
+#[cfg(fix42)]
 fn test_build_logon() {
     let frame = FixFrame {
+        begin_string: Cow::from("FIX.4.2"),
+        sending: Utc.ymd(2017, 08, 09).and_hms_milli(11, 48, 59, 413),
+        seq: 100321,
+        sender_comp_id: "XPOMS".to_string(),
+        target_comp_id: "CLEAR".to_string(),
+        message: FixMessage::Logon(Box::new(LogonFields {
+            encrypt_method: Field_EncryptMethod_Enum::NONEOTHER,
+            heart_bt_int: 60,
+            reset_seq_num_flag: Some(true),
+            .. Default::default()
+        }))
+    };
+    let mut buffer = BytesMut::new();
+    let _ = frame.write( &mut buffer );
+    let message = unsafe {
+        String::from_utf8_unchecked(buffer.freeze().to_vec())
+    };
+
+    assert_eq!("8=FIX.4.2|9=99|35=A|34=100321|49=XPOMS|52=20170809-11:48:59.413|56=CLEAR|98=0|108=60|141=Y|464=Y|553=Hey|554=John|10=220|",
+               message.replace("\u{1}", "|"));
+}
+
+#[test]
+#[cfg(fix44)]
+fn test_build_logon() {
+    let frame = FixFrame {
+        begin_string: Cow::from("FIX.4.4"),
         sending: Utc.ymd(2017, 08, 09).and_hms_milli(11, 48, 59, 413),
         seq: 100321,
         sender_comp_id: "XPOMS".to_string(),
@@ -64,8 +94,10 @@ fn test_build_logon() {
 }
 
 #[test]
+#[cfg(fix44)]
 fn test_build_new_order_single() {
     let frame = FixFrame {
+        begin_string: Cow::from("FIX.4.4"),
         sending: Utc.ymd(2017, 08, 09).and_hms_milli(13, 44, 16, 182),
         seq: 70827,
         sender_comp_id: "CLEAR".to_string(),
