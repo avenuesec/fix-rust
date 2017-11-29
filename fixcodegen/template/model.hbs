@@ -216,19 +216,19 @@ const FIELD_{{upper f.name  }} : u32 = {{ f.tag }}; // {{f.fld_type}}
 {{#if f.is_enum ~}}
 
 #[derive(PartialEq,Debug,Serialize,Deserialize)]
-pub enum Field_{{f.name }}_Enum {
+pub enum Field{{f.name }}Enum {
     {{#each f.enum_vals as |v| ~}}
-        {{v.description}}, // = "{{v.enum_val}}"
+        {{capitalize v.description}}, // = "{{v.enum_val}}"
     {{/each}}
     Undefined
 }
 
-impl FromStr for Field_{{f.name }}_Enum {
+impl FromStr for Field{{f.name }}Enum {
     type Err = OurParserError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             {{#each f.enum_vals as |v| ~}}
-            "{{v.enum_val}}" => Ok(Field_{{f.name }}_Enum::{{v.description}}),
+            "{{v.enum_val}}" => Ok(Field{{f.name }}Enum::{{capitalize v.description}}),
             {{/each}}
             _ => {
                 Err(OurParserError { unregonized_val: s.to_string() })
@@ -237,11 +237,11 @@ impl FromStr for Field_{{f.name }}_Enum {
     }
 }
 
-impl Display for Field_{{f.name }}_Enum {
+impl Display for Field{{f.name }}Enum {
   fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
     match self {
         {{#each f.enum_vals as |v| ~}}
-        &Field_{{f.name }}_Enum::{{v.description}} => {
+        &Field{{f.name }}Enum::{{capitalize v.description}} => {
             f.write_str( "{{v.enum_val}}" )
         }, 
         {{/each}}
@@ -252,9 +252,9 @@ impl Display for Field_{{f.name }}_Enum {
   }
 }
 
-impl Default for Field_{{f.name }}_Enum {
+impl Default for Field{{f.name }}Enum {
     fn default() -> Self {
-        Field_{{f.name }}_Enum::Undefined
+        Field{{f.name }}Enum::Undefined
     }
 }
 {{~/if}}

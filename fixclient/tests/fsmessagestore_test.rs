@@ -12,9 +12,9 @@ fn test_seq_nums_persistence_and_init() {
 
     env_logger::init().unwrap();
 
-    FSMessageStore::delete_files( "./store" ); // <- clean slate
+    FSMessageStore::delete_files( "./temptest/store" ); // <- clean slate
 
-    let cfg = FixSessionConfig::new( "123", "sender", "target", "hostname", 1234, 30, "./logs", "./store" );
+    let cfg = FixSessionConfig::new( "123", "sender", "target", "hostname", 1234, 30, "./temptest/logs", "./temptest/store" );
 
     let mut store = FSMessageStore::new ( &cfg ).expect("store created");
     store.incr_sender_seq_num();

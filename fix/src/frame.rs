@@ -53,9 +53,9 @@ impl FixFrame {
 		// message content
 		let mut temp_buf = BytesMut::new(); // ::new() ::with_capacity(1024) -  experiment with initial capacity here 
 		//delegates to code gen
-		write_fix_message(&self.message, &UtcDateTime::new(self.sending), self.seq, &self.sender_comp_id, &self.target_comp_id, FIX_MESSAGE_DELIMITER, &mut temp_buf)?;
+		write_fix_message(&self.message, &UtcDateTime::new(self.sending), self.seq, &self.sender_comp_id, &self.target_comp_id, &mut temp_buf)?;
 		
-		let prelude = format!("8={version}{del}9={len}{del}", len= temp_buf.len(), version=FIX_BEGIN, del=FIX_MESSAGE_DELIMITER );
+		let prelude = format!("8={version}\u{1}9={len}\u{1}", len= temp_buf.len(), version=FIX_BEGIN );
 		let mut message_builder = BytesMut::with_capacity(prelude.len() + temp_buf.len());
 		message_builder.put( prelude ); // buffer copy 1 - sad!
 		message_builder.extend_from_slice( &temp_buf.freeze()[..] ); // buffer copy 2 - sad!

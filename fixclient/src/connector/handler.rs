@@ -60,7 +60,7 @@ impl <State,UserF> DefaultHandler <State,UserF>
 
         // Start login process
         let flds = LogonFields {
-            encrypt_method: Field_EncryptMethod_Enum::NONE,
+            encrypt_method: FieldEncryptMethodEnum::None,
             heart_bt_int: self.heart_bt,
             reset_seq_num_flag: Some(true), // TODO: review this
             .. Default::default()

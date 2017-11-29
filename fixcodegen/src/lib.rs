@@ -140,6 +140,7 @@ impl FixCodeGen {
         handlebars.register_helper("camel",         Box::new(camel_helper));
         handlebars.register_helper("snake",         Box::new(snake_helper));
         handlebars.register_helper("upper",         Box::new(upper_helper));
+        handlebars.register_helper("capitalize",    Box::new(capitalize_helper));
         handlebars.register_helper("chainvname",    Box::new(chainvname_helper));
         handlebars.register_helper("mutchainvname", Box::new(mutchainvname_helper));
 
@@ -468,7 +469,7 @@ fn rec_chain_name(fld: &serde_json::Value, writer: &mut String, for_mut: bool) {
 pub fn fix_type_to_rust (fld : &FixField) -> String {
     
     if fld.is_enum {
-        format!("Field_{0}_Enum", &fld.name)
+        format!("Field{0}Enum", &fld.name)
     } else {
         match fld.fld_type.as_str() {
             "STRING"      => { "String" },
@@ -505,7 +506,7 @@ pub fn fix_type_to_rust (fld : &FixField) -> String {
 pub fn fld_type_to_conv (fld : &FixField) -> String {
 
     if fld.is_enum {
-        format!("Field_{0}_Enum::from_str(v).unwrap()", &fld.name)
+        format!("Field{0}Enum::from_str(v).unwrap()", &fld.name)
     } else {
          match fld.fld_type.as_str() {
             "STRING"      |
@@ -570,6 +571,13 @@ pub fn upper_helper (h: &Helper, _: &Handlebars, rc: &mut RenderContext) -> Resu
     Ok(())
 }
 
+pub fn capitalize_helper(h: &Helper, _: &Handlebars, rc: &mut RenderContext) -> Result<(), RenderError> {
+    let value = h.param(0).ok_or_else(|| RenderError::new("Param not found for helper \"capitalize\""))?;
+    let param = value.value().as_str().ok_or_else(|| RenderError::new("Non-string param given to helper \"capitalize\""))?;
+    rc.writer.write_all(capitalize(param.trim()).as_bytes())?;
+    Ok(())
+}
+
 pub fn upper_case(name: &str) -> String {
     name.to_ascii_uppercase()
 }
@@ -585,6 +593,22 @@ pub fn camel_case(name: &str) -> String {
             new_word = false;
             result
         }
+    })
+}
+
+pub fn capitalize(name: &str) -> String {
+    let mut new_word = true;
+    name.chars().fold("".to_string(), |mut result, ch| {
+        if result.len() == 0 && ch.is_digit(10) {
+            result.push('A'); // arbitrary prefix
+        }
+        if ch == '-' || ch == '_' || ch == ' ' {
+            new_word = true;
+        } else {
+            result.push(if new_word { ch.to_ascii_uppercase() } else { ch.to_ascii_lowercase() });
+            new_word = false;
+        }
+        result
     })
 }
 
@@ -613,4 +637,21 @@ pub fn snake_case(name: &str) -> String {
             })
         }
     }
+}
+
+mod tests {
+
+    use super::*;
+
+    #[test]
+    fn test_capitalize() {
+        assert_eq!("Description", capitalize("DESCRIPTION"));
+        assert_eq!("DescriptionOfSomething", capitalize("DESCRIPTION_OF_SOMETHING"));
+    }
+
+    #[test]
+    fn test_capitalize_with_invalid_starts() {
+        assert_eq!("A5yr", capitalize("5YR"));
+    }
+
 }

@@ -2,7 +2,7 @@
 pub fn build_fix_message( msg_type: &str, flds: &Vec<FieldVal> ) -> FixMessage { 
 
   match msg_type {
-    {{~ #each flatmessages as |m| }}
+    {{ #each flatmessages as |m| }}
       "{{ m.msg_type }}" => {
           let mut consumer = FixConsumer::new(flds);
           let fields = parse_message_{{snake m.rust_type }}( &mut consumer );
@@ -83,9 +83,9 @@ fn parse_message_{{snake m.rust_type }}( consumer : &mut FixConsumer  ) -> {{m.r
 
 {{#each flatgroups as |g| }}
 fn build_group_{{snake g.rust_type }}(consumer: &mut FixConsumer, size: usize) -> Vec<{{g.rust_type }}> {
-  let mut items : Vec<{{g.rust_type }}> = Vec::with_capacity(size);
+    let mut items : Vec<{{g.rust_type }}> = Vec::with_capacity(size);
 
-  for _ in 0..size {
+    for _ in 0..size {
         let party = build_group_{{snake g.rust_type }}_line( consumer );
         items.push(party);
     }

@@ -4,38 +4,38 @@ use std::io::{Write};
 use std::result::{Result};
 
 struct WriteWrapper<'a> {
-  buf: &'a mut BytesMut
+    buf: &'a mut BytesMut
 }
 
 // impl of the Write trait so we can use format! and/or write! 
 // directly without string allocs
 impl <'a> io::Write for WriteWrapper<'a> {
 
-  fn write(&mut self, buf: &[u8]) -> Result<usize, io::Error> {
-    let len = buf.len();
-    self.buf.reserve( len );
-    self.buf.extend( buf );
+    fn write(&mut self, buf: &[u8]) -> Result<usize, io::Error> {
+        let len = buf.len();
+        self.buf.reserve( len );
+        self.buf.extend( buf );
 
-    Ok( len )
-  }
+        Ok( len )
+    }
 
-  fn flush(&mut self) -> Result<(), io::Error> {
-    // nothing to do
-    Ok( () )
-  }
+    fn flush(&mut self) -> Result<(), io::Error> {
+        // nothing to do
+        Ok( () )
+    }
 }
 
 
 
-pub fn write_fix_message(msg: &FixMessage, ts: &UtcDateTime, seq: u32, sender: &str, target: &str, sep: char, buf: &mut BytesMut) -> Result<(), io::Error> {
+pub fn write_fix_message(msg: &FixMessage, ts: &UtcDateTime, seq: u32, sender: &str, target: &str, buf: &mut BytesMut) -> Result<(), io::Error> {
 
   match msg {
     {{#each flatmessages as |msg|}}
     // type: {{msg.msg_type}} 
     &FixMessage::{{msg.name}}(ref box_flds) => {
       let mut writer_wrapper = WriteWrapper { buf: buf };
-      write!(writer_wrapper, "35={{msg.msg_type}}{sep}34={seq}{sep}49={sender}{sep}52={ts}{sep}56={target}{sep}", 
-        ts= ts, seq= seq, sender= sender, target= target, sep= sep )?;
+      write!(writer_wrapper, "35={{msg.msg_type}}\u{1}34={seq}\u{1}49={sender}\u{1}52={ts}\u{1}56={target}\u{1}",
+        ts= ts, seq= seq, sender= sender, target= target )?;
       write_{{snake msg.rust_type }}(box_flds, &mut writer_wrapper)?;
       Ok ( () )
     },
@@ -52,21 +52,21 @@ pub fn write_fix_message(msg: &FixMessage, ts: &UtcDateTime, seq: u32, sender: &
   {{~#each flds as |f| ~}}
     {{~#if f.is_top_level ~}}
       {{~#if f.is_required }}
-  {
-      let val = &flds.{{ f.vname }};
+    {
+        let val = &flds.{{ f.vname }};
       {{ else }}
-    if flds.{{ f.vname }}.is_some() {
-      let val = flds.{{ f.vname }}.as_ref().unwrap();
+        if flds.{{ f.vname }}.is_some() {
+            let val = flds.{{ f.vname }}.as_ref().unwrap();
       {{/if}}
 
       {{~#if f.is_simple }}
-      write!(output, "{{f.fld_tag}}={}\u{01}", {{f.fix_type_converter }} )?; // FIELD_{{upper f.name }}
+        write!(output, "{{f.fld_tag}}={}\u{01}", {{f.fix_type_converter }} )?; // FIELD_{{upper f.name }}
       {{~/if ~}}
       {{~#if f.is_component }}
-      write_component_{{ f.vname }}_fields( val, output )?;
+        write_component_{{ f.vname }}_fields( val, output )?;
       {{~/if ~}}
       {{~#if f.is_group }}
-      write_{{ f.group_builder_fn_name }}( val, output )?;
+        write_{{ f.group_builder_fn_name }}( val, output )?;
       {{~/if }}
     }
     {{~/if ~}}
@@ -77,7 +77,7 @@ pub fn write_fix_message(msg: &FixMessage, ts: &UtcDateTime, seq: u32, sender: &
 {{#each flatmessages as |msg|}}
 fn write_{{snake msg.rust_type }}(flds: &{{msg.rust_type}}, output: &mut Write) -> Result<(), io::Error> {
 {{> fields flds=msg.fields }}
-  Ok( () )
+    Ok( () )
 }
 
 {{/each}}
@@ -88,7 +88,7 @@ fn write_{{snake msg.rust_type }}(flds: &{{msg.rust_type}}, output: &mut Write) 
 fn write_component_{{snake c.rust_type}}( flds: &{{c.rust_type}}, output: &mut Write ) -> Result<(), io::Error> {
 {{> fields flds=c.fields }}
 
-  Ok( () )
+    Ok( () )
 }
 
 {{/each}}
@@ -96,20 +96,20 @@ fn write_component_{{snake c.rust_type}}( flds: &{{c.rust_type}}, output: &mut W
 {{#each flatgroups as |c|}}
 
 fn write_group_{{snake c.rust_type}}( group: &Vec<{{c.rust_type}}>, output: &mut Write ) -> Result<(), io::Error> {
-  let len = group.len();
-  write!(output, "{}={}\u{01}", FIELD_{{upper c.name }}, len )?;
+    let len = group.len();
+    write!(output, "{}={}\u{01}", FIELD_{{upper c.name }}, len )?;
 
-  for g in group {
-    write_group_{{snake c.rust_type}}_line( g, output )?;
-  }
+    for g in group {
+        write_group_{{snake c.rust_type}}_line( g, output )?;
+    }
 
-  Ok( () )
+    Ok( () )
 }
 
 fn write_group_{{snake c.rust_type}}_line( flds: &{{c.rust_type}}, output: &mut Write) -> Result<(), io::Error> {
 {{> fields flds=c.fields }}
 
-  Ok( () )
+    Ok( () )
 }
 
 {{/each}}
