@@ -142,7 +142,7 @@ pub trait FixHandler {
 
     fn on_timeout(&mut self, event_kind: Token) -> io::Result<()>;
 
-    fn new_timeout(&mut self, timeout: timer::Timeout, event_kind: Token) {
+    fn new_timeout(&mut self, _timeout: timer::Timeout, _event_kind: Token) {
     }
 
     fn on_network_error(&mut self); // <- add error info

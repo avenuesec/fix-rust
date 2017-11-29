@@ -21,10 +21,10 @@ use fixclient::connector::{UserSender,UserHandler,UserHandlerFactory};
 
 
 fn main() {
-    env_logger::init().unwrap();
+    set_up_logger();
 
-
-    let addr = to_addr("localhost:8000").expect("Could not parse address for fixserver");
+    let addr = to_addr("127.0.0.1:8000").expect("Could not parse address for fixserver");
+    println!("addr resolve to {:?}", addr);
 
     let factory = FixCustomHandlerFactory { };
 
@@ -32,8 +32,30 @@ fn main() {
 
     let _ = fix_app.connect(&addr);
 
-    fix_app.run(); // blocks
+    let _ = fix_app.run(); // blocks
 
+}
+
+use std::env;
+use env_logger::LogBuilder;
+use log::{LogRecord, LogLevelFilter};
+use chrono::{Local};
+
+fn set_up_logger() {
+    let format = |record: &LogRecord| {
+        format!("{0} {2} : {1}", record.level(), record.args(), Local::now().format("%m-%d %H:%M:%S%.3f") )
+    };
+
+    let mut builder = LogBuilder::new();
+    builder.format(format).filter(None, LogLevelFilter::Info);
+
+    if env::var("RUST_LOG").is_ok() {
+        builder.parse(&env::var("RUST_LOG").unwrap());
+    } else {
+        builder.parse("debug");
+    }
+
+    builder.init().unwrap();
 }
 
 
@@ -52,7 +74,7 @@ pub struct FixCustomHandlerFactory { }
 impl FixHandlerFactory for FixCustomHandlerFactory {
     type Handler = DefaultHandler<SessionStateImpl<FSMessageStore>, UserHandlerFactory2>;
 
-    fn on_connected(&mut self, destination: &SocketAddr, sender: Sender) -> Self::Handler {
+    fn on_connected(&mut self, _destination: &SocketAddr, sender: Sender) -> Self::Handler {
         // needs to map SocketAddr to fixsessionconfig
 
         let settings = FixSessionConfig {
@@ -74,7 +96,6 @@ impl FixHandlerFactory for FixCustomHandlerFactory {
         let fsstore = FSMessageStore::new( &settings ).unwrap(); // Better error handling here
         let state   = SessionStateImpl::new( &settings, fsstore );
 
-        // |usersender| {  ServiceFixHandler { sender: usersender } }
         let f = UserHandlerFactory2 { };
 
         let mut handler = DefaultHandler::new(sender, settings, state, f);
@@ -105,7 +126,7 @@ pub struct ServiceFixHandler {
 
 impl UserHandler for ServiceFixHandler {
 
-    fn on_new_order_single(&mut self, message: &NewOrderSingleFields) -> io::Result<()> {
+    fn on_new_order_single(&mut self, _message: &NewOrderSingleFields) -> io::Result<()> {
 
         Ok( () )
     }

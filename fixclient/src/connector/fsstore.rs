@@ -28,7 +28,7 @@ impl FSMessageStore {
         if seqs_path_buf.as_path().exists() {
             let mut file = OpenOptions::new().read(true).open(seqs_path_buf.as_path())?;
             let mut buffer = String::new();
-            file.read_to_string(&mut buffer);
+            file.read_to_string(&mut buffer)?;
 
             if let Some(index) = buffer.find(" : ") {
                 sender_seq_num = u32::from_str_radix( &buffer[ ..index ]      , 10 ).unwrap();
@@ -74,7 +74,7 @@ impl FSMessageStore {
     }
 
     pub fn persist_seqs(&mut self) -> io::Result<()> {
-        self.seqnums.seek(SeekFrom::Start(0));
+        self.seqnums.seek(SeekFrom::Start(0))?;
         write!( self.seqnums, "{} : {}", self.sender_seq, self.target_seq )?;
         self.seqnums.flush()
     }
@@ -101,12 +101,12 @@ impl MessageStore for FSMessageStore {
         Ok(temp)
     }
 
-    fn sent(&mut self, frame: &FixFrame) -> io::Result<()> {
+    fn sent(&mut self, _frame: &FixFrame) -> io::Result<()> {
 
         Ok( () )
     }
 
-    fn received(&mut self, frame: &FixFrame) -> io::Result<()> {
+    fn received(&mut self, _frame: &FixFrame) -> io::Result<()> {
 
         Ok( () )
     }

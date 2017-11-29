@@ -47,7 +47,7 @@ impl<T : FixHandler> Conn<T> {
         Ok( self.adjust_socket_events() )
     }
 
-    pub fn error(&mut self, error: io::Error ) {
+    pub fn error(&mut self, _error: io::Error ) {
         // TODO: translate the error into proper callbacks on the handler
         self.in_error = true;
     }
@@ -215,8 +215,8 @@ impl<T : FixHandler> Conn<T> {
             }
         };
 
-        let discarded = self.inbound.split_to( consumed );
-        // debug!("raw processed {:?} consumed {}", discarded, consumed);
+        let _discarded = self.inbound.split_to( consumed );
+        // debug!("raw processed {:?} consumed {}", _discarded, consumed);
 
         Ok( Some(frame) )
     }

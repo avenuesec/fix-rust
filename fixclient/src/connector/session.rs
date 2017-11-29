@@ -104,7 +104,7 @@ impl <Store> SessionStateImpl <Store>
         if flds.reset_seq_num_flag.unwrap_or(false) {
             info!("reseting seqs nums as per server request");
 
-            self.store.reset_seqs();
+            let _ = self.store.reset_seqs();
         }
 
         if flds.heart_bt_int != self.config_heartbeat as i32 {
@@ -189,7 +189,7 @@ impl <Store> SessionState for SessionStateImpl <Store> where Store : MessageStor
         Ok( () )
     }
 
-    fn new_timeout(&mut self, timeout: &timer::Timeout, event_kind: Token) {
+    fn new_timeout(&mut self, _timeout: &timer::Timeout, _event_kind: Token) {
 
     }
 
@@ -198,9 +198,10 @@ impl <Store> SessionState for SessionStateImpl <Store> where Store : MessageStor
         if event_kind == EVKIND_SENDER_TIMEOUT {
 
             if let Some(last) = self.last_sent {
-
                 let now = Utc::now();
                 let duration_since_last_sent = now.signed_duration_since(last);
+                debug!("duration_since_last_sent {}", duration_since_last_sent);
+
 
                 let flds = TestRequestFields {
                     test_req_id: "TEST".to_owned()
@@ -213,6 +214,7 @@ impl <Store> SessionState for SessionStateImpl <Store> where Store : MessageStor
             if let Some(last) = self.last_recv {
                 let now = Utc::now();
                 let duration_since_last_rcv  = now.signed_duration_since(last);
+                debug!("duration_since_last_rcv {}", duration_since_last_rcv);
 
                 let flds = HeartbeatFields {
                     test_req_id: None,

@@ -13,7 +13,7 @@ use mio_more::timer;
 use fix::frame::*;
 use fix::fixmessagegen::*;
 use super::super::Sender;
-use super::{MessageStore, SessionState, UserHandlerFactory, UserSender};
+use super::{SessionState, UserHandlerFactory, UserSender};
 
 // needs to be driven by:
 use super::super::{FixHandler, FixSessionConfig};
@@ -23,8 +23,8 @@ pub struct DefaultHandler <State,UserF>
     where State : SessionState,
           UserF : UserHandlerFactory {
     sender: Sender,
-    sender_comp_id: String,
-    target_comp_id: String,
+//    sender_comp_id: String,
+//    target_comp_id: String,
     user_handler: UserF::Handler,
     user_handler_factory: PhantomData<UserF>,
     state : State,
@@ -44,8 +44,8 @@ impl <State,UserF> DefaultHandler <State,UserF>
 
         DefaultHandler {
             sender: sender.clone(), 
-            sender_comp_id: settings.sender_comp.to_owned(),
-            target_comp_id: settings.target_comp.to_owned(),
+//            sender_comp_id: settings.sender_comp.to_owned(),
+//            target_comp_id: settings.target_comp.to_owned(),
             user_handler,
             user_handler_factory: PhantomData::default(),
             heart_bt: settings.heart_beat as i32,

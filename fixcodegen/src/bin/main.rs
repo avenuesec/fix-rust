@@ -1,20 +1,11 @@
 
-#[macro_use] extern crate serde_derive;
-
+// extern crate serde_derive;
 extern crate fixcodegen;
 extern crate handlebars;
 extern crate xmltree;
 extern crate argparse;
 
-use handlebars::{Handlebars, Helper, Renderable, RenderContext, RenderError, to_json};
 use argparse::{ArgumentParser, Store};
-
-use std::collections::BTreeMap;
-use std::env;
-use std::fs::File;
-use std::io::{Read, Write};
-use std::path::{Path,PathBuf};
-use std::ffi::OsStr;
 
 use fixcodegen::*;
 

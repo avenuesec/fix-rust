@@ -23,7 +23,7 @@
 // parser should not require it.
 
 #[macro_use] extern crate serde_derive;
-#[macro_use] extern crate itertools;
+// #[macro_use] extern crate itertools;
 
 extern crate serde;
 extern crate handlebars;
@@ -37,7 +37,7 @@ use std::io::{Read};
 use std::str::{FromStr};
 use std::default::Default;
 use std::ascii::AsciiExt;
-use itertools::Itertools;
+// use itertools::Itertools;
 
 
 use handlebars::{Handlebars, Helper, RenderContext, RenderError};

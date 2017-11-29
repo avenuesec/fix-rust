@@ -100,7 +100,7 @@ impl<F> IoHandler <F>
             connection_token: None,
             event_kind: EVKIND_RECONN
         };
-        self.timer.set_timeout( duration, timeout_info );
+        let _ = self.timer.set_timeout( duration, timeout_info );
     }
 
     fn do_connect(&mut self, addr: SocketAddr) -> io::Result<()> {
@@ -276,7 +276,7 @@ impl<F> IoHandler <F>
                             // confirm with handler?
                             conn.handler.new_timeout( timeout, event_kind );
                         }, 
-                        Err(err) => {
+                        Err(_err) => {
                             // then what?
                         }
                     }
@@ -332,7 +332,7 @@ impl<F> IoHandler <F>
     fn handle_timeout(&mut self, ConnetionTimeoutSettings { connection_token: t, event_kind } : ConnetionTimeoutSettings) {
         if let Some(t) = t {
             if let Some(conn) = self.token_2conn.get_mut(t) {
-                if let Err(err) = conn.handler.on_timeout(event_kind) {
+                if let Err(_err) = conn.handler.on_timeout(event_kind) {
                     // TODO: should we close the connection?
                 }
             }
@@ -349,7 +349,7 @@ impl<F> IoHandler <F>
 
                 // for each addr in reconnect queue, start connection process
                 while let Some(addr) = self.reconnect_queue.pop() {
-                    self.do_connect( addr );
+                    let _ = self.do_connect( addr );
                 }
             },
             _ => unreachable!("no other event supported yet")

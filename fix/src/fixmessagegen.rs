@@ -10,8 +10,6 @@ use std::{io, str, char, i32};
 use std::default::{Default};
 
 use chrono::prelude::*;  // DateTime
-use serde::{Serialize,Deserialize,Deserializer,Serializer};
-use serde::de::{self, Visitor};
 
 
 use frame::{FieldVal};
@@ -20833,7 +20831,7 @@ fn build_group_no_related_sym24_fields_line(consumer: &mut FixConsumer) -> NoRel
 }
 
 
-use bytes::{BytesMut, BufMut};
+use bytes::{BytesMut};
 use std::io::{Write};
 use std::result::{Result};
 
