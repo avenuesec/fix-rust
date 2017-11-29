@@ -24,7 +24,7 @@ impl FSMessageStore {
         let mut sender_seq_num = 1;
         let mut target_seq_num = 1;
 
-        let seqs_path_buf = FSMessageStore::to_path(cfg_store, "seqnums")?;
+        let seqs_path_buf = to_path(cfg_store, "seqnums")?;
         if seqs_path_buf.as_path().exists() {
             let mut file = OpenOptions::new().read(true).open(seqs_path_buf.as_path())?;
             let mut buffer = String::new();
@@ -57,20 +57,9 @@ impl FSMessageStore {
 
     // Only for unit tests
     pub fn delete_files( store_dir: &str ) -> io::Result<()> {
-        let seqs_path_buf = FSMessageStore::to_path(store_dir, "seqnums")?;
+        let seqs_path_buf = to_path(store_dir, "seqnums")?;
         fs::remove_file( seqs_path_buf.as_path() )?;
         Ok( () )
-    }
-
-    fn to_path( store: &str, file_name: &str ) -> io::Result<PathBuf> {
-        let mut path_buf = PathBuf::new();
-        path_buf.push( store );
-        if !path_buf.as_path().exists() {
-            DirBuilder::new().recursive(true).create( store )?;
-        }
-
-        path_buf.push( file_name );
-        Ok ( path_buf )
     }
 
     pub fn persist_seqs(&mut self) -> io::Result<()> {
@@ -120,3 +109,16 @@ impl MessageStore for FSMessageStore {
 }
 
 
+
+
+
+fn to_path( store: &str, file_name: &str ) -> io::Result<PathBuf> {
+    let mut path_buf = PathBuf::new();
+    path_buf.push( store );
+    if !path_buf.as_path().exists() {
+        DirBuilder::new().recursive(true).create( store )?;
+    }
+
+    path_buf.push( file_name );
+    Ok ( path_buf )
+}

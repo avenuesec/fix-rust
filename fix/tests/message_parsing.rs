@@ -7,14 +7,14 @@ use fix::*;
 
 #[test]
 fn test_logon_message() {
-    let line = "8=FIX.4.4|9=98|35=A|34=1|49=CCLRA301|52=20170627-14:23:04.660|56=OE101C|95=6|96=YWEKNJ|98=0|108=20|141=Y|35002=0|10=103|\r\n".replace("|", "\x01");
-	let b = frame::parse(line.as_bytes());
+    let line = b"8=FIX.4.2\x019=70\x0135=A\x0134=1\x0149=SOME\x0152=20171129-22:28:53.000\x0156=SINGU\x0198=0\x01108=60\x01141=Y\x0110=226\x01";
+	let b = frame::parse(line);
     println!("{:?}", b);
 }
 
 #[test]
 fn test_heartbeat_message() {
-    let line = "8=FIX.4.4|9=57|35=0|49=OE101C|56=CCLRA301|34=2|52=20170627-14:23:54.802|10=065|\r\n".replace("|", "\x01");
+    let line = "8=FIX.4.4|9=57|35=0|49=OE101C|56=CCLRA301|34=2|52=20170627-14:23:54.802|10=065|".replace("|", "\x01");
 	let b = frame::parse(line.as_bytes());
     println!("{:?}", b);
 }

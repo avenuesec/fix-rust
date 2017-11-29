@@ -146,7 +146,7 @@ const CHECKSUM_SIZE : usize = 7; // 10=012\u{1}
 named!(raw_frame<RawFixFrame>,
   do_parse!(
       bstr  : begin_string >>
-              tag!("\x01") >>
+              tag!("\x019=") >>
               // tag!(b"8=FIX.4.2\x019=") >>
       lenw  : fld_value_usize >> 
               tag!("\x01") >>

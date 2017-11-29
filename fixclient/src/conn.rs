@@ -203,7 +203,8 @@ impl<T : FixHandler> Conn<T> {
         let original_len = self.inbound.len();
 
         let (consumed, frame) = match frame::parse( &self.inbound ) {
-            IResult::Error(e) => { 
+            IResult::Error(e) => {
+                error!( "parsing frame error: {:?}", e );
                 return Err(io::Error::new(io::ErrorKind::Other, e)) 
             },
             IResult::Incomplete(_) => { 
