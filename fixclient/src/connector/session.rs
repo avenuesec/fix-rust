@@ -20,11 +20,13 @@ const EVKIND_RCV_TIMEOUT    : Token = Token(1);
 pub struct SessionStateImpl <Store>
     where Store : MessageStore {
 
-    sender_comp_id : String,
-    target_comp_id : String,
+    config: FixSessionConfig,
+//    sender_comp_id : String,
+//    target_comp_id : String,
     store: Store,
     logon_sent : bool,
     logon_recv : bool,
+    seq_reset_sent: bool,
     last_sent: Option<DateTime<Utc>>,
     last_recv: Option<DateTime<Utc>>,
     sender: Option<Sender>,
@@ -32,7 +34,7 @@ pub struct SessionStateImpl <Store>
     send_timeout: Option<timer::Timeout>,
     recv_timeout: Option<timer::Timeout>,
     hearbeat_in_ms: u32, // heartbeat in milliseconds
-    config_heartbeat: u32, // original config, unless server overrides it
+    // config_heartbeat: u32, // original config, unless server overrides it
     begin_string: Cow<'static, str>,
 }
 
@@ -42,17 +44,16 @@ impl <Store> SessionStateImpl <Store>
     pub fn new( cfg: &FixSessionConfig, store: Store ) -> SessionStateImpl<Store> {
 
         SessionStateImpl {
-            sender_comp_id: cfg.sender_comp.to_owned(),
-            target_comp_id: cfg.target_comp.to_owned(),
+            config: cfg.clone(),
             logon_sent: false,
             logon_recv: false,
+            seq_reset_sent: false,
             store,
             last_sent: None,
             last_recv: None,
             sender: None,
             send_timeout: None,
             recv_timeout: None,
-            config_heartbeat: cfg.heart_beat,
             hearbeat_in_ms: (cfg.heart_beat as f32 * 1000.0 * 0.8) as u32, // converts it to ms and also lowers it a bit
             begin_string: Cow::from(cfg.begin_string.to_owned()),
         }
@@ -91,7 +92,7 @@ impl <Store> SessionStateImpl <Store>
         let hb_flds = HeartbeatFields {
             test_req_id: Some(test_req_id.to_owned()),
         };
-        let _ = self.sender.as_ref().map(move |s| s.send_self( FixMessage::Heartbeat(Box::new(hb_flds)) ));
+        let _ = self.post_send( FixMessage::Heartbeat(Box::new(hb_flds)) );
     }
 
     fn ack_hearbeat_received(&mut self, test_req_id: &Option<String>) {
@@ -101,15 +102,14 @@ impl <Store> SessionStateImpl <Store>
     fn ack_logon_received(&mut self, flds: &LogonFields) {
         info!("received server logon with {:?}", flds );
 
-        if flds.reset_seq_num_flag.unwrap_or(false) {
+        if flds.reset_seq_num_flag.unwrap_or(false) && !self.seq_reset_sent {
             info!("reseting seqs nums as per server request");
 
             let _ = self.store.reset_seqs();
         }
 
-        if flds.heart_bt_int != self.config_heartbeat as i32 {
-            info!("server asked for a different hearbeat. our cfg {} - server {}", self.config_heartbeat, flds.heart_bt_int);
-
+        if flds.heart_bt_int != self.config.heart_beat as i32 {
+            info!("server asked for a different hearbeat. our cfg {} - server {}", self.config.heart_beat, flds.heart_bt_int);
         }
 
         self.logon_recv = true;
@@ -123,6 +123,11 @@ impl <Store> SessionStateImpl <Store>
             self.update_last_sent();
         }
     }
+
+    fn post_send(&self, message: FixMessage) {
+
+        self.sender.as_ref().map(move |s| s.send_self(message) );
+    }
 }
 
 impl <Store> SessionState for SessionStateImpl <Store> where Store : MessageStore {
@@ -130,6 +135,24 @@ impl <Store> SessionState for SessionStateImpl <Store> where Store : MessageStor
     fn init(&mut self, sender: Sender) {
         self.store.init( sender.clone() );
         self.sender = Some(sender);
+
+        let reset_seq_num_flag = self.config.reset_seq_num;
+
+        if reset_seq_num_flag {
+            self.seq_reset_sent = true;
+            self.store.reset_seqs();
+        }
+
+        // Start login process
+        let flds = LogonFields {
+            encrypt_method: FieldEncryptMethodEnum::None,
+            heart_bt_int: self.config.heart_beat as i32,
+            reset_seq_num_flag: Some(reset_seq_num_flag),
+            .. Default::default()
+        };
+        let logon_message = FixMessage::Logon(Box::new(flds));
+
+        self.post_send( logon_message );
     }
 
     fn build(&mut self, message: FixMessage) -> io::Result<FixFrame> {
@@ -140,8 +163,8 @@ impl <Store> SessionState for SessionStateImpl <Store> where Store : MessageStor
             seq,
             message,
             sending: Utc::now(),
-            sender_comp_id: self.sender_comp_id.to_owned(),
-            target_comp_id: self.target_comp_id.to_owned(),
+            sender_comp_id: self.config.sender_comp.to_owned(),
+            target_comp_id: self.config.target_comp.to_owned(),
             begin_string: self.begin_string.clone(),
         };
         Ok ( frame )
@@ -170,6 +193,8 @@ impl <Store> SessionState for SessionStateImpl <Store> where Store : MessageStor
         self.store.received( frame )?;
 
         self.update_last_recv();
+
+        // TODO: validate income seq number, and request missing frames in case there's a difference
 
         match &frame.message {
             &FixMessage::Logon(ref flds) => {
@@ -206,7 +231,7 @@ impl <Store> SessionState for SessionStateImpl <Store> where Store : MessageStor
                 let flds = TestRequestFields {
                     test_req_id: "TEST".to_owned()
                 };
-                let _ = self.sender.as_ref().map(move |s| s.send_self(FixMessage::TestRequest(Box::new(flds))));
+                let _ = self.post_send(FixMessage::TestRequest(Box::new(flds)));
             }
 
         } else if event_kind == EVKIND_RCV_TIMEOUT {
@@ -220,7 +245,7 @@ impl <Store> SessionState for SessionStateImpl <Store> where Store : MessageStor
                     test_req_id: None,
                     // test_req_id: Some("b".to_owned())
                 };
-                let _ = self.sender.as_ref().map(move |s| s.send_self(FixMessage::Heartbeat( Box::new(flds))));
+                let _ = self.post_send(FixMessage::Heartbeat( Box::new(flds)));
             }
         }
     }

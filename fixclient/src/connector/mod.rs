@@ -9,6 +9,7 @@ use mio_more::timer;
 pub mod handler;
 pub mod session;
 pub mod fsstore;
+pub mod memstore;
 
 
 #[derive(Clone)]
@@ -50,6 +51,38 @@ impl<F, H> UserHandlerFactory for F
     }
 }
 
+pub struct MessageStoreState {
+    sender_seq: u32,
+    target_seq: u32,
+}
+
+impl MessageStoreState {
+    pub fn new() -> MessageStoreState {
+        MessageStoreState::new_with(1, 1)
+    }
+    pub fn new_with(sender_seq: u32, target_seq: u32) -> MessageStoreState {
+        MessageStoreState {
+            sender_seq,
+            target_seq,
+        }
+    }
+
+    fn incr_sender_seq_num(&mut self) -> u32 {
+        let temp = self.sender_seq;
+        self.sender_seq = self.sender_seq + 1;
+        temp
+    }
+    fn incr_target_seq_num(&mut self) -> u32 {
+        let temp = self.target_seq;
+        self.target_seq = self.target_seq + 1;
+        temp
+    }
+    fn reset(&mut self) {
+        self.sender_seq = 1;
+        self.target_seq = 1;
+    }
+}
+
 pub trait MessageStore {
 
     fn init(&mut self, sender: Sender);
@@ -61,6 +94,8 @@ pub trait MessageStore {
     fn incr_sender_seq_num(&mut self) -> io::Result<u32>;
     fn incr_target_seq_num(&mut self) -> io::Result<u32>;
     fn reset_seqs(&mut self) -> io::Result<()>;
+
+    fn get_state(&self) -> &MessageStoreState;
 }
 
 pub trait SessionState {

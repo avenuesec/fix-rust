@@ -3,7 +3,7 @@ use std::io::{self, Read, Write, Seek, SeekFrom};
 use std::fs::{self, File, OpenOptions, DirBuilder};
 use std::path::{PathBuf};
 
-use super::MessageStore;
+use super::{MessageStore, MessageStoreState};
 use fix::frame::FixFrame;
 use super::super::FixSessionConfig;
 use super::super::sender::Sender;
@@ -11,9 +11,8 @@ use super::super::sender::Sender;
 
 pub struct FSMessageStore {
     seqnums: File,
-    sender_seq: u32,
-    target_seq: u32,
     sender: Option<Sender>,
+    state: MessageStoreState,
 }
 
 impl FSMessageStore {
@@ -40,19 +39,20 @@ impl FSMessageStore {
 
         debug!("exists: {:?} {}", seqs_path_buf, seqs_path_buf.as_path().exists());
 
+        let state = MessageStoreState::new_with(sender_seq_num, target_seq_num);
+
         Ok(FSMessageStore {
             seqnums: seqs_file,
-            sender_seq: sender_seq_num,
-            target_seq: target_seq_num,
             sender: None,
+            state,
         })
     }
 
     pub fn get_sender_seq(&self) -> u32 {
-        self.sender_seq
+        self.state.sender_seq
     }
     pub fn get_target_seq(&self) -> u32 {
-        self.target_seq
+        self.state.target_seq
     }
 
     // Only for unit tests
@@ -64,7 +64,7 @@ impl FSMessageStore {
 
     pub fn persist_seqs(&mut self) -> io::Result<()> {
         self.seqnums.seek(SeekFrom::Start(0))?;
-        write!( self.seqnums, "{} : {}", self.sender_seq, self.target_seq )?;
+        write!( self.seqnums, "{} : {}", self.state.sender_seq, self.state.target_seq )?;
         self.seqnums.flush()
     }
 }
@@ -77,15 +77,13 @@ impl MessageStore for FSMessageStore {
     }
 
     fn incr_sender_seq_num(&mut self) -> io::Result<u32> {
-        let temp = self.sender_seq;
-        self.sender_seq = self.sender_seq + 1;
+        let temp = self.state.incr_sender_seq_num();
         self.persist_seqs()?;
         Ok(temp)
     }
 
     fn incr_target_seq_num(&mut self) -> io::Result<u32> {
-        let temp = self.target_seq;
-        self.target_seq = self.target_seq + 1;
+        let temp = self.state.incr_target_seq_num();
         self.persist_seqs()?;
         Ok(temp)
     }
@@ -101,10 +99,14 @@ impl MessageStore for FSMessageStore {
     }
 
     fn reset_seqs(&mut self) -> io::Result<()> {
-        self.sender_seq = 1;
-        self.target_seq = 1;
+        self.state.sender_seq = 1;
+        self.state.target_seq = 1;
         self.persist_seqs()?;
         Ok( () )
+    }
+
+    fn get_state(&self) -> &MessageStoreState {
+        &self.state
     }
 }
 

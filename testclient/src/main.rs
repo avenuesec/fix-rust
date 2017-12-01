@@ -74,7 +74,7 @@ pub struct FixCustomHandlerFactory { }
 impl FixHandlerFactory for FixCustomHandlerFactory {
     type Handler = DefaultHandler<SessionStateImpl<FSMessageStore>, UserHandlerFactory2>;
 
-    fn on_connected(&mut self, _destination: &SocketAddr, sender: Sender) -> Self::Handler {
+    fn on_started(&mut self, _destination: &SocketAddr, sender: Sender) -> Self::Handler {
         // needs to map SocketAddr to fixsessionconfig
 
         let settings = FixSessionConfig {

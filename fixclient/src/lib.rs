@@ -25,10 +25,12 @@ use fix::frame;
 //    pub session   : FixSessionConfig, // Vec<FixSessionConfig>,
 //}
 
+#[derive(Clone)]
 pub enum DayOfTheWeek {
     Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday
 }
 
+#[derive(Clone)]
 pub struct DayTime {
     pub hour: u8,
     pub min:  u8,
@@ -43,7 +45,7 @@ impl DayTime {
     }
 }
 
-// #[derive(Default)]
+#[derive(Clone)]
 pub struct FixSessionConfig {
     pub qualifier     : String,
     pub sender_comp   : String,
@@ -129,7 +131,7 @@ impl<F : FixHandlerFactory> FixApp<F> {
 pub trait FixHandlerFactory {
     type Handler: FixHandler;
 
-    fn on_connected(&mut self, destination: &SocketAddr, sender: Sender) -> Self::Handler;
+    fn on_started(&mut self, destination: &SocketAddr, sender: Sender) -> Self::Handler;
 
     fn on_shutdown(&mut self) {
         debug!("Factory received WebSocket shutdown request.");
@@ -137,7 +139,7 @@ pub trait FixHandlerFactory {
 }
 
 pub trait FixHandler {
-    
+
     fn on_message(&mut self, message: frame::FixFrame) -> io::Result<()>;
 
     fn on_timeout(&mut self, event_kind: Token) -> io::Result<()>;
@@ -157,7 +159,7 @@ impl<F, H> FixHandlerFactory for F
           F : FnMut(Sender) -> H {
     type Handler = H;
 
-    fn on_connected(&mut self, _destination: &SocketAddr, sender: Sender) -> Self::Handler {
+    fn on_started(&mut self, _destination: &SocketAddr, sender: Sender) -> Self::Handler {
         // when the "event" is called, we just invoke the FnMut which should return a handler
         self(sender)
     }

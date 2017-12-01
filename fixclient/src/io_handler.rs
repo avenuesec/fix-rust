@@ -4,7 +4,7 @@ use std::usize;
 use std::io;
 use std::time::Duration;
 
-use mio::{Poll, Token, PollOpt, Events, Ready};
+use mio::{Poll, PollOpt, Events, Ready, Token};
 use mio::tcp::{TcpStream};
 use mio_more::{channel,timer};
 use slab::Slab;
@@ -16,11 +16,11 @@ use fix::frame;
 use fix::fixmessagegen;
 
 
-const TOKEN_QUEUE   : Token = Token(usize::MAX - 1);
-const TOKEN_TIMER   : Token = Token(usize::MAX - 2);
-const TOKEN_RESOLVE : Token = Token(usize::MAX - 3); // hack for now
-const EVKIND_RECONN : Token = Token(usize::MAX - 4);
-
+const TOKEN_QUEUE   : Token = Token(0); // (usize::MAX - 1);
+const TOKEN_TIMER   : Token = Token(1); // (usize::MAX - 2);
+const TOKEN_RESOLVE : Token = Token(2); // (usize::MAX - 3); // hack for now
+const EVKIND_RECONN : Token = Token(3); // (usize::MAX - 4);
+const RESERVED_TOKENS : usize = 4;
 
 pub struct IoHandler <F : FixHandlerFactory> {
     factory: F,
@@ -28,7 +28,7 @@ pub struct IoHandler <F : FixHandlerFactory> {
     queue_rx: channel::Receiver<Command>,
     timer: timer::Timer<ConnetionTimeoutSettings>,
     is_running : bool,
-    token_2conn: Slab<conn::Conn<F::Handler>, Token>,
+    token_2conn: Slab<Option<conn::Conn<F::Handler>>>,
     poll: Poll,
     reconnect_queue : Vec<SocketAddr>,
 }
@@ -58,6 +58,13 @@ impl<F> IoHandler <F>
             .capacity(TIMER_CAPACITY)
             .build();
 
+        let mut slab = Slab::with_capacity(20); // todo: param
+
+        // reserves RESERVED_TOKENS to avoid mistepping over special tokens
+        for _ in 0..RESERVED_TOKENS {
+            slab.vacant_entry().insert( None );
+        }
+
         IoHandler {
             poll,
             factory,
@@ -65,7 +72,7 @@ impl<F> IoHandler <F>
             queue_tx: tx,
             is_running: true,
             timer,
-            token_2conn : Slab::with_capacity(10), // todo: param
+            token_2conn : slab,
             reconnect_queue : Vec::new(),
         }
     }
@@ -78,15 +85,15 @@ impl<F> IoHandler <F>
     fn reconnect(&mut self, token: Token) {
 
         let addr = {
-            let conn = self.token_2conn.get(token).unwrap();
+            let conn = self.token_2conn.get(token.0).unwrap().as_ref().unwrap();
             conn.addr.clone()
         };
 
         // Signal `on_network_error` to handler
         {
-            self.token_2conn.get_mut(token).as_mut().unwrap().handler.on_network_error();
+            // self.token_2conn.get_mut(token.0).as_mut().unwrap().handler.on_network_error();
             // remove token/conn from token_2conn
-            self.token_2conn.remove(token);
+            self.token_2conn.remove(token.0).unwrap().handler.on_network_error();
         }
 
         // save for later
@@ -114,24 +121,24 @@ impl<F> IoHandler <F>
         let socket = conn_res.unwrap();
 
         let token = {
-            let entry = self.token_2conn.vacant_entry().unwrap(); // <- needs to be more robust
-            let token = entry.index();
+            let entry = self.token_2conn.vacant_entry(); // <- needs to be more robust
+            let token = entry.key();
 
-            // debug!("token created: {:?}", token);
+            debug!("new conn token created: {:?}", token);
 
             // on_connected - creates handler with a sender
-            let sender = Sender::new(token, self.queue_tx.clone());
-            let handler = self.factory.on_connected( &addr, sender );
+            let sender = Sender::new(Token(token), self.queue_tx.clone());
+            let handler = self.factory.on_started( &addr, sender );
 
-            let connection = conn::Conn::new(token, socket, handler, addr);
+            let connection = conn::Conn::new(Token(token), socket, handler, addr);
 
-            entry.insert(connection);
+            entry.insert(Some(connection));
             token
         };
 
-        let res = self.poll.register( &self.token_2conn[token].socket,
-                                       self.token_2conn[token].token,
-                                       self.token_2conn[token].events,
+        let res = self.poll.register( &self.token_2conn[token].as_ref().unwrap().socket,
+                                       self.token_2conn[token].as_ref().unwrap().token,
+                                       self.token_2conn[token].as_ref().unwrap().events,
                                       PollOpt::edge() | PollOpt::oneshot() )
             .map_err(io::Error::from)
             .or_else(move |err| {
@@ -213,7 +220,7 @@ impl<F> IoHandler <F>
 
                 let must_reconnect = {
 
-                    if let Some(conn) = self.token_2conn.get_mut(token) {
+                    if let Some(conn) = self.token_2conn.get_mut(token.0).unwrap().as_mut() {
                         if events.is_readable() {
                             if let Err(err) = conn.read() {
                                 error!("error reading: {}", err);
@@ -235,13 +242,13 @@ impl<F> IoHandler <F>
                 if must_reconnect {
                     self.reconnect(token);
                 } else {
-                    if let Some(_) = self.token_2conn.get(token) {
-                        if self.token_2conn[token].in_error {
+                    if let Some(_) = self.token_2conn.get(token.0) {
+                        if self.token_2conn[token.0].as_mut().unwrap().in_error {
                             info!("removed connection due to previous error {:?}", token);
-                            self.token_2conn.remove(token);
-                        } else if let Err(err) = self.schedule( &self.token_2conn[token] ) {
-                            self.token_2conn[token].error(err);
-                            self.token_2conn.remove(token);
+                            self.token_2conn.remove(token.0);
+                        } else if let Err(err) = self.schedule( self.token_2conn[token.0].as_ref().unwrap() ) {
+                            // self.token_2conn[token.0].unwrap().error(err);
+                            self.token_2conn.remove(token.0).unwrap().error(err);
                         }
                     }
                 }
@@ -254,7 +261,7 @@ impl<F> IoHandler <F>
         
         match cmd.action {
             CommandAction::Message(payload) => {
-                if let Some(conn) = self.token_2conn.get_mut(cmd.token) {
+                if let Some(conn) = self.token_2conn.get_mut(cmd.token.0).unwrap().as_mut() {
                     if let Err(err) = conn.send( payload ) {
                         conn.error( err );
                     }
@@ -264,7 +271,7 @@ impl<F> IoHandler <F>
             },
 
             CommandAction::SetTimeout { timeout_in_ms, event_kind } => {
-                if let Some(conn) = self.token_2conn.get_mut(cmd.token) {
+                if let Some(conn) = self.token_2conn.get_mut(cmd.token.0).unwrap().as_mut() {
                     let duration = Duration::from_millis(timeout_in_ms as u64);
                     let timeout_info = ConnetionTimeoutSettings { 
                         connection_token: Some(cmd.token),
@@ -300,7 +307,7 @@ impl<F> IoHandler <F>
                         let mut tk = Token(0);
                         for t in 0..100 { // 0 to 99 is totally arbitrary
                             tk = Token(t);
-                            if self.token_2conn.contains( tk ) {
+                            if self.token_2conn.contains( tk.0 ) {
                                 break;
                             }
                         }
@@ -309,11 +316,13 @@ impl<F> IoHandler <F>
                     token => token
                 };
 
-                if let Some(conn) = self.token_2conn.get_mut(token_to_use) {
-                    // sends back to handler
-                    conn.handler.before_send( message );
-                } else {
-                    warn!("Conn not found to send SendBackToHandler. token {:?}", token_to_use);
+                if let Some(opt) = self.token_2conn.get_mut(token_to_use.0) {
+                    if let Some(conn) = opt.as_mut() {
+                        // sends back to handler
+                        conn.handler.before_send( message );
+                    } else {
+                        warn!("Conn not found to send SendBackToHandler. token {:?}", token_to_use);
+                    }
                 }
 
                 return;
@@ -322,16 +331,16 @@ impl<F> IoHandler <F>
             // _ => unreachable!()
         };
 
-        if let Some(_) = self.token_2conn.get(cmd.token) {
-            if let Err(err) = self.schedule( &self.token_2conn[cmd.token] ) {
-                self.token_2conn[cmd.token].error(err);
+        if let Some(_) = self.token_2conn.get(cmd.token.0) {
+            if let Err(err) = self.schedule( self.token_2conn[cmd.token.0].as_ref().unwrap() ) {
+                self.token_2conn[cmd.token.0].as_mut().unwrap().error(err);
             }
         }
     }
 
     fn handle_timeout(&mut self, ConnetionTimeoutSettings { connection_token: t, event_kind } : ConnetionTimeoutSettings) {
         if let Some(t) = t {
-            if let Some(conn) = self.token_2conn.get_mut(t) {
+            if let Some(conn) = self.token_2conn.get_mut(t.0).unwrap().as_mut() {
                 if let Err(_err) = conn.handler.on_timeout(event_kind) {
                     // TODO: should we close the connection?
                 }

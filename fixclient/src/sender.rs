@@ -43,13 +43,13 @@ pub struct Sender {
 impl Sender {
     pub fn new(token: Token, tx: channel::SyncSender<Command>) -> Sender {
         Sender {
-            token: token,
+            token,
             queue_tx: tx,
         }
     }
 
     pub fn send(&self, message: frame::FixFrame) -> io::Result<()> {
-        debug!("enqueing frame for sending {:?}", message);
+        debug!("sender {:?} - enqueing frame for sending {:?}", self.token, message);
 
         let cmd = Command::new( self.token, CommandAction::Message( message ) );
         if let Err(err) = self.queue_tx.send( cmd ) {
@@ -60,7 +60,7 @@ impl Sender {
 
     // only fired once
     pub fn set_timeout(&self, timeout_in_ms: u32, event_kind: Token) -> io::Result<()> {
-        debug!("enqueing set_timeout {}", timeout_in_ms);
+        debug!("sender {:?} - enqueing set_timeout {} ms for event {:?}", self.token, timeout_in_ms, event_kind);
 
         let cmd = Command::new( self.token, CommandAction::SetTimeout { timeout_in_ms, event_kind } );
         if let Err(err) = self.queue_tx.send( cmd ) {
@@ -71,8 +71,7 @@ impl Sender {
 
     // attempts to cancel it, but there are no guarantees it will
     pub fn cancel_timeout(&self, timeout: timer::Timeout) -> io::Result<()> {
-
-        debug!("enqueing cancel_timeout {:?}", timeout);
+        debug!("sender {:?} - enqueing cancel_timeout {:?}", self.token, timeout);
 
         let cmd = Command::new( self.token, CommandAction::CancelTimeout(timeout) );
 
@@ -83,6 +82,8 @@ impl Sender {
     }
 
     pub fn send_self(&self, message: FixMessage) -> io::Result<()> {
+        debug!("sender {:?} - send_self ", self.token);
+
         let cmd = Command::new( self.token, CommandAction::SendBackToHandler( message ) );
         if let Err(err) = self.queue_tx.send( cmd ) {
             return Err(io::Error::new( io::ErrorKind::Other, err) )

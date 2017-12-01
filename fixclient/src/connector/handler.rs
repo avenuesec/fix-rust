@@ -23,8 +23,6 @@ pub struct DefaultHandler <State,UserF>
     where State : SessionState,
           UserF : UserHandlerFactory {
     sender: Sender,
-//    sender_comp_id: String,
-//    target_comp_id: String,
     user_handler: UserF::Handler,
     user_handler_factory: PhantomData<UserF>,
     state : State,
@@ -44,8 +42,6 @@ impl <State,UserF> DefaultHandler <State,UserF>
 
         DefaultHandler {
             sender: sender.clone(), 
-//            sender_comp_id: settings.sender_comp.to_owned(),
-//            target_comp_id: settings.target_comp.to_owned(),
             user_handler,
             user_handler_factory: PhantomData::default(),
             heart_bt: settings.heart_beat as i32,
@@ -58,18 +54,9 @@ impl <State,UserF> DefaultHandler <State,UserF>
 
         self.state.init( self.sender.clone() );
 
-        // Start login process
-        let flds = LogonFields {
-            encrypt_method: FieldEncryptMethodEnum::None,
-            heart_bt_int: self.heart_bt,
-            reset_seq_num_flag: Some(true), // TODO: review this
-            .. Default::default()
-        };
-        let logon_message = FixMessage::Logon(Box::new(flds));
-
-        self.send( logon_message );
+        // self.send( logon_message );
     }
-    
+
     fn send(&mut self, message: FixMessage) -> io::Result<()> {
         info!("send init");
 

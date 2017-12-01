@@ -53,16 +53,14 @@ impl<T : FixHandler> Conn<T> {
     }
 
     pub fn read(&mut self) -> io::Result<()> {
-        
-        if let Ok(total) = self.read_all() {
-            debug!("total read {}", total);
+        let total = self.read_all()?;
 
-            if total == 0 { 
-                self.disconnected();
-                return Err(io::Error::new(io::ErrorKind::ConnectionReset, "connection closed by server"))
-            } else {
-                self.handle_frames();
-            }
+        if total == 0 {
+            self.disconnected();
+            return Err(io::Error::new(io::ErrorKind::ConnectionReset, "connection closed by server"))
+        } else {
+            debug!("total read {}", total);
+            self.handle_frames();
         }
         self.adjust_socket_events();
         Ok( () )
@@ -231,7 +229,7 @@ impl<T : FixHandler> Conn<T> {
         self.events.remove( Ready::writable() );
 
         self.events.insert( Ready::readable() );
-        
+
         if self.outbound.len() != 0 { // anything left to be sent?
             self.events.insert( Ready::writable() );
         }

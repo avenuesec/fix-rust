@@ -14,7 +14,7 @@ chrono       = { version = "0.4", features = ["serde"] }   # datetime lib
 nom          = "^3.2.1" # comb parser
 mio          = "0.6"    # network
 mio-more     = "0.1"    # evented channel + evented timer
-slab         = "0.3"    # experimenting with pre-allocation
+slab         = "0.4"    # experimenting with pre-allocation
 bytes        = "^0.4"
 log          = "^0.3"
 time         = "^0.1"
