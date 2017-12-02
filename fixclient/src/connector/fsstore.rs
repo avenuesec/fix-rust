@@ -39,14 +39,16 @@ impl FSMessageStore {
         let header_path_buf   = to_path(cfg_store, & format!("{}.header", prefix ))?;
         let session_path_buf  = to_path(cfg_store, & format!("{}.session", prefix ))?;
 
-        let (sender_seq_num, target_seq_num) = FSMessageStore::restore_seqnums(seqs_path_buf.as_path())?;
-        let session_creation = FSMessageStore::restore_session(session_path_buf.as_path())?;
+        let (sender_seq_num, target_seq_num) =
+            FSMessageStore::restore_seqnums(seqs_path_buf.as_path())?;
+        let session_creation =
+            FSMessageStore::restore_session(session_path_buf.as_path())?;
         debug!("initial store state: sender_seq {} - target: {} - session creation {}", sender_seq_num, target_seq_num, session_creation);
 
         let mut seqs_file = OpenOptions::new().write(true).create(true).open(seqs_path_buf.as_path())?;
         let mut messages = OpenOptions::new().write(true).create(true).append(true).open(messages_path_buf.as_path())?;
         let mut headers  = OpenOptions::new().write(true).create(true).append(true).open(header_path_buf.as_path())?;
-        let mut session = OpenOptions::new().write(true).create(true).append(true).open(session_path_buf.as_path())?;
+        let mut session = OpenOptions::new().write(true).create(true).truncate(true).open(session_path_buf.as_path())?;
 
         let messages_pos = messages.seek(SeekFrom::End(0))?;
         headers.seek(SeekFrom::End(0));
@@ -120,8 +122,10 @@ impl FSMessageStore {
 
     // Only for unit tests
     pub fn delete_files( prefix: &str, store_dir: &str ) -> io::Result<()> {
-        let seqs_path_buf = to_path(store_dir, "seqnums")?;
-        fs::remove_file( seqs_path_buf.as_path() )?;
+        fs::remove_file( to_path(store_dir, &format!("{}.seqnums", prefix))?.as_path() )?;
+        fs::remove_file( to_path(store_dir, &format!("{}.body", prefix))?.as_path() )?;
+        fs::remove_file( to_path(store_dir, &format!("{}.header", prefix))?.as_path() )?;
+        fs::remove_file( to_path(store_dir, &format!("{}.session", prefix))?.as_path() )?;
         Ok( () )
     }
 

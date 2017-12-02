@@ -25,25 +25,6 @@ use fix::frame;
 //    pub session   : FixSessionConfig, // Vec<FixSessionConfig>,
 //}
 
-#[derive(Clone)]
-pub enum DayOfTheWeek {
-    Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday
-}
-
-#[derive(Clone)]
-pub struct DayTime {
-    pub hour: u8,
-    pub min:  u8,
-    pub sec:  u8,
-    pub day_of_the_week: Option<DayOfTheWeek>,
-}
-impl DayTime {
-    pub fn new( hour: u8, min: u8, sec: u8, day_of_the_week : Option<DayOfTheWeek> ) -> DayTime {
-        DayTime {
-            hour, min, sec, day_of_the_week
-        }
-    }
-}
 
 #[derive(Clone)]
 pub struct FixSessionConfig {
@@ -77,7 +58,7 @@ use self::sender::{Sender, AdvSender};
 impl FixSessionConfig {
 
     pub fn new ( qualifier: &str, sender: &str, target: &str, hostname: &str,
-                 port: u32, heart_beat: u32, log: &str, store: &str ) -> FixSessionConfig {
+                 port: u32, heart_beat: u32, log: &str, store: &str, dict:FixDictionary ) -> FixSessionConfig {
 
         FixSessionConfig {
             qualifier: qualifier.to_owned(),
@@ -92,7 +73,7 @@ impl FixSessionConfig {
             use_local_time: false,
             session_start: DayTime::new(0, 01, 0, None),   // 1 min past   midnight
             session_end:   DayTime::new(23, 59, 0, None),  // 1 min before midnight,
-            begin_string:  "FIX.4.2".to_owned(),
+            begin_string:  dict.to_string(), // "FIX.4.2".to_owned(),
         }
     }
 }
@@ -167,4 +148,39 @@ impl<F, H> FixHandlerFactory for F
 
 
 
+
+#[derive(Clone)]
+pub enum DayOfTheWeek {
+    Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday
+}
+
+#[derive(Clone)]
+pub struct DayTime {
+    pub hour: u8,
+    pub min:  u8,
+    pub sec:  u8,
+    pub day_of_the_week: Option<DayOfTheWeek>,
+}
+impl DayTime {
+    pub fn new( hour: u8, min: u8, sec: u8, day_of_the_week : Option<DayOfTheWeek> ) -> DayTime {
+        DayTime {
+            hour, min, sec, day_of_the_week
+        }
+    }
+}
+
+#[derive(Clone)]
+pub enum FixDictionary {
+    Fix42,
+    Fix44
+}
+
+impl ToString for FixDictionary {
+    fn to_string(&self) -> String {
+        match self {
+            &FixDictionary::Fix42 => "FIX.4.2".to_owned(),
+            &FixDictionary::Fix44 => "FIX.4.4".to_owned(),
+        }
+    }
+}
 
