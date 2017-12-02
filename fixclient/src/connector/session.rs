@@ -128,6 +128,14 @@ impl <Store> SessionStateImpl <Store>
 
         self.sender.as_ref().map(move |s| s.send_self(message) );
     }
+
+    fn validate_incoming(&self, frame: &FixFrame) -> io::Result<()> {
+
+        // TODO: validate sender, target, time within session timespan
+        //
+
+        Ok( () )
+    }
 }
 
 impl <Store> SessionState for SessionStateImpl <Store> where Store : MessageStore {
@@ -201,14 +209,32 @@ impl <Store> SessionState for SessionStateImpl <Store> where Store : MessageStor
                 self.ack_logon_received(flds.as_ref());
             },
 
+            &FixMessage::ResendRequest(ref flds) => {
+                // let flds = flds.as_ref();
+                // let entries = self.store.retrieve(flds.begin_seq_no, flds.end_seq_no);
+                // we may send them or generate a sequence reset if we dont have all of them
+            },
+
+            &FixMessage::SequenceReset(ref flds) => {
+
+            },
+
             &FixMessage::TestRequest(ref flds) => {
+                self.validate_incoming(&frame)?;
+
                 self.send_hearbeat_in_response(&flds.test_req_id)
             },
 
             &FixMessage::Heartbeat(ref flds) => {
+
+                self.validate_incoming(&frame)?;
+
                 self.ack_hearbeat_received(&flds.test_req_id);
             }
-            _ => {}
+            _ => {
+                self.validate_incoming(&frame)?;
+
+            }
         }
 
         Ok( () )

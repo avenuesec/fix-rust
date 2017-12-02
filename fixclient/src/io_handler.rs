@@ -119,6 +119,7 @@ impl<F> IoHandler <F>
             return Err(conn_res.unwrap_err());
         }
         let socket = conn_res.unwrap();
+        socket.set_nodelay(true); // TODO: config param
 
         let token = {
             let entry = self.token_2conn.vacant_entry(); // <- needs to be more robust

@@ -34,7 +34,7 @@ impl <State,UserF> DefaultHandler <State,UserF>
           UserF : UserHandlerFactory {
 
     pub fn new(sender: Sender, settings: FixSessionConfig, state: State, mut user_handler_f: UserF) -> Self {
-        info!("send new");
+        // info!("send new");
 
         let user_handler = { 
             user_handler_f.build(UserSender { sender: sender.clone() }) 
@@ -50,15 +50,14 @@ impl <State,UserF> DefaultHandler <State,UserF>
     }
 
     pub fn init(&mut self) {
-        info!("handler init");
+        info!("DefaultHandler init");
 
         self.state.init( self.sender.clone() );
 
-        // self.send( logon_message );
     }
 
     fn send(&mut self, message: FixMessage) -> io::Result<()> {
-        info!("send init");
+        info!("DefaultHandler send");
 
         let frame = self.state.build(message)?;
 
@@ -77,7 +76,7 @@ impl <State,UserF> FixHandler for DefaultHandler <State,UserF>
     // cancelled with a timeout has been set on the timer
     fn new_timeout(&mut self, timeout: timer::Timeout, event_kind: Token ) {
 
-        info!("new_timeout called for event_kind: {:?}", event_kind);
+        info!("DefaultHandler new_timeout called for event_kind: {:?}", event_kind);
 
         self.state.new_timeout(&timeout, event_kind);
     }
@@ -86,7 +85,7 @@ impl <State,UserF> FixHandler for DefaultHandler <State,UserF>
     fn on_timeout(&mut self, event_kind: Token) -> io::Result<()> {
         
         let now = Utc::now();
-        info!("on_timeout called for {:?} event_kind: {:?}", now, event_kind);
+        info!("DefaultHandler on_timeout called for {:?} event_kind: {:?}", now, event_kind);
 
         self.state.on_timeout(event_kind);
 
@@ -94,7 +93,7 @@ impl <State,UserF> FixHandler for DefaultHandler <State,UserF>
     }
 
     fn on_message(&mut self, frame: FixFrame) -> io::Result<()> {
-        info!("on_message called for {:?}", frame);
+        info!("DefaultHandler on_message called for {:?}", frame);
 
         self.state.received(&frame)?;
 
@@ -102,7 +101,7 @@ impl <State,UserF> FixHandler for DefaultHandler <State,UserF>
     }
 
     fn on_network_error(&mut self) {
-        info!("handler on_network_error");
+        info!("DefaultHandler handler on_network_error");
 
         // indicates the handler is about to be destroyed, so we should close everything
     }
@@ -110,7 +109,7 @@ impl <State,UserF> FixHandler for DefaultHandler <State,UserF>
     // invoked when someone calls Sender2.send(fixmessage)
     // this allow us to build the frame, store, validate, etc
     fn before_send(&mut self, message: FixMessage) {
-        info!("handler before_send");
+        info!("DefaultHandler handler before_send");
 
         self.send(message);
     }
