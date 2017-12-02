@@ -140,6 +140,33 @@ impl FSMessageStore {
         write!( self.session, "{:?}", self.session_creation )?;
         self.session.flush()
     }
+
+    fn persist_message(&mut self, frame: &FixFrame) -> io::Result<(u32, usize, usize)> {
+        if self.reusable_buf.len() != 0 {
+            unsafe { self.reusable_buf.set_len(0); } // will this cause the buffer free its capacity?
+        }
+
+        // writes immutable msg to buffer
+        frame.write(&mut self.reusable_buf)?;
+
+        // calculate offset
+        let len = self.reusable_buf.len();
+        let pos = self.messages_pos;
+
+        self.messages_pos = self.messages_pos + len; // updates pos
+
+        // persists message
+        self.messages.write_all( &mut self.reusable_buf )?;
+
+        Ok ( (frame.seq, pos, len) )
+    }
+    fn persist_message_offset(&mut self, offset: (u32, usize, usize)) -> io::Result<()> {
+
+        let (seq, pos, len) = offset;
+        write!( &mut self.headers, "{},{},{} ", seq, pos, len)
+
+        // debug!("FSMessageStore offsets {}  {} ", self.messages_pos, len);
+    }
 }
 
 
@@ -162,33 +189,20 @@ impl MessageStore for FSMessageStore {
     }
 
     fn sent(&mut self, frame: &FixFrame) -> io::Result<()> {
-        // TODO persist msg + segment index (will io be an issue?)
 
-        if self.reusable_buf.len() != 0 {
-            unsafe { self.reusable_buf.set_len(0); } // will this cause the buffer free its capacity?
-        }
+        let offset = self.persist_message(frame)?;
 
-        // writes immutable msg to buffer
-        frame.write(&mut self.reusable_buf)?;
-
-        // calculate offset
-        let len = self.reusable_buf.len();
-        self.messages_pos = self.messages_pos + len;
-
-        // persists message
-        self.messages.write_all( &mut self.reusable_buf )?;
-
-
-        // persists offset
-        write!( &mut self.headers, "{},{},{} ", frame.seq, self.messages_pos, len)?;
-
-        // debug!("FSMessageStore offsets {}  {} ", self.messages_pos, len);
+        self.persist_message_offset(offset);
 
         Ok( () )
     }
 
     fn received(&mut self, _frame: &FixFrame) -> io::Result<()> {
         Ok( () )
+    }
+
+    fn query(&self, begin: u32, end: u32) -> Vec<FixFrame> {
+        Vec::new()
     }
 
     fn reset_seqs(&mut self) -> io::Result<()> {

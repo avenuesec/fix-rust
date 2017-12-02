@@ -1,10 +1,17 @@
 
 extern crate fixclient;
 extern crate env_logger;
+extern crate fix;
+
+use std::default::Default;
+
+use fix::fixmessagegen::*;
+use fix::frame::FixFrame;
 
 use fixclient::{FixSessionConfig, FixDictionary};
 use fixclient::connector::MessageStore;
 use fixclient::connector::fsstore::FSMessageStore;
+
 
 // Starts brand new store, change its seqs, drop it and start new
 // old to confirm restored state
@@ -48,4 +55,36 @@ fn test_recreation() {
         assert_eq!( store.get_sender_seq(), 1 );
         assert_eq!( store.get_target_seq(), 1 );
     }
+}
+
+#[test]
+fn test_message_persistence() {
+
+    env_logger::init().unwrap();
+
+    let store_dir = "./temptest/store";
+
+    FSMessageStore::delete_files( "fix.4.2_target_sender", store_dir ); // <- clean slate
+
+    let cfg = FixSessionConfig::new( "123", "sender", "target", "hostname",
+                                     1234, 30, "./temptest/logs", store_dir,
+                                     FixDictionary::Fix42 );
+
+    {
+        let mut store = FSMessageStore::new ( &cfg ).expect("store created");
+        let logon = FixFrame::new(1, "sender", "target", "FIX.4.2", FixMessage::Logon(Box::new(LogonFields {
+            encrypt_method: FieldEncryptMethodEnum::None,
+            heart_bt_int: 60,
+            reset_seq_num_flag: Some(true),
+            .. Default::default()
+        })));
+        store.sent( &logon );
+    }
+
+    {
+        let mut store = FSMessageStore::new ( &cfg ).expect("store created");
+        let messages = store.query(1, 0);
+        assert_eq!(messages.len(), 1);
+    }
+
 }
