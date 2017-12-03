@@ -1,3 +1,15 @@
+
+pub fn is_admin_message( m : &FixMessage ) -> bool {
+    match m {
+        {{~ #each flatmessages as |m| ~}}
+{{~#if m.is_admin }}
+        &FixMessage::{{ m.name }}(_) => true,
+{{~/if ~}}
+        {{~/each }}
+        _ => false,
+    }
+}
+
 /// Main builder
 pub fn build_fix_message( msg_type: &str, flds: &Vec<FieldVal> ) -> FixMessage { 
 

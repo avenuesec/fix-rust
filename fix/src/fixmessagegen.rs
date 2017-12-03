@@ -138,6 +138,19 @@ fn to_boolconv(val: &bool) -> &'static str {
     }
 }
 
+pub fn is_admin_message( m : &FixMessage ) -> bool {
+    match m {
+        &FixMessage::Heartbeat(_) => true,
+        &FixMessage::TestRequest(_) => true,
+        &FixMessage::ResendRequest(_) => true,
+        &FixMessage::Reject(_) => true,
+        &FixMessage::SequenceReset(_) => true,
+        &FixMessage::Logout(_) => true,
+        &FixMessage::Logon(_) => true,
+        _ => false,
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OurParserError {
     unregonized_val : String,

@@ -37,8 +37,6 @@ use std::io::{Read};
 use std::str::{FromStr};
 use std::default::Default;
 use std::ascii::AsciiExt;
-// use itertools::Itertools;
-
 
 use handlebars::{Handlebars, Helper, RenderContext, RenderError};
 use xmltree::Element;
@@ -122,7 +120,7 @@ impl FixCodeGen {
         // }
         println!("Total unused: {}", field_names.len());
 
-        FixCodeGen { data: data }
+        FixCodeGen { data }
     }
 
     pub fn render(&self, tpl_name: &str, tpl_filename: &str, output: &str) -> Result<(), Error> {
@@ -203,7 +201,7 @@ fn build_flat_parser_component(c: &FixComponent,
     let flat_fields = entries_to_flat_fields(None, &c.entries, group_to_uniqueid, groups, comps, fields_map, field_names );
 
     FlatComponent {
-        rust_type: format!("{}Fields", c.name), 
+        rust_type: format!("{}Fields", c.name),
         // name: name.clone(),
         fields: flat_fields
     }
@@ -226,7 +224,7 @@ fn build_flat_group( kv:(&&FixGroup, &String),
     FlatGroup {
         name: group.name.clone(),
         rust_type: format!("{}Fields", unique_id),
-        fields: fields
+        fields
     }
 }
 
@@ -242,7 +240,8 @@ fn build_flat_message(msg : &Message,
         name: msg.name.clone(),
         rust_type: format!("{}Fields", msg.name), 
         msg_type: msg.msg_type.clone(),
-        fields: fields
+        is_admin: msg.is_admin,
+        fields
     }
 }
 
@@ -272,13 +271,13 @@ fn entries_to_flat_fields(// parent: &str,
                 let flat_fld = FlatField {
                     name : name.clone(),
                     fld_tag: field_def.tag,
-                    is_top_level : is_top_level, // top level or the field within a component?
+                    is_top_level, // top level or the field within a component?
                     vname : snake_case(name), // format!("{}{}", parent_name, snake_case(name)), // variable name: snake cased, prefixed
                     is_simple : true,  // simple, group, component
-                    rust_type : rust_type, // u32, String, something else?
+                    rust_type, // u32, String, something else?
                     rust_type_converter : conv, // .to_string? parse?
                     fix_type_converter: inv_conv,
-                    is_required : is_required,
+                    is_required,
                     parent: match &parent { &Some(ref p) => Some(Box::new(p.clone())), _ => None },
                     .. Default::default()
                 };
@@ -289,12 +288,12 @@ fn entries_to_flat_fields(// parent: &str,
                 
                 let flat_fld = FlatField {
                     name: name.clone(),
-                    is_top_level : is_top_level, // top level or the field within a component?
+                    is_top_level, // top level or the field within a component?
                     vname : snake_case(name), // format!("{}{}", parent_name, snake_case(name)), // variable name: snake cased, prefixed
                     is_component : true,  // simple, group, component
                     rust_type : format!("{}Fields", name),  // ""rust_type.to_string(), // u32, String, something else?
                     rust_type_converter : "".to_string(), // .to_string? parse?
-                    is_required : is_required,
+                    is_required,
                     parent: match &parent { &Some(ref p) => Some(Box::new(p.clone())), _ => None },
                     .. Default::default()
                 };
@@ -318,12 +317,12 @@ fn entries_to_flat_fields(// parent: &str,
 
                 let flat_fld = FlatField {
                     name: name.clone(),
-                    is_top_level : is_top_level, // top level or the field within a component?
+                    is_top_level, // top level or the field within a component?
                     vname : snake_case(name), // format!("{}{}", parent_name, snake_case(name)), // variable name: snake cased, prefixed
                     is_group : true,  // simple, group, component
                     rust_type : rust_type.to_string(), // u32, String, something else?
                     rust_type_converter : "".to_string(), // .to_string? parse?
-                    is_required : is_required,
+                    is_required,
                     parent: match &parent { &Some(ref p) => Some(Box::new(p.clone())), _ => None },
                     group_builder_fn_name : format!("group_{}_fields", snake_case(unique_id)),
                     .. Default::default()
@@ -338,8 +337,9 @@ fn entries_to_flat_fields(// parent: &str,
 }
 
 fn build_message(el: &Element) -> Message {
-    let name = el.attributes.get( "name" );
+    let name = el.attributes.get( "name" ).unwrap();
     let msg_type = el.attributes.get( "msgtype" );
+    let is_admin = el.attributes.get( "msgcat" ).map_or(false, |v| v == "admin");
     let mut entries = Vec::new();
 
     for c in &el.children {
@@ -368,21 +368,21 @@ fn build_message(el: &Element) -> Message {
         None => { String::new() }
     };
 
-    Message { name: name.unwrap().clone(), msg_type: msg_type2, entries: entries }
+    Message { name: name.clone(), msg_type: msg_type2, entries, is_admin }
 }
 
 fn build_fix_group(el: &Element) -> FixGroup {
-    let name = el.attributes.get( "name" ).unwrap();
+    // let name = el.attributes.get( "name" ).unwrap();
     let message = build_message( el );
 
-    FixGroup { name: name.clone(), entries: message.entries }
+    FixGroup { name: message.name, entries: message.entries }
 }
 
 fn build_fix_component(el: &Element) -> FixComponent {
-    let name = el.attributes.get( "name" ).unwrap();
+    // let name = el.attributes.get( "name" ).unwrap();
     let message = build_message( el );
 
-    FixComponent { name: name.clone(), entries: message.entries }
+    FixComponent { name: message.name.clone(), entries: message.entries }
 }
 
 fn build_field(el: &Element) -> FixField {
@@ -399,11 +399,11 @@ fn build_field(el: &Element) -> FixField {
     }
 
     FixField { 
-        tag: tag, 
+        tag,
         name: name.clone(), 
         fld_type: fld_type.clone(), 
-        enum_vals: enum_vals, 
-        is_enum: is_enum 
+        enum_vals,
+        is_enum
     }
 }
 
@@ -641,7 +641,7 @@ pub fn snake_case(name: &str) -> String {
 
 mod tests {
 
-    use super::*;
+
 
     #[test]
     fn test_capitalize() {

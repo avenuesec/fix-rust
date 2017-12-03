@@ -9,6 +9,7 @@ pub trait FixComposite {
 pub struct Message {
     pub name: String,
     pub msg_type : String,
+    pub is_admin : bool,
     pub entries : Vec<MessageEntry>,
 }
 
@@ -16,8 +17,9 @@ pub struct Message {
 pub struct FlatMessage {
     pub name: String,
     pub msg_type : String,
+    pub is_admin : bool,
     pub rust_type: String, // fields struct name
-    pub fields : Vec<FlatField> 
+    pub fields : Vec<FlatField>
 }
 
 #[derive(Serialize,Deserialize,Debug)]
