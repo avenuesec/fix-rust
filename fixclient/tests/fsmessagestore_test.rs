@@ -4,6 +4,7 @@ extern crate env_logger;
 extern crate fix;
 
 use std::default::Default;
+use std::string::ToString;
 
 use fix::fixmessagegen::*;
 use fix::frame::FixFrame;
@@ -97,9 +98,9 @@ fn test_message_persistence_and_query_post_recreation() {
         let mut store = FSMessageStore::new ( &cfg ).expect("store created");
         let messages = store.query(1, 0).expect("expecting messages");
         assert_eq!(messages.len(), 3);
-        assert_eq!(logon.as_ref().unwrap(),    &messages[0]);
-        assert_eq!(test_req.as_ref().unwrap(), &messages[1]);
-        assert_eq!(hb_req.as_ref().unwrap(),   &messages[2]);
+        assert_eq!(logon.unwrap().to_string(),    messages[0].to_string());
+        assert_eq!(test_req.unwrap().to_string(), messages[1].to_string());
+        assert_eq!(hb_req.unwrap().to_string(),   messages[2].to_string());
     }
 }
 
@@ -136,7 +137,7 @@ fn test_message_persistence_and_query() {
     let messages = store.query(1, 0).expect("expecting messages");
     assert_eq!(messages.len(), 3);
 
-    assert_eq!(&logon,    &messages[0]);
-    assert_eq!(&test_req, &messages[1]);
-    assert_eq!(&hb_req,   &messages[2]);
+    assert_eq!(&logon.to_string(),    &messages[0].to_string());
+    assert_eq!(&test_req.to_string(), &messages[1].to_string());
+    assert_eq!(&hb_req.to_string(),   &messages[2].to_string());
 }

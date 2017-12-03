@@ -94,6 +94,18 @@ impl FixFrame {
     }
 }
 
+
+// begin -- only here to make unit testing easier
+use std::string::ToString;
+impl ToString for FixFrame {
+    fn to_string(&self) -> String {
+        let mut buf = BytesMut::new();
+        self.write(&mut buf);
+        String::from_utf8( buf.to_vec() ).unwrap()
+    }
+}
+// end ---
+
 // SOH = 0x01
 // 20170627-14:23:04.690 : 8=FIX.4.4|9=98
 // 20170627-19:06:54.551 : 8=FIX.4.4 | 9=98 | 35=A | 34=1 | 49=CCLRA301 | 52=20170627-19:06:54.522 | 56=OE101C | 95=6 | 96=YWEKNJ | 98=0 | 108=20 | 141=Y | 35002=0 | 10=111 | 
