@@ -92,7 +92,7 @@ pub trait MessageStore {
 
     fn received(&mut self, frame: &FixFrame) -> io::Result<()>;
 
-    fn query(&self, begin: u32, end: u32) -> Vec<FixFrame>;
+    fn query(&mut self, begin: u32, end: u32) -> io::Result<Vec<FixFrame>>;
 
     fn incr_sender_seq_num(&mut self) -> io::Result<u32>;
     fn incr_target_seq_num(&mut self) -> io::Result<u32>;

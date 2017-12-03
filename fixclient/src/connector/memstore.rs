@@ -37,8 +37,8 @@ impl MessageStore for MemoryMessageStore {
         Ok( () )
     }
 
-    fn query(&self, begin: u32, end: u32) -> Vec<FixFrame> {
-        Vec::new()
+    fn query(&mut self, begin: u32, end: u32) -> io::Result<Vec<FixFrame>> {
+        Ok( Vec::new() )
     }
 
     fn incr_sender_seq_num(&mut self) -> io::Result<u32> {

@@ -2,11 +2,13 @@
 use std::io::{self, Read, Write, Seek, SeekFrom};
 use std::fs::{self, File, OpenOptions, DirBuilder};
 use std::path::{PathBuf, Path};
+use std::collections::HashMap;
 
 use bytes::{BytesMut};
 use chrono::{DateTime, Utc};
+use nom::IResult;
 
-use fix::frame::FixFrame;
+use fix::frame::{self, FixFrame};
 use super::{MessageStore, MessageStoreState};
 use super::super::FixSessionConfig;
 use super::super::sender::Sender;
@@ -18,6 +20,7 @@ pub struct FSMessageStore {
     messages_pos: usize,
     headers: File,
     session: File,
+    offsets_map: HashMap<u32, (usize, usize)>,
 
     session_creation: DateTime<Utc>,
 
@@ -25,6 +28,13 @@ pub struct FSMessageStore {
     state: MessageStoreState,
 
     reusable_buf: BytesMut,
+}
+
+macro_rules! scanf {
+    ( $string:expr, $sep:expr, $( $x:ty ),+ ) => {{
+        let mut iter = $string.split($sep);
+        ($(iter.next().and_then(|word| word.parse::<$x>().ok()),)*)
+    }}
 }
 
 impl FSMessageStore {
@@ -43,10 +53,12 @@ impl FSMessageStore {
             FSMessageStore::restore_seqnums(seqs_path_buf.as_path())?;
         let session_creation =
             FSMessageStore::restore_session(session_path_buf.as_path())?;
+        let offsets_map =
+            FSMessageStore::restore_offsets(header_path_buf.as_path())?;
         debug!("initial store state: sender_seq {} - target: {} - session creation {}", sender_seq_num, target_seq_num, session_creation);
 
         let mut seqs_file = OpenOptions::new().write(true).create(true).open(seqs_path_buf.as_path())?;
-        let mut messages = OpenOptions::new().write(true).create(true).append(true).open(messages_path_buf.as_path())?;
+        let mut messages = OpenOptions::new().create(true).write(true).read(true).open(messages_path_buf.as_path())?;
         let mut headers  = OpenOptions::new().write(true).create(true).append(true).open(header_path_buf.as_path())?;
         let mut session = OpenOptions::new().write(true).create(true).truncate(true).open(session_path_buf.as_path())?;
 
@@ -64,6 +76,7 @@ impl FSMessageStore {
             sender: None,
             session_creation,
             state,
+            offsets_map,
             reusable_buf : BytesMut::new(),
         };
 
@@ -90,6 +103,25 @@ impl FSMessageStore {
         } else {
             Err( io::Error::new(io::ErrorKind::Other, format!("malformed seqnums file {}", buffer)) )
         }
+    }
+
+    fn restore_offsets(path : &Path) -> io::Result<HashMap<u32, (usize, usize)>> {
+        let mut map = HashMap::new();
+
+        if path.exists() {
+            let mut file = OpenOptions::new().read(true).open(path)?;
+            let mut buf = String::new();
+            file.read_to_string(&mut buf)?;
+
+            for line in buf.split(' ') {
+                if line == "" { continue };
+
+                let (seq, offset, len) = scanf!(line, ',', u32, usize, usize);
+                map.insert( seq.expect("bad seq"), (offset.expect("bad offset"), len.expect("bad len")) );
+            }
+        }
+
+        Ok( map )
     }
 
     fn restore_session(path : &Path) -> io::Result<DateTime<Utc>> {
@@ -163,9 +195,28 @@ impl FSMessageStore {
     fn persist_message_offset(&mut self, offset: (u32, usize, usize)) -> io::Result<()> {
 
         let (seq, pos, len) = offset;
-        write!( &mut self.headers, "{},{},{} ", seq, pos, len)
 
-        // debug!("FSMessageStore offsets {}  {} ", self.messages_pos, len);
+        // update our local cache
+        self.offsets_map.insert(seq, (pos, len));
+
+        write!( &mut self.headers, "{},{},{} ", seq, pos, len)
+    }
+
+    fn load_message(&mut self, seq: u32, offset: (usize, usize) ) -> io::Result<FixFrame> {
+
+        // TODO: try cache first, then file
+
+        let (pos, len) = offset;
+        self.messages.seek(SeekFrom::Start(pos as u64))?;
+
+        let mut buffer = vec![0; len];
+
+        self.messages.read_exact( buffer.as_mut_slice() )?;
+
+        match frame::parse(&buffer) {
+            IResult::Done(_, fixframe) => Ok( fixframe ),
+            _ => Err( io::Error::new(io::ErrorKind::Other, "error parsing frame from file") )
+        }
     }
 }
 
@@ -201,8 +252,43 @@ impl MessageStore for FSMessageStore {
         Ok( () )
     }
 
-    fn query(&self, begin: u32, end: u32) -> Vec<FixFrame> {
-        Vec::new()
+    fn query(&mut self, start: u32, end: u32) -> io::Result<Vec<FixFrame>> {
+
+        // TODO: implement a cache so we dont do this much IO
+
+        let upper_bound =
+            (if end == 0 {
+                self.get_sender_seq()
+            } else {
+                u32::min( end, self.get_sender_seq() )
+            }) + 1;
+
+        // if upper_bound < end then ResetSeqs is needed
+
+        let capacity = (upper_bound - start) as usize;
+        let mut messages = Vec::with_capacity( capacity );
+
+        for seq in start..upper_bound {
+            let offset =
+                match self.offsets_map.get(&seq) {
+                    Some(offset) => {
+                        Some( (offset.0, offset.1) )
+                    },
+                    None => {
+                        // bad, some seq is missing, the handle should send a
+                        // seqreset message then
+                        None
+                    }
+                };
+
+            if offset.is_some() {
+                if let Ok(frame) = self.load_message( seq, offset.unwrap() ) {
+                    messages.push( frame );
+                }
+            }
+        }
+
+        Ok( messages )
     }
 
     fn reset_seqs(&mut self) -> io::Result<()> {

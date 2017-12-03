@@ -17,9 +17,9 @@ use fixclient::connector::fsstore::FSMessageStore;
 // old to confirm restored state
 #[test]
 fn test_seq_nums_persistence_and_init() {
-    env_logger::init().unwrap();
+    // env_logger::init().unwrap();
 
-    let store_dir = "./temptest/store";
+    let store_dir = "./temptest/store2";
 
     FSMessageStore::delete_files( "fix.4.2_target_sender", store_dir ); // <- clean slate
 
@@ -40,9 +40,9 @@ fn test_seq_nums_persistence_and_init() {
 
 #[test]
 fn test_recreation() {
-    env_logger::init().unwrap();
+    // env_logger::init().unwrap();
 
-    let store_dir = "./temptest/store";
+    let store_dir = "./temptest/store1";
 
     FSMessageStore::delete_files( "fix.4.2_target_sender", store_dir ); // <- clean slate
 
@@ -58,11 +58,10 @@ fn test_recreation() {
 }
 
 #[test]
-fn test_message_persistence() {
+fn test_message_persistence_and_query_post_recreation() {
+    // env_logger::init().unwrap();
 
-    env_logger::init().unwrap();
-
-    let store_dir = "./temptest/store";
+    let store_dir = "./temptest/store3";
 
     FSMessageStore::delete_files( "fix.4.2_target_sender", store_dir ); // <- clean slate
 
@@ -70,21 +69,74 @@ fn test_message_persistence() {
                                      1234, 30, "./temptest/logs", store_dir,
                                      FixDictionary::Fix42 );
 
+    let mut logon = None;
+    let mut test_req = None;
+    let mut hb_req = None;
+
     {
         let mut store = FSMessageStore::new ( &cfg ).expect("store created");
-        let logon = FixFrame::new(1, "sender", "target", "FIX.4.2", FixMessage::Logon(Box::new(LogonFields {
+        logon = Some(FixFrame::new(store.incr_sender_seq_num().unwrap(), "sender", "target", "FIX.4.2", FixMessage::Logon(Box::new(LogonFields {
             encrypt_method: FieldEncryptMethodEnum::None,
             heart_bt_int: 60,
             reset_seq_num_flag: Some(true),
             .. Default::default()
-        })));
-        store.sent( &logon );
+        }))));
+        test_req = Some(FixFrame::new(store.incr_sender_seq_num().unwrap(), "sender", "target", "FIX.4.2", FixMessage::TestRequest(Box::new(TestRequestFields {
+            test_req_id: "TEST".to_owned(),
+        }))));
+        hb_req = Some(FixFrame::new(store.incr_sender_seq_num().unwrap(), "sender", "target", "FIX.4.2", FixMessage::Heartbeat(Box::new(HeartbeatFields {
+            test_req_id: Some("TEST".to_owned()),
+        }))));
+
+        store.sent( logon.as_ref().unwrap() );
+        store.sent( test_req.as_ref().unwrap() );
+        store.sent( hb_req.as_ref().unwrap() );
     }
 
     {
         let mut store = FSMessageStore::new ( &cfg ).expect("store created");
-        let messages = store.query(1, 0);
-        assert_eq!(messages.len(), 1);
+        let messages = store.query(1, 0).expect("expecting messages");
+        assert_eq!(messages.len(), 3);
+        assert_eq!(logon.as_ref().unwrap(),    &messages[0]);
+        assert_eq!(test_req.as_ref().unwrap(), &messages[1]);
+        assert_eq!(hb_req.as_ref().unwrap(),   &messages[2]);
     }
+}
 
+#[test]
+fn test_message_persistence_and_query() {
+    // env_logger::init().unwrap();
+
+    let store_dir = "./temptest/store4";
+
+    FSMessageStore::delete_files( "fix.4.2_target_sender", store_dir ); // <- clean slate
+
+    let cfg = FixSessionConfig::new( "123", "sender", "target", "hostname",
+                                     1234, 30, "./temptest/logs", store_dir,
+                                     FixDictionary::Fix42 );
+
+    let mut store = FSMessageStore::new ( &cfg ).expect("store created");
+    let logon = FixFrame::new(store.incr_sender_seq_num().unwrap(), "sender", "target", "FIX.4.2", FixMessage::Logon(Box::new(LogonFields {
+        encrypt_method: FieldEncryptMethodEnum::None,
+        heart_bt_int: 60,
+        reset_seq_num_flag: Some(true),
+        .. Default::default()
+    })));
+    let test_req = FixFrame::new(store.incr_sender_seq_num().unwrap(), "sender", "target", "FIX.4.2", FixMessage::TestRequest(Box::new(TestRequestFields {
+        test_req_id: "TEST".to_owned(),
+    })));
+    let hb_req = FixFrame::new(store.incr_sender_seq_num().unwrap(), "sender", "target", "FIX.4.2", FixMessage::Heartbeat(Box::new(HeartbeatFields {
+        test_req_id: Some("TEST@".to_owned())
+    })));
+
+    store.sent( &logon );
+    store.sent( &test_req );
+    store.sent( &hb_req );
+
+    let messages = store.query(1, 0).expect("expecting messages");
+    assert_eq!(messages.len(), 3);
+
+    assert_eq!(&logon,    &messages[0]);
+    assert_eq!(&test_req, &messages[1]);
+    assert_eq!(&hb_req,   &messages[2]);
 }
