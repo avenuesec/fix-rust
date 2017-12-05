@@ -21,8 +21,6 @@ pub struct SessionStateImpl <Store>
     where Store : MessageStore {
 
     config: FixSessionConfig,
-//    sender_comp_id : String,
-//    target_comp_id : String,
     store: Store,
     logon_sent : bool,
     logon_recv : bool,
@@ -34,7 +32,6 @@ pub struct SessionStateImpl <Store>
     send_timeout: Option<timer::Timeout>,
     recv_timeout: Option<timer::Timeout>,
     hearbeat_in_ms: u32, // heartbeat in milliseconds
-    // config_heartbeat: u32, // original config, unless server overrides it
     begin_string: Cow<'static, str>,
 }
 
@@ -136,6 +133,33 @@ impl <Store> SessionStateImpl <Store>
 
         Ok( () )
     }
+
+    /// tries to fulfill request from the other side to supply missing messages
+    /// we may send them or generate a sequence reset if there's a gap
+    fn ack_resend_request(&mut self, start : u32, end : u32) {
+        let entries = self.store.query(start, end)?;
+
+        for i in 0..entries.len() {
+
+            let frame = &entries[i];
+            let seq = frame.seq;
+
+            if fixmessagegen::is_admin_message( frame.message ) {
+                // we dont resend admin messages
+
+            } else {
+
+            }
+
+        }
+
+        let reset_flds = SequenceResetFields {
+            gap_fill_flag: Some(true),
+            new_seq_no: new_seq_start,
+        };
+        self.post_send( FixMessage::SequenceReset(Box::new(reset_flds)) );
+
+    }
 }
 
 impl <Store> SessionState for SessionStateImpl <Store> where Store : MessageStore {
@@ -210,9 +234,8 @@ impl <Store> SessionState for SessionStateImpl <Store> where Store : MessageStor
             },
 
             &FixMessage::ResendRequest(ref flds) => {
-                // let flds = flds.as_ref();
-                // let entries = self.store.retrieve(flds.begin_seq_no, flds.end_seq_no);
-                // we may send them or generate a sequence reset if we dont have all of them
+                let flds = flds.as_ref();
+                self.ack_resend_request(flds.begin_seq_no, flds.end_seq_no)?
             },
 
             &FixMessage::SequenceReset(ref flds) => {

@@ -6,6 +6,7 @@ use fix::*;
 
 
 #[test]
+#[cfg(fix42)]
 fn test_logon_message() {
     let line = b"8=FIX.4.2\x019=70\x0135=A\x0134=1\x0149=SOME\x0152=20171129-22:28:53.000\x0156=SINGU\x0198=0\x01108=60\x01141=Y\x0110=226\x01";
 	let b = frame::parse(line);
@@ -13,6 +14,7 @@ fn test_logon_message() {
 }
 
 #[test]
+#[cfg(fix44)]
 fn test_heartbeat_message() {
     let line = "8=FIX.4.4|9=57|35=0|49=OE101C|56=CCLRA301|34=2|52=20170627-14:23:54.802|10=065|".replace("|", "\x01");
 	let b = frame::parse(line.as_bytes());
@@ -20,6 +22,7 @@ fn test_heartbeat_message() {
 }
 
 #[test]
+#[cfg(fix44)]
 fn test_new_order_single_message() {
     let line = "8=FIX.4.4|9=206|35=D|34=2|49=CCLRA301|52=20170627-19:32:13.105|56=OE101C|1=4004|11=30011_0|38=100|40=2|44=5|54=1|55=PETR4|59=0|60=20170627-16:32:13|453=3|448=CCLRA301|447=D|452=36|448=308|447=D|452=7|448=DMA1|447=D|452=31|10=207|\r\n".replace("|", "\x01");
 	let b = frame::parse(line.as_bytes());

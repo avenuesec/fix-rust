@@ -17,11 +17,14 @@ use fix::fixmessagegen::*;
 #[test]
 fn test_build_heartbeat() {
     let frame = FixFrame {
-        begin_string: Cow::from("FIX.4.4"),
+        begin_string: Cow::from("FIX.4.2"),
         sending: Utc.ymd(2017, 08, 09).and_hms_milli(11, 48, 59, 413),
         seq: 479,
         sender_comp_id: "XPOMS".to_string(),
         target_comp_id: "CLEAR".to_string(),
+        orig_sending: None,
+        poss_duplicate: None,
+        poss_resend: None,
         message: FixMessage::Heartbeat(Box::new(HeartbeatFields { 
             // test_req_id: Some("req".to_string())
             test_req_id: None
@@ -34,7 +37,7 @@ fn test_build_heartbeat() {
     };
     // original:  8=FIX.4.4|9=55|35=0|34=479|49=XPOMS|52=20170809-11:48:59.413|56=CLEAR|10=086| 
     // generated: 8=FIX.4.4|9=55|35=0|34=479|49=XPOMS|52=20170809-11:48:59.413|56=CLEAR|10=086|
-    assert_eq!("8=FIX.4.2|9=55|35=0|34=479|49=XPOMS|52=20170809-11:48:59.413|56=CLEAR|10=086|",
+    assert_eq!("8=FIX.4.2|9=55|35=0|34=479|49=XPOMS|52=20170809-11:48:59.413|56=CLEAR|10=084|",
         message.replace("\u{1}", "|"));
 }
 
@@ -47,6 +50,9 @@ fn test_build_logon() {
         seq: 100321,
         sender_comp_id: "XPOMS".to_string(),
         target_comp_id: "CLEAR".to_string(),
+        orig_sending: None,
+        poss_duplicate: None,
+        poss_resend: None,
         message: FixMessage::Logon(Box::new(LogonFields {
             encrypt_method: Field_EncryptMethod_Enum::NONEOTHER,
             heart_bt_int: 60,
@@ -73,6 +79,9 @@ fn test_build_logon() {
         seq: 100321,
         sender_comp_id: "XPOMS".to_string(),
         target_comp_id: "CLEAR".to_string(),
+        orig_sending: None,
+        poss_duplicate: None,
+        poss_resend: None,
         message: FixMessage::Logon(Box::new(LogonFields { 
             encrypt_method: Field_EncryptMethod_Enum::NONEOTHER,
             heart_bt_int: 60,
@@ -102,6 +111,9 @@ fn test_build_new_order_single() {
         seq: 70827,
         sender_comp_id: "CLEAR".to_string(),
         target_comp_id: "XPOMS".to_string(),
+        orig_sending: None,
+        poss_duplicate: None,
+        poss_resend: None,
         message: FixMessage::NewOrderSingle(Box::new(NewOrderSingleFields { 
             cl_ord_id: "53887733_0".to_string(),
             account: Some("31334".to_string()),

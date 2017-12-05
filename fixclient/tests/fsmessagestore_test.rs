@@ -20,7 +20,7 @@ use fixclient::connector::fsstore::FSMessageStore;
 fn test_seq_nums_persistence_and_init() {
     // env_logger::init().unwrap();
 
-    let store_dir = "./temptest/store2";
+    let store_dir = "./temptest/store1";
 
     FSMessageStore::delete_files( "fix.4.2_target_sender", store_dir ); // <- clean slate
 
@@ -43,7 +43,7 @@ fn test_seq_nums_persistence_and_init() {
 fn test_recreation() {
     // env_logger::init().unwrap();
 
-    let store_dir = "./temptest/store1";
+    let store_dir = "./temptest/store2";
 
     FSMessageStore::delete_files( "fix.4.2_target_sender", store_dir ); // <- clean slate
 

@@ -14,6 +14,11 @@ pub struct Message {
 }
 
 #[derive(Serialize,Deserialize,Debug)]
+pub struct FixHeader {
+    pub fields : Vec<FlatField>
+}
+
+#[derive(Serialize,Deserialize,Debug)]
 pub struct FlatMessage {
     pub name: String,
     pub msg_type : String,

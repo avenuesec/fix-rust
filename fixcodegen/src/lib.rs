@@ -23,7 +23,6 @@
 // parser should not require it.
 
 #[macro_use] extern crate serde_derive;
-// #[macro_use] extern crate itertools;
 
 extern crate serde;
 extern crate handlebars;
@@ -62,15 +61,20 @@ impl FixCodeGen {
 
         // TODO: transitive closure to keep fields and components that were referenced by the messages. remove all else.
 
-        let fields   : Vec<FixField>     = fix_xml.get_child("fields").unwrap().children.iter().map(build_field).collect();
-        let messages : Vec<Message>      = fix_xml.get_child("messages").unwrap().children.iter().map(|m| { build_message(m) }).collect();
-        let cptns    : Vec<FixComponent> = fix_xml.get_child("components").unwrap().children.iter().map(|c| { build_fix_component(c) } ).collect();
-        let mut field_names : HashSet<String> = HashSet::new(); // &fields.iter().map(|f| { *f.name.clone() } ).collect();
+        let fields          : Vec<FixField>     = fix_xml.get_child("fields").unwrap().children.iter().map(build_field).collect();
+        let mut header_flds : Vec<MessageEntry> = build_message_refs( fix_xml.get_child("header").unwrap() );
+        let messages        : Vec<Message>      = fix_xml.get_child("messages").unwrap().children.iter().map(|m| { build_message(m) }).collect();
+        let cptns           : Vec<FixComponent> = fix_xml.get_child("components").unwrap().children.iter().map(|c| { build_fix_component(c) } ).collect();
+        let mut field_names : HashSet<String>   = HashSet::new(); // &fields.iter().map(|f| { *f.name.clone() } ).collect();
         {
             for f in &fields {
                 field_names.insert( f.name.clone() );
             }
         }
+
+        // remove fields that are kind of specially handled by code gen
+        remove_fieldref( &mut header_flds, "BeginString" );
+        remove_fieldref( &mut header_flds, "BodyLength" );
 
         // flat list of groups found on messages, components and groups (nested)
         let mut all_groups : HashSet<&FixGroup> = HashSet::new();
@@ -79,10 +83,10 @@ impl FixCodeGen {
 
         // one-to-one unique group to struct/fn to decode it
         // note that groups may have the same "name" like NoRelatedSym
-        let unique_group_ids = uniquefy_group(&all_groups);
+        let unique_group_ids   = uniquefy_group(&all_groups);
         let components_map     : HashMap<&String, &FixComponent> = cptns.iter().map(|c| { (&c.name, c) } ).collect();
-        let fields_map_by_name : HashMap<&String, &FixField> = fields.iter().map(|c| { (&c.name, c) } ).collect();
-        let groups_map_by_name : HashMap<&String, &FixGroup> = all_groups.iter().map(|c| { (&c.name, *c) } ).collect();
+        let fields_map_by_name : HashMap<&String, &FixField>     = fields.iter().map(|c| { (&c.name, c) } ).collect();
+        let groups_map_by_name : HashMap<&String, &FixGroup>     = all_groups.iter().map(|c| { (&c.name, *c) } ).collect();
 
         let flat_parser_msgs : Vec<FlatMessage> = 
             // fix_xml.get_child("messages").unwrap().children.iter()
@@ -95,6 +99,9 @@ impl FixCodeGen {
         let flatgroups : Vec<FlatGroup> = unique_group_ids.iter()
             .map(|kv| build_flat_group(kv, &unique_group_ids, &groups_map_by_name, &components_map, &fields_map_by_name, &mut field_names))
             .collect();
+        let header = FixHeader {
+            fields: entries_to_flat_fields(None, &header_flds, &unique_group_ids, &groups_map_by_name, &components_map, &fields_map_by_name, &mut field_names),
+        };
 
         let mut data : BTreeMap<String, serde_json::Value> = BTreeMap::new();
 
@@ -102,6 +109,7 @@ impl FixCodeGen {
         let fields_json   = serde_json::to_value(&fields).unwrap();
         let cptns_json    = serde_json::to_value(flat_parser_comps).unwrap();
         let groups_json   = serde_json::to_value(flatgroups).unwrap();
+        let header_json   = serde_json::to_value(header).unwrap();
 
         // let ioi_message = flat_parser_msgs.iter().find(|f| f.name == "IOI").unwrap();
         // println!(" {:#}", serde_json::to_value(ioi_message).unwrap() );
@@ -111,6 +119,7 @@ impl FixCodeGen {
         data.insert("fields".to_string(),       fields_json);
         data.insert("components".to_string(),   cptns_json);
         data.insert("flatgroups".to_string(),   groups_json);
+        data.insert("header".to_owned(),        header_json);
 
         // println!("unused fields:");
         // {
@@ -245,8 +254,7 @@ fn build_flat_message(msg : &Message,
     }
 }
 
-fn entries_to_flat_fields(// parent: &str, 
-                          parent: Option<FlatField>, 
+fn entries_to_flat_fields(parent: Option<FlatField>,
                           entries: &Vec<MessageEntry>, 
                           group_to_uniqueid : &HashMap<&FixGroup, String>, 
                           groups: &HashMap<&String, &FixGroup>, 
@@ -340,6 +348,18 @@ fn build_message(el: &Element) -> Message {
     let name = el.attributes.get( "name" ).unwrap();
     let msg_type = el.attributes.get( "msgtype" );
     let is_admin = el.attributes.get( "msgcat" ).map_or(false, |v| v == "admin");
+
+    let entries = build_message_refs(el);
+
+    let msg_type2 = match msg_type {
+        Some(s) => { s.to_owned() },
+        None => { String::new() }
+    };
+
+    Message { name: name.clone(), msg_type: msg_type2, entries, is_admin }
+}
+
+fn build_message_refs(el : &Element) -> Vec<MessageEntry> {
     let mut entries = Vec::new();
 
     for c in &el.children {
@@ -359,16 +379,10 @@ fn build_message(el: &Element) -> Message {
             },
             _ => { panic!("unsupported {}", c.name); }
         };
-        
+
         entries.push(entry);
     }
-
-    let msg_type2 = match msg_type {
-        Some(s) => { s.to_owned() },
-        None => { String::new() }
-    };
-
-    Message { name: name.clone(), msg_type: msg_type2, entries, is_admin }
+    entries
 }
 
 fn build_fix_group(el: &Element) -> FixGroup {
@@ -467,7 +481,7 @@ fn rec_chain_name(fld: &serde_json::Value, writer: &mut String, for_mut: bool) {
 }
 
 pub fn fix_type_to_rust (fld : &FixField) -> String {
-    
+
     if fld.is_enum {
         format!("Field{0}Enum", &fld.name)
     } else {
@@ -639,9 +653,20 @@ pub fn snake_case(name: &str) -> String {
     }
 }
 
+fn remove_fieldref( fields: &mut Vec<MessageEntry>, name : &str ) {
+    let to_remove = fields.iter().enumerate().find(move |t| {
+        match t.1 {
+            &MessageEntry::FieldRef(ref name_, _) => {
+                name_ == name
+            },
+            _ => false
+        }
+    } ).unwrap().0 ;
+
+    fields.remove( to_remove );
+}
+
 mod tests {
-
-
 
     #[test]
     fn test_capitalize() {

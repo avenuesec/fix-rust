@@ -22,13 +22,7 @@ pub struct RawFixFrame<'a> {
 
 #[derive(PartialEq,Debug,Serialize,Deserialize)]
 pub struct FixFrame {
-    pub begin_string : Cow<'static, str>, // &'static str,
-    pub sending  : DateTime<Utc>, // field 52
-    pub seq : u32,  // field 34
-    pub sender_comp_id: String, // 49
-    pub target_comp_id: String, // 56
-    // OnBehalfOfCompID: String, 115 
-    // DeliverToCompID: String,  128
+    pub header  : FixHeader,
     pub message : FixMessage,
 }
 
@@ -46,23 +40,31 @@ impl FixFrame {
     pub fn new(seq: u32, sender: &str, target: &str, begin_str: &'static str, message: FixMessage) -> FixFrame {
         let ts = Utc::now();
         FixFrame {
-            begin_string: Cow::from(begin_str),
-            sending: ts,
-            seq,
-            sender_comp_id: sender.to_string(),
-            target_comp_id: target.to_string(),
-            message
+            header: FixHeader {
+                begin_string: Cow::from(begin_str),
+                sending_time: UtcDateTime::new(ts),
+                msg_seq_num: seq as i32,
+                sender_comp_id: sender.to_owned(), // TODO: Consider making these 2 Cow too
+                target_comp_id: target.to_owned(),
+                .. Default::default()
+            },
+            message,
         }
     }
 
+    /// format:
+    /// 8=begin_string|9=len of body|body|10=checksum
+    /// body = extended header + specific message fields + trailer (except checksum)
     pub fn write(&self, buf : &mut BytesMut) -> Result<(), io::Error> {
+
         // message content
         let mut temp_buf = BytesMut::new(); // ::new() ::with_capacity(1024) -  experiment with initial capacity here 
-        //delegates to code gen
-        write_fix_message(&self.message, &UtcDateTime::new(self.sending), self.seq,
-                          &self.sender_comp_id, &self.target_comp_id, &mut temp_buf)?;
+
+        // delegates to code gen
+        write_fix_header(&self.header, &mut temp_buf)?;
+        write_fix_message(&self.message, &mut temp_buf)?;
         
-        let prelude = format!("8={version}\u{1}9={len}\u{1}", len= temp_buf.len(), version=self.begin_string );
+        let prelude = format!("8={version}\u{1}9={len}\u{1}", len= temp_buf.len(), version=self.header.begin_string );
         let mut message_builder = BytesMut::with_capacity(prelude.len() + temp_buf.len());
         message_builder.put( prelude ); // buffer copy 1 - sad!
         message_builder.extend_from_slice( &temp_buf.freeze()[..] ); // buffer copy 2 - sad!
@@ -73,12 +75,10 @@ impl FixFrame {
 
         // trailler
         let checksum = FixFrame::checksum( &body[..] );
-        //let trailer = format!("10={:03}{}\r\n", checksum, FIX_MESSAGE_DELIMITER);
         let trailer = format!("10={:03}{}", checksum, FIX_MESSAGE_DELIMITER);
-        // buf.reserve( trailer.len() );
         buf.extend_from_slice( &trailer.as_str().as_bytes()[..] ); // ugly!
 
-        debug!("raw generated {:?}", buf);
+        // debug!("raw generated {:?}", buf);
 
         Ok( () )
     }
@@ -163,7 +163,7 @@ named!(raw_frame<RawFixFrame>,
       lenw  : fld_value_usize >> 
               tag!("\x01") >>
               call!(ensure_size, lenw + CHECKSUM_SIZE) >> // is there enough bytes to consume given the msg length?
-      flds  : fields >> // ideally should not parse checksum field..
+      flds  : fields >>
     (RawFixFrame {
         begin_str: bstr,
         len      : lenw,
@@ -178,50 +178,17 @@ const SENDER_COMP_ID: u32 = 49;
 const TARGET_COMP_ID: u32 = 56;
 const SEND_TIME:      u32 = 52;
 
+/// Assemble FixFrame containinig proper message
 pub fn parse(buffer: &[u8]) -> IResult<&[u8], FixFrame> {
     let (remaining, raw) = try_parse!(buffer, raw_frame);
-    
-    // Assemble FixFrame containinig proper message
 
-    // StandardHeader    https://www.onixs.biz/fix-dictionary/4.4/compBlock_StandardHeader.html
-    // msg type  // 35
-    // seq : u32,   34    MsgSeqNum
-    // sender_comp_id: String, // 49
-    // target_comp_id: String, // 56
-    // 52    SendingTime
-
-    let mut msg_type : Option<String> = None;
-    let mut msg_seq  : Option<u32> = None;
-    let mut sender   : Option<String> = None;
-    let mut target   : Option<String> = None;
-    let mut snd_time : Option<DateTime<Utc>> = None;
-
-    let standard_headers = &raw.flds;
-    
-    // not sure we need to filter. these will be the first fields anyways
-    for fld in standard_headers.iter().filter(|f| { f.id == 34 || f.id == 35 || f.id == 49 || f.id == 52 || f.id == 56 }) {
-        // to_string sends them to the heap
-        match fld { 
-            &FieldVal { id: MSG_SEQ,        val: v } => { msg_seq  = Some(u32::from_str(v).unwrap());  },
-            &FieldVal { id: MSG_TYPE,       val: v } => { msg_type = Some(v.to_string());  },
-            &FieldVal { id: SENDER_COMP_ID, val: v } => { sender   = Some(v.to_string());  },
-            &FieldVal { id: TARGET_COMP_ID, val: v } => { target   = Some(v.to_string());  },
-            &FieldVal { id: SEND_TIME,      val: v } => { snd_time = timestamp_val( v.as_bytes() );  },
-            _ => {
-                return IResult::Error(error_code!(ErrorKind::Custom(42))); // TODO: better errors!
-            }
-        }
-    }
+    let header = build_fix_header( &raw.begin_str, &raw.flds );
+    let msg_type = header.msg_type;
+    let message = build_fix_message( &msg_type.to_string(), &raw.flds );
 
     let fixframe = FixFrame {
-        begin_string: Cow::from(raw.begin_str),
-        sending  : snd_time.unwrap(),
-        seq : msg_seq.unwrap(),
-        sender_comp_id: sender.unwrap(),
-        target_comp_id: target.unwrap(),
-        // OnBehalfOfCompID: String, 115 
-        // DeliverToCompID: String,  128
-        message : build_fix_message( &msg_type.unwrap(), &raw.flds ), // delegates to code gen
+        header,
+        message,
     };
 
     IResult::Done(remaining, fixframe)

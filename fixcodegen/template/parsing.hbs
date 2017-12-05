@@ -10,8 +10,65 @@ pub fn is_admin_message( m : &FixMessage ) -> bool {
     }
 }
 
+pub fn build_fix_header( begin_str: &'static str, flds: &Vec<FieldVal> ) -> FixHeader {
+
+    let filter = |f: &&FieldVal| {
+        {{#each header.fields as |f| ~}}
+        f.id == {{ f.fld_tag }} ||
+        {{~/each }}
+        f.id == 0
+    };
+
+  {{~#each header.fields as |f| ~}}
+    {{~#if f.is_top_level ~}}
+      {{~#if f.is_simple }}
+    let mut {{ f.vname }} : Option<{{ f.rust_type }}> = None;
+      {{~/if ~}}
+      {{~#if f.is_component }}
+    let mut {{ f.vname }} : Option<{{ f.rust_type }}> = None; // {{ f.rust_type }} { .. Default::default() };
+      {{~/if ~}}
+      {{~#if f.is_group }}
+    let mut {{ f.vname }} : Option<{{ f.rust_type }}> = None;
+      {{~/if ~}}
+    {{~/if ~}}
+  {{~/each}}
+
+    for fld in flds.iter().filter(filter) {
+        match fld {
+        {{~#each header.fields as |f| }}
+            &FieldVal { id: FIELD_{{upper f.name }}, val: v } => {
+        {{~#if f.parent ~}}
+                {{>init f=f.parent }}
+        {{~/if ~}}
+        {{~#if f.is_simple }}
+                {{mutchainvname f }} = Some( {{ f.rust_type_converter }} );
+        {{~/if ~}}
+        {{~#if f.is_group }}
+                // group
+                let size = usize::from_str(v).unwrap();
+                let subgroup = build_{{ f.group_builder_fn_name }}(consumer, size);
+                {{mutchainvname f }} = Some(subgroup);
+        {{~/if }}
+            },
+        {{~/each }}
+            _ => {
+                // return IResult::Error(error_code!(ErrorKind::Custom(42))); // TODO: better errors!
+            }
+        }
+    }
+
+    FixHeader  {
+        begin_string: Cow::from(begin_str),
+    {{~#each header.fields as |f| ~}}
+    {{~#if f.is_top_level }}
+        {{ f.vname }}: {{f.vname }}{{#if f.is_required }}.unwrap() /* better error hdl? */ {{/if}},
+    {{~/if ~}}
+    {{~/each }}
+    }
+}
+
 /// Main builder
-pub fn build_fix_message( msg_type: &str, flds: &Vec<FieldVal> ) -> FixMessage { 
+pub fn build_fix_message( msg_type: &str, flds: &Vec<FieldVal> ) -> FixMessage {
 
   match msg_type {
     {{ #each flatmessages as |m| }}
