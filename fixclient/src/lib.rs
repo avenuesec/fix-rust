@@ -120,18 +120,24 @@ pub trait FixHandlerFactory {
     }
 }
 
+/// Main trait, where user code goes
 pub trait FixHandler {
 
+    /// Indicates message received
     fn on_message(&mut self, message: frame::FixFrame) -> io::Result<()>;
 
+    /// Indicates a timeout signaled.
     fn on_timeout(&mut self, event_kind: Token) -> io::Result<()>;
 
+    /// Confirms the set up of a timeout
     fn new_timeout(&mut self, _timeout: timer::Timeout, _event_kind: Token) {
     }
 
+    /// Indicates a comm error, the handler should clean up as it will be destroyed
     fn on_network_error(&mut self); // <- add error info
 
-    // back channel to allow extensions to send messages
+    /// Back channel to allow extensions to send messages
+    /// This is trigged when a message is send through [Sender::send_self]
     fn before_send(&mut self, message: fix::fixmessagegen::FixMessage);
 }
 
@@ -146,9 +152,6 @@ impl<F, H> FixHandlerFactory for F
         self(sender)
     }
 }
-
-
-
 
 #[derive(Clone)]
 pub enum DayOfTheWeek {

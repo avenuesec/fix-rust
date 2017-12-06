@@ -1,4 +1,9 @@
-use std::io;
+
+///! This module attempts to implement the common fix handler,
+///  and just calls the user code through the [UserHandler] which
+///  is somewhat similar to the way the quickfix engine is designed.
+
+use std::{io};
 
 use fix::fixmessagegen::*;
 use fix::frame::FixFrame;

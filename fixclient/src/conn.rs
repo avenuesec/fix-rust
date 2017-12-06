@@ -28,10 +28,10 @@ impl<T : FixHandler> Conn<T> {
             addr,
             token,
             socket,
+            handler,
             events:   Ready::readable(), // Ready::empty(),
             inbound:  BytesMut::new(),
             outbound: BytesMut::new(),
-            handler,
             in_error: false,
         }
     }
