@@ -116,25 +116,8 @@ impl ToString for FixFrame {
 }
 // end ---
 
-// SOH = 0x01
-// 20170627-14:23:04.690 : 8=FIX.4.4|9=98
-// 20170627-19:06:54.551 : 8=FIX.4.4 | 9=98 | 35=A | 34=1 | 49=CCLRA301 | 52=20170627-19:06:54.522 | 56=OE101C | 95=6 | 96=YWEKNJ | 98=0 | 108=20 | 141=Y | 35002=0 | 10=111 | 
+/// parsing using [nom] (parsing combinator)
 
-named!(timestamp<DateTime<Utc>>,
-    do_parse!(
-        // 20170627-14:23:04.690
-        y: apply!(to_u32_sized, 4) >> 
-        m: apply!(to_u32_sized, 2) >> 
-        d: apply!(to_u32_sized, 2) >> 
-        tag!(b"-") >> 
-        h: apply!(to_u32_sized, 2)  >> tag!(b":") >>
-        mm: apply!(to_u32_sized, 2) >> tag!(b":") >> 
-        s: apply!(to_u32_sized, 2)  >> tag!(b".") >>
-        ms: apply!(to_u32_sized, 3) >> 
-        // assembles with parsed pieces:
-        ( Utc.ymd(y as i32, m, d).and_hms_milli(h, mm, s, ms) )
-    )
-);
 named!(fieldid, take_while1!(is_digit));
 named!(fieldval, take_until!( "\x01" )); // consume all up to SOH
 named!(field<FieldVal>, do_parse!(
@@ -160,10 +143,7 @@ named!(pub begin_string<&'static str>, do_parse!(
     ( to_fix_version(bstr) )
 ));
 
-// raw parser entry point
-// 20170627-19:06:54.551 : 8=FIX.4.4 | 9=98 | 35=A | 34=1 | 49=CCLRA301 | 52=20170627-19:06:54.522 | 56=OE101C | 95=6 | 96=YWEKNJ | 98=0 | 108=20 | 141=Y | 35002=0 | 10=111 | 
-// 20170713-22:04:24.685 : 8=FIX.4.4|9=58|35=0|49=OE103C|56=RCLRA310|34=54|52=20170713-22:04:24.696|10=140|
-const CHECKSUM_SIZE : usize = 7; // 10=012\u{1}
+const CHECKSUM_SIZE : usize = 7; // = 10=012\u{1}
 named!(raw_frame<RawFixFrame>,
   do_parse!(
               tag!(b"8=") >>
@@ -253,20 +233,7 @@ fn to_u32_2(s: &str) -> u32 {
 fn buf_to_u32_2(s: &[u8]) -> u32 {
     to_u32_2(to_string_2(s))
 }
-// #[inline(always)]
-// fn buf_to_i32_2(s: &[u8]) -> i32 {
-//     to_i32_2(to_string_2(s))
-// }
-#[inline(always)]
-// pub required for benchmark code
-pub fn timestamp_val(buffer: &[u8]) -> Option<DateTime<Utc>>  {
-    match timestamp(buffer) {
-        IResult::Done(_, dt) => {
-            Some( dt )
-        },
-        _ => return None
-    }
-}
+
 
 /// Just ensures the stream has enough bytes, doesnt consume anything
 fn ensure_size(i:&[u8], len: usize) -> IResult<&[u8], &[u8]>{
@@ -289,13 +256,6 @@ mod tests {
     fn parse_1() {
         let res = parse(b"20170627-14:23:04.690 : 8=FIX.4.4\x019=57\x0135=0\x0134=3\x0149=RCLRA310\x0152=20170627-14:24:14.804\x0156=OE103C\x0110=082\x01\n");
         println!("parse_1 {:?}", res);
-    }
-
-    #[test]
-    fn timestamp_parsing() {
-        let res = timestamp( b"20170627-14:23:04.690 : 8=FIX.4.4\x019=98" ) ;
-        // println!("timestamp_parsing {:?}", res);
-        assert_eq!(res, IResult::Done(&b" : 8=FIX.4.4\x019=98"[..], Utc.ymd(2017, 06, 27).and_hms_milli(14, 23, 4, 690)));
     }
 
     #[test]

@@ -141,3 +141,38 @@ fn test_message_persistence_and_query() {
     assert_eq!(&test_req.to_string(), &messages[1].to_string());
     assert_eq!(&hb_req.to_string(),   &messages[2].to_string());
 }
+
+#[test]
+fn test_message_persistence_and_query_with_range() {
+    let store_dir = "./temptest/store5";
+
+    FSMessageStore::delete_files( "fix.4.2_target_sender", store_dir ); // <- clean slate
+
+    let cfg = FixSessionConfig::new( "123", "sender", "target", "hostname",
+                                     1234, 30, "./temptest/logs", store_dir,
+                                     FixDictionary::Fix42 );
+
+    let mut store = FSMessageStore::new ( &cfg ).expect("store created");
+    let logon = FixFrame::new(store.incr_sender_seq_num().unwrap(), "sender", "target", "FIX.4.2", FixMessage::Logon(Box::new(LogonFields {
+        encrypt_method: FieldEncryptMethodEnum::None,
+        heart_bt_int: 60,
+        reset_seq_num_flag: Some(true),
+        .. Default::default()
+    })));
+    let test_req = FixFrame::new(store.incr_sender_seq_num().unwrap(), "sender", "target", "FIX.4.2", FixMessage::TestRequest(Box::new(TestRequestFields {
+        test_req_id: "TEST".to_owned(),
+    })));
+    let hb_req = FixFrame::new(store.incr_sender_seq_num().unwrap(), "sender", "target", "FIX.4.2", FixMessage::Heartbeat(Box::new(HeartbeatFields {
+        test_req_id: Some("TEST@".to_owned())
+    })));
+
+    store.sent( &logon );
+    store.sent( &test_req );
+    store.sent( &hb_req );
+
+    let messages = store.query(1, 2).expect("expecting messages");
+    assert_eq!(messages.len(), 2);
+
+    assert_eq!(&logon.to_string(),    &messages[0].to_string());
+    assert_eq!(&test_req.to_string(), &messages[1].to_string());
+}

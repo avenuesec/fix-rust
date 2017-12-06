@@ -13,19 +13,6 @@ use fix::frame::{FixFrame};
 use fix::fixmessagegen::*;
 
 
-fn timestamp_parse_utc_datetime_from_str(bench: &mut Bencher) {
-    bench.iter(|| {
-        // (0..1000).fold(0, |x, y| x + y)
-        Utc.datetime_from_str("20170627-14:24:14.804", "%Y%m%d-%H:%M:%S%.3f").unwrap()
-    })
-}
-
-fn timestamp_parse_combinator(bench: &mut Bencher) {
-    bench.iter(|| {
-        frame::timestamp_val(b"20170627-14:24:14.804")
-    });
-}
-
 fn new_order_single_parse(bench: &mut Bencher) {
     let line = "8=FIX.4.2|9=123|35=D|34=479|49=OMS|52=20170809-11:48:59.413|56=SING|11=1234567|1=1|21=2|55=GOOGL|54=1|60=20170809-11:48:59.413|38=100|40=2|10=029|".replace("|", "\x01");
     let b = line.as_bytes();
@@ -58,8 +45,8 @@ fn heartbeat_message_build(bench: &mut Bencher) {
         header: FixHeader {
             sending_time: UtcDateTime::new(Utc.ymd(2017, 08, 09).and_hms_milli(11, 48, 59, 413)),
             msg_seq_num: 479,
-            sender_comp_id: "XPOMS".to_string(),
-            target_comp_id: "CLEAR".to_string(),
+            sender_comp_id: "OMS".to_string(),
+            target_comp_id: "SING".to_string(),
             msg_type: FieldMsgTypeEnum::Heartbeat,
             .. Default::default()
         },
@@ -75,5 +62,5 @@ fn heartbeat_message_build(bench: &mut Bencher) {
     });
 }
 
-benchmark_group!(benches, timestamp_parse_combinator, timestamp_parse_utc_datetime_from_str, heartbeat_message_parse, logon_message_parse, new_order_single_parse, heartbeat_message_build);
+benchmark_group!(benches, heartbeat_message_parse, logon_message_parse, new_order_single_parse, heartbeat_message_build);
 benchmark_main!(benches);
