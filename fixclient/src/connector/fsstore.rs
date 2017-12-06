@@ -20,7 +20,7 @@ pub struct FSMessageStore {
     messages_pos: usize,
     headers: File,
     session: File,
-    offsets_map: HashMap<u32, (usize, usize)>,
+    offsets_map: HashMap<i32, (usize, usize)>,
 
     session_creation: DateTime<Utc>,
 
@@ -86,7 +86,7 @@ impl FSMessageStore {
         Ok(store)
     }
 
-    fn restore_seqnums(path : &Path) -> io::Result<(u32, u32)> {
+    fn restore_seqnums(path : &Path) -> io::Result<(i32, i32)> {
         if !path.exists() {
             return Ok( ( 1, 1 ) ) // default
         }
@@ -96,8 +96,8 @@ impl FSMessageStore {
         file.read_to_string(&mut buffer)?;
         drop(file);
         if let Some(index) = buffer.find(" : ") {
-            let sender_seq = u32::from_str_radix( &buffer[ ..index ]      , 10 ).unwrap();
-            let target_seq = u32::from_str_radix( &buffer[ (index + 3).. ], 10 ).unwrap();
+            let sender_seq = i32::from_str_radix( &buffer[ ..index ]      , 10 ).unwrap();
+            let target_seq = i32::from_str_radix( &buffer[ (index + 3).. ], 10 ).unwrap();
 
             Ok ( (sender_seq, target_seq) )
         } else {
@@ -105,7 +105,7 @@ impl FSMessageStore {
         }
     }
 
-    fn restore_offsets(path : &Path) -> io::Result<HashMap<u32, (usize, usize)>> {
+    fn restore_offsets(path : &Path) -> io::Result<HashMap<i32, (usize, usize)>> {
         let mut map = HashMap::new();
 
         if path.exists() {
@@ -116,7 +116,7 @@ impl FSMessageStore {
             for line in buf.split(' ') {
                 if line == "" { continue };
 
-                let (seq, offset, len) = scanf!(line, ',', u32, usize, usize);
+                let (seq, offset, len) = scanf!(line, ',', i32, usize, usize);
                 map.insert( seq.expect("bad seq"), (offset.expect("bad offset"), len.expect("bad len")) );
             }
         }
@@ -145,10 +145,10 @@ impl FSMessageStore {
         }
     }
 
-    pub fn get_sender_seq(&self) -> u32 {
+    pub fn get_sender_seq(&self) -> i32 {
         self.state.sender_seq
     }
-    pub fn get_target_seq(&self) -> u32 {
+    pub fn get_target_seq(&self) -> i32 {
         self.state.target_seq
     }
 
@@ -173,7 +173,7 @@ impl FSMessageStore {
         self.session.flush()
     }
 
-    fn persist_message(&mut self, frame: &FixFrame) -> io::Result<(u32, usize, usize)> {
+    fn persist_message(&mut self, frame: &FixFrame) -> io::Result<(i32, usize, usize)> {
         if self.reusable_buf.len() != 0 {
             unsafe { self.reusable_buf.set_len(0); } // will this cause the buffer free its capacity?
         }
@@ -190,9 +190,9 @@ impl FSMessageStore {
         // persists message
         self.messages.write_all( &mut self.reusable_buf )?;
 
-        Ok ( (frame.seq, pos, len) )
+        Ok ( (frame.header.msg_seq_num, pos, len) )
     }
-    fn persist_message_offset(&mut self, offset: (u32, usize, usize)) -> io::Result<()> {
+    fn persist_message_offset(&mut self, offset: (i32, usize, usize)) -> io::Result<()> {
 
         let (seq, pos, len) = offset;
 
@@ -202,7 +202,7 @@ impl FSMessageStore {
         write!( &mut self.headers, "{},{},{} ", seq, pos, len)
     }
 
-    fn load_message(&mut self, seq: u32, offset: (usize, usize) ) -> io::Result<FixFrame> {
+    fn load_message(&mut self, seq: i32, offset: (usize, usize) ) -> io::Result<FixFrame> {
 
         // TODO: try cache first, then file
 
@@ -227,20 +227,19 @@ impl MessageStore for FSMessageStore {
         self.sender = Some(sender);
     }
 
-    fn incr_sender_seq_num(&mut self) -> io::Result<u32> {
+    fn incr_sender_seq_num(&mut self) -> io::Result<i32> {
         let temp = self.state.incr_sender_seq_num();
         self.persist_seqs()?;
         Ok(temp)
     }
 
-    fn incr_target_seq_num(&mut self) -> io::Result<u32> {
+    fn incr_target_seq_num(&mut self) -> io::Result<i32> {
         let temp = self.state.incr_target_seq_num();
         self.persist_seqs()?;
         Ok(temp)
     }
 
     fn sent(&mut self, frame: &FixFrame) -> io::Result<()> {
-
         let offset = self.persist_message(frame)?;
 
         self.persist_message_offset(offset);
@@ -252,7 +251,7 @@ impl MessageStore for FSMessageStore {
         Ok( () )
     }
 
-    fn query(&mut self, start: u32, end: u32) -> io::Result<Vec<FixFrame>> {
+    fn query(&mut self, start: i32, end: i32) -> io::Result<Vec<FixFrame>> {
 
         // TODO: implement a cache so we dont do this much IO
 
@@ -260,7 +259,7 @@ impl MessageStore for FSMessageStore {
             (if end == 0 {
                 self.get_sender_seq()
             } else {
-                u32::min( end, self.get_sender_seq() )
+                i32::min( end, self.get_sender_seq() )
             }) + 1;
 
         // if upper_bound < end then ResetSeqs is needed

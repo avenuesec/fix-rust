@@ -58,27 +58,27 @@ impl<F, H> UserHandlerFactory for F
 }
 
 pub struct MessageStoreState {
-    sender_seq: u32,
-    target_seq: u32,
+    sender_seq: i32,
+    target_seq: i32,
 }
 
 impl MessageStoreState {
     pub fn new() -> MessageStoreState {
         MessageStoreState::new_with(1, 1)
     }
-    pub fn new_with(sender_seq: u32, target_seq: u32) -> MessageStoreState {
+    pub fn new_with(sender_seq: i32, target_seq: i32) -> MessageStoreState {
         MessageStoreState {
             sender_seq,
             target_seq,
         }
     }
 
-    fn incr_sender_seq_num(&mut self) -> u32 {
+    fn incr_sender_seq_num(&mut self) -> i32 {
         let temp = self.sender_seq;
         self.sender_seq = self.sender_seq + 1;
         temp
     }
-    fn incr_target_seq_num(&mut self) -> u32 {
+    fn incr_target_seq_num(&mut self) -> i32 {
         let temp = self.target_seq;
         self.target_seq = self.target_seq + 1;
         temp
@@ -97,10 +97,10 @@ pub trait MessageStore {
 
     fn received(&mut self, frame: &FixFrame) -> io::Result<()>;
 
-    fn query(&mut self, begin: u32, end: u32) -> io::Result<Vec<FixFrame>>;
+    fn query(&mut self, begin: i32, end: i32) -> io::Result<Vec<FixFrame>>;
 
-    fn incr_sender_seq_num(&mut self) -> io::Result<u32>;
-    fn incr_target_seq_num(&mut self) -> io::Result<u32>;
+    fn incr_sender_seq_num(&mut self) -> io::Result<i32>;
+    fn incr_target_seq_num(&mut self) -> io::Result<i32>;
     fn reset_seqs(&mut self) -> io::Result<()>;
 
     fn get_state(&self) -> &MessageStoreState;

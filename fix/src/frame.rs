@@ -37,7 +37,7 @@ const FIX_MESSAGE_DELIMITER: char = '\u{1}';
 
 impl FixFrame {
 
-    pub fn new(seq: u32, sender: &str, target: &str, begin_str: &'static str, message: FixMessage) -> FixFrame {
+    pub fn new(seq: i32, sender: &str, target: &str, begin_str: &'static str, message: FixMessage) -> FixFrame {
         let ts = Utc::now();
         FixFrame {
             header: FixHeader {

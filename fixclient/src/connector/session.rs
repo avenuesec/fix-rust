@@ -136,15 +136,15 @@ impl <Store> SessionStateImpl <Store>
 
     /// tries to fulfill request from the other side to supply missing messages
     /// we may send them or generate a sequence reset if there's a gap
-    fn ack_resend_request(&mut self, start : u32, end : u32) {
+    fn ack_resend_request(&mut self, start : i32, end : i32) -> io::Result<()> {
         let entries = self.store.query(start, end)?;
 
         for i in 0..entries.len() {
 
             let frame = &entries[i];
-            let seq = frame.seq;
+            let seq = frame.header.msg_seq_num;
 
-            if fixmessagegen::is_admin_message( frame.message ) {
+            if is_admin_message( &frame.message ) {
                 // we dont resend admin messages
 
             } else {
@@ -153,12 +153,13 @@ impl <Store> SessionStateImpl <Store>
 
         }
 
-        let reset_flds = SequenceResetFields {
-            gap_fill_flag: Some(true),
-            new_seq_no: new_seq_start,
-        };
-        self.post_send( FixMessage::SequenceReset(Box::new(reset_flds)) );
+//        let reset_flds = SequenceResetFields {
+//            gap_fill_flag: Some(true),
+//            new_seq_no: new_seq_start,
+//        };
+//        self.post_send( FixMessage::SequenceReset(Box::new(reset_flds)) );
 
+        Ok( () )
     }
 }
 
@@ -192,12 +193,16 @@ impl <Store> SessionState for SessionStateImpl <Store> where Store : MessageStor
         let seq = self.store.incr_sender_seq_num()?;
 
         let frame = FixFrame {
-            seq,
+            header: FixHeader {
+                msg_seq_num: seq,
+                msg_type : message.msg_type(),
+                sending_time: UtcDateTime::new(Utc::now()),
+                sender_comp_id: self.config.sender_comp.to_owned(),
+                target_comp_id: self.config.target_comp.to_owned(),
+                begin_string: self.begin_string.clone(),
+                .. Default::default()
+            },
             message,
-            sending: Utc::now(),
-            sender_comp_id: self.config.sender_comp.to_owned(),
-            target_comp_id: self.config.target_comp.to_owned(),
-            begin_string: self.begin_string.clone(),
         };
         Ok ( frame )
     }
