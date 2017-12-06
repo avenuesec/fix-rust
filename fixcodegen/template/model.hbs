@@ -33,17 +33,28 @@ pub struct FixHeader {
 // size of enum = tag + size of largest message, so we box the fields
 #[derive(PartialEq,Debug,Serialize,Deserialize)]
 pub enum FixMessage { 
-    {{#each flatmessages as |msg|}}
-    // type: {{msg.msg_type}} 
-    {{msg.name}}(Box<{{msg.rust_type}}>),
+    {{~#each flatmessages as |msg|}}
+    // type: {{msg.msg_type}}
+    &{{msg.name}}(Box<{{msg.rust_type}}>),
     {{~/each}}
     // fixed, for when the parser can't figure out the message type
     UndefinedMessage,
 }
 
+impl FixMessage {
+    pub fn msg_type(&self) -> FieldMsgTypeEnum {
+        match self {
+            {{~#each msg_type as |m| }}
+            FixMessage::{{ m.message_name }}(_) => FieldMsgTypeEnum::{{capitalize m.enum_name }},      // {{m.msg_type}}
+            {{~/each }}
+            _ => unreachable!()
+        }
+    }
+}
+
 // message struct Fields
 
-{{#each flatmessages as |msg|}}
+{{~#each flatmessages as |msg|}}
 
 #[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
 pub struct {{msg.rust_type}} {
@@ -54,7 +65,7 @@ pub struct {{msg.rust_type}} {
     {{/each}}
 }
 
-{{/each}}
+{{~/each}}
 
 
 // components struct Fields
@@ -90,16 +101,12 @@ pub struct {{c.rust_type}} {
 {{/each}}
 
 
-
-
-
-
 // Fields Constants / enums
 
 {{#each fields as |f| ~}}
 const FIELD_{{upper f.name  }} : u32 = {{ f.tag }}; // {{f.fld_type}}
-{{#if f.is_enum ~}}
 
+{{#if f.is_enum }}
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum Field{{f.name }}Enum {
     {{#each f.enum_vals as |v| ~}}
@@ -144,8 +151,7 @@ impl Default for Field{{f.name }}Enum {
 }
 {{~/if}}
 {{/each}}
-// TODO impl of ToString trait for the enum. Is std::fmt::Display an alternative for less allocs?
-// TODO impl of FromStr trait for the enum. 
+
 // TODO: If type=Mulstring needs to impl trait BitOr as well
 
 #[derive(Serialize,Deserialize)]
@@ -272,8 +278,3 @@ fn to_boolconv(val: &bool) -> &'static str {
 pub struct OurParserError {
     unregonized_val : String,
 }
-
-
-
-
-

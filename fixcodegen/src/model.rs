@@ -14,6 +14,13 @@ pub struct Message {
 }
 
 #[derive(Serialize,Deserialize,Debug)]
+pub struct Message2MsgTypeEnum {
+    pub message_name: String,
+    pub enum_name: String,
+    pub msg_type : String,
+}
+
+#[derive(Serialize,Deserialize,Debug)]
 pub struct FixHeader {
     pub fields : Vec<FlatField>
 }

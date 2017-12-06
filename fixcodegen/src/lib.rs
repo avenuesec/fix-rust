@@ -71,6 +71,7 @@ impl FixCodeGen {
                 field_names.insert( f.name.clone() );
             }
         }
+        let msg_type_2_enum = reconcile_enum_with_message_types(&fix_xml, &messages);
 
         // remove fields that are kind of specially handled by code gen
         remove_fieldref( &mut header_flds, "BeginString" );
@@ -110,6 +111,7 @@ impl FixCodeGen {
         let cptns_json    = serde_json::to_value(flat_parser_comps).unwrap();
         let groups_json   = serde_json::to_value(flatgroups).unwrap();
         let header_json   = serde_json::to_value(header).unwrap();
+        let msg_type_2_enum_json = serde_json::to_value(msg_type_2_enum).unwrap();
 
         // let ioi_message = flat_parser_msgs.iter().find(|f| f.name == "IOI").unwrap();
         // println!(" {:#}", serde_json::to_value(ioi_message).unwrap() );
@@ -120,6 +122,7 @@ impl FixCodeGen {
         data.insert("components".to_string(),   cptns_json);
         data.insert("flatgroups".to_string(),   groups_json);
         data.insert("header".to_owned(),        header_json);
+        data.insert("msg_type".to_owned(),        msg_type_2_enum_json);
 
         // println!("unused fields:");
         // {
@@ -199,6 +202,35 @@ fn collect_groups<'a, T : FixComposite>(source: &'a T, groups: &mut HashSet<&'a 
             _ => {  }
         }
     }
+}
+
+/// reconcile the enum with the message types, since their names are not always the same
+fn reconcile_enum_with_message_types(xml : &Element, messages: &Vec<Message>) -> Vec<Message2MsgTypeEnum> {
+    let message_by_msg_type : HashMap<&str, &Message> = messages.iter().map(|m| (m.msg_type.as_str(), m)).collect();
+
+    let mut items = Vec::new();
+
+    let msg_type_enum = xml.get_child("fields").unwrap()
+        .children
+        .iter()
+        .find(|e| e.attributes.get("name").unwrap() == "MsgType" )
+        .unwrap();
+
+    for c in &msg_type_enum.children {
+        let msg_type_val = c.attributes.get("enum").expect( &format!("enum attr not found at {:?}", c) );
+        let enum_name    = c.attributes.get("description").expect( &format!("description attr not found at {:?}", c) );
+
+        let matchin_message = message_by_msg_type.get( msg_type_val.as_str() );
+        if matchin_message.is_none() { continue };
+
+        items.push( Message2MsgTypeEnum {
+            message_name: matchin_message.unwrap().name.clone(),
+            enum_name: enum_name.clone(),
+            msg_type: msg_type_val.clone(),
+        } );
+    }
+
+    items
 }
 
 fn build_flat_parser_component(c: &FixComponent, 

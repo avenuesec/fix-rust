@@ -56,7 +56,6 @@ pub struct FixHeader {
 // size of enum = tag + size of largest message, so we box the fields
 #[derive(PartialEq,Debug,Serialize,Deserialize)]
 pub enum FixMessage {
-
     // type: 0
     Heartbeat(Box<HeartbeatFields>),
     // type: 1
@@ -69,8 +68,6 @@ pub enum FixMessage {
     SequenceReset(Box<SequenceResetFields>),
     // type: 5
     Logout(Box<LogoutFields>),
-    // type: 6
-    IOI(Box<IOIFields>),
     // type: 7
     Advertisement(Box<AdvertisementFields>),
     // type: 8
@@ -79,10 +76,6 @@ pub enum FixMessage {
     OrderCancelReject(Box<OrderCancelRejectFields>),
     // type: A
     Logon(Box<LogonFields>),
-    // type: B
-    News(Box<NewsFields>),
-    // type: C
-    Email(Box<EmailFields>),
     // type: D
     NewOrderSingle(Box<NewOrderSingleFields>),
     // type: E
@@ -93,69 +86,34 @@ pub enum FixMessage {
     OrderCancelReplaceRequest(Box<OrderCancelReplaceRequestFields>),
     // type: H
     OrderStatusRequest(Box<OrderStatusRequestFields>),
-    // type: J
-    Allocation(Box<AllocationFields>),
-    // type: K
-    ListCancelRequest(Box<ListCancelRequestFields>),
-    // type: L
-    ListExecute(Box<ListExecuteFields>),
-    // type: M
-    ListStatusRequest(Box<ListStatusRequestFields>),
-    // type: N
-    ListStatus(Box<ListStatusFields>),
-    // type: P
-    AllocationInstructionAck(Box<AllocationInstructionAckFields>),
-    // type: Q
-    DontKnowTrade(Box<DontKnowTradeFields>),
-    // type: R
-    QuoteRequest(Box<QuoteRequestFields>),
-    // type: S
-    Quote(Box<QuoteFields>),
-    // type: T
-    SettlementInstructions(Box<SettlementInstructionsFields>),
-    // type: V
-    MarketDataRequest(Box<MarketDataRequestFields>),
-    // type: W
-    MarketDataSnapshotFullRefresh(Box<MarketDataSnapshotFullRefreshFields>),
-    // type: X
-    MarketDataIncrementalRefresh(Box<MarketDataIncrementalRefreshFields>),
-    // type: Y
-    MarketDataRequestReject(Box<MarketDataRequestRejectFields>),
-    // type: Z
-    QuoteCancel(Box<QuoteCancelFields>),
-    // type: a
-    QuoteStatusRequest(Box<QuoteStatusRequestFields>),
-    // type: b
-    QuoteAcknowledgement(Box<QuoteAcknowledgementFields>),
-    // type: c
-    SecurityDefinitionRequest(Box<SecurityDefinitionRequestFields>),
-    // type: d
-    SecurityDefinition(Box<SecurityDefinitionFields>),
-    // type: e
-    SecurityStatusRequest(Box<SecurityStatusRequestFields>),
-    // type: f
-    SecurityStatus(Box<SecurityStatusFields>),
-    // type: g
-    TradingSessionStatusRequest(Box<TradingSessionStatusRequestFields>),
-    // type: h
-    TradingSessionStatus(Box<TradingSessionStatusFields>),
-    // type: i
-    MassQuote(Box<MassQuoteFields>),
-    // type: j
-    BusinessMessageReject(Box<BusinessMessageRejectFields>),
-    // type: k
-    BidRequest(Box<BidRequestFields>),
-    // type: l
-    BidResponse(Box<BidResponseFields>),
-    // type: m
-    ListStrikePrice(Box<ListStrikePriceFields>),
     // fixed, for when the parser can't figure out the message type
     UndefinedMessage,
 }
 
+impl FixMessage {
+    pub fn msg_type(&self) -> FieldMsgTypeEnum {
+        match self {
+            &FixMessage::Heartbeat(_) => FieldMsgTypeEnum::Heartbeat,      // 0
+            &FixMessage::TestRequest(_) => FieldMsgTypeEnum::TestRequest,      // 1
+            &FixMessage::ResendRequest(_) => FieldMsgTypeEnum::ResendRequest,      // 2
+            &FixMessage::Reject(_) => FieldMsgTypeEnum::Reject,      // 3
+            &FixMessage::SequenceReset(_) => FieldMsgTypeEnum::SequenceReset,      // 4
+            &FixMessage::Logout(_) => FieldMsgTypeEnum::Logout,      // 5
+            &FixMessage::Advertisement(_) => FieldMsgTypeEnum::Advertisement,      // 7
+            &FixMessage::ExecutionReport(_) => FieldMsgTypeEnum::ExecutionReport,      // 8
+            &FixMessage::OrderCancelReject(_) => FieldMsgTypeEnum::OrderCancelReject,      // 9
+            &FixMessage::Logon(_) => FieldMsgTypeEnum::Logon,      // A
+            &FixMessage::NewOrderSingle(_) => FieldMsgTypeEnum::OrderSingle,      // D
+            &FixMessage::NewOrderList(_) => FieldMsgTypeEnum::OrderList,      // E
+            &FixMessage::OrderCancelRequest(_) => FieldMsgTypeEnum::OrderCancelRequest,      // F
+            &FixMessage::OrderCancelReplaceRequest(_) => FieldMsgTypeEnum::OrderCancelReplaceRequest,      // G
+            &FixMessage::OrderStatusRequest(_) => FieldMsgTypeEnum::OrderStatusRequest,      // H
+            _ => unreachable!()
+        }
+    }
+}
+
 // message struct Fields
-
-
 
 #[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
 pub struct HeartbeatFields {
@@ -163,15 +121,11 @@ pub struct HeartbeatFields {
 
 }
 
-
-
 #[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
 pub struct TestRequestFields {
     pub test_req_id : String, // FIELD_TESTREQID 112
 
 }
-
-
 
 #[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
 pub struct ResendRequestFields {
@@ -179,8 +133,6 @@ pub struct ResendRequestFields {
     pub end_seq_no : i32, // FIELD_ENDSEQNO 16
 
 }
-
-
 
 #[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
 pub struct RejectFields {
@@ -194,16 +146,12 @@ pub struct RejectFields {
 
 }
 
-
-
 #[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
 pub struct SequenceResetFields {
     pub gap_fill_flag : Option<bool>, // FIELD_GAPFILLFLAG 123
     pub new_seq_no : i32, // FIELD_NEWSEQNO 36
 
 }
-
-
 
 #[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
 pub struct LogoutFields {
@@ -212,53 +160,6 @@ pub struct LogoutFields {
     pub encoded_text : Option<String>, // FIELD_ENCODEDTEXT 355
 
 }
-
-
-
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
-pub struct IOIFields {
-    pub ioiid : String, // FIELD_IOIID 23
-    pub ioitrans_type : FieldIOITransTypeEnum, // FIELD_IOITRANSTYPE 28
-    pub ioiref_id : Option<String>, // FIELD_IOIREFID 26
-    pub symbol : String, // FIELD_SYMBOL 55
-    pub symbol_sfx : Option<String>, // FIELD_SYMBOLSFX 65
-    pub security_id : Option<String>, // FIELD_SECURITYID 48
-    pub idsource : Option<FieldIDSourceEnum>, // FIELD_IDSOURCE 22
-    pub security_type : Option<FieldSecurityTypeEnum>, // FIELD_SECURITYTYPE 167
-    pub maturity_month_year : Option<UtcDate>, // FIELD_MATURITYMONTHYEAR 200
-    pub maturity_day : Option<i32>, // FIELD_MATURITYDAY 205
-    pub put_or_call : Option<FieldPutOrCallEnum>, // FIELD_PUTORCALL 201
-    pub strike_price : Option<f32>, // FIELD_STRIKEPRICE 202
-    pub opt_attribute : Option<char>, // FIELD_OPTATTRIBUTE 206
-    pub contract_multiplier : Option<f32>, // FIELD_CONTRACTMULTIPLIER 231
-    pub coupon_rate : Option<f32>, // FIELD_COUPONRATE 223
-    pub security_exchange : Option<String>, // FIELD_SECURITYEXCHANGE 207
-    pub issuer : Option<String>, // FIELD_ISSUER 106
-    pub encoded_issuer_len : Option<usize>, // FIELD_ENCODEDISSUERLEN 348
-    pub encoded_issuer : Option<String>, // FIELD_ENCODEDISSUER 349
-    pub security_desc : Option<String>, // FIELD_SECURITYDESC 107
-    pub encoded_security_desc_len : Option<usize>, // FIELD_ENCODEDSECURITYDESCLEN 350
-    pub encoded_security_desc : Option<String>, // FIELD_ENCODEDSECURITYDESC 351
-    pub side : FieldSideEnum, // FIELD_SIDE 54
-    pub ioishares : FieldIOISharesEnum, // FIELD_IOISHARES 27
-    pub price : Option<f32>, // FIELD_PRICE 44
-    pub currency : Option<f32>, // FIELD_CURRENCY 15
-    pub valid_until_time : Option<UtcDateTime>, // FIELD_VALIDUNTILTIME 62
-    pub ioiqlty_ind : Option<FieldIOIQltyIndEnum>, // FIELD_IOIQLTYIND 25
-    pub ioinatural_flag : Option<bool>, // FIELD_IOINATURALFLAG 130
-    pub no_ioiqualifiers : Option<Vec<NoIOIQualifiers9Fields>>, // FIELD_NOIOIQUALIFIERS 0
-    pub text : Option<String>, // FIELD_TEXT 58
-    pub encoded_text_len : Option<usize>, // FIELD_ENCODEDTEXTLEN 354
-    pub encoded_text : Option<String>, // FIELD_ENCODEDTEXT 355
-    pub transact_time : Option<UtcDateTime>, // FIELD_TRANSACTTIME 60
-    pub urllink : Option<String>, // FIELD_URLLINK 149
-    pub no_routing_ids : Option<Vec<NoRoutingIDs27Fields>>, // FIELD_NOROUTINGIDS 0
-    pub spread_to_benchmark : Option<f32>, // FIELD_SPREADTOBENCHMARK 218
-    pub benchmark : Option<FieldBenchmarkEnum>, // FIELD_BENCHMARK 219
-
-}
-
-
 
 #[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
 pub struct AdvertisementFields {
@@ -299,8 +200,6 @@ pub struct AdvertisementFields {
 
 }
 
-
-
 #[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
 pub struct ExecutionReportFields {
     pub order_id : String, // FIELD_ORDERID 37
@@ -309,7 +208,7 @@ pub struct ExecutionReportFields {
     pub orig_cl_ord_id : Option<String>, // FIELD_ORIGCLORDID 41
     pub client_id : Option<String>, // FIELD_CLIENTID 109
     pub exec_broker : Option<String>, // FIELD_EXECBROKER 76
-    pub no_contra_brokers : Option<Vec<NoContraBrokers7Fields>>, // FIELD_NOCONTRABROKERS 0
+    pub no_contra_brokers : Option<Vec<NoContraBrokers2Fields>>, // FIELD_NOCONTRABROKERS 0
     pub list_id : Option<String>, // FIELD_LISTID 66
     pub exec_id : String, // FIELD_EXECID 17
     pub exec_trans_type : FieldExecTransTypeEnum, // FIELD_EXECTRANSTYPE 20
@@ -398,8 +297,6 @@ pub struct ExecutionReportFields {
 
 }
 
-
-
 #[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
 pub struct OrderCancelRejectFields {
     pub order_id : String, // FIELD_ORDERID 37
@@ -420,8 +317,6 @@ pub struct OrderCancelRejectFields {
 
 }
 
-
-
 #[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
 pub struct LogonFields {
     pub encrypt_method : FieldEncryptMethodEnum, // FIELD_ENCRYPTMETHOD 98
@@ -430,49 +325,9 @@ pub struct LogonFields {
     pub raw_data : Option<String>, // FIELD_RAWDATA 96
     pub reset_seq_num_flag : Option<bool>, // FIELD_RESETSEQNUMFLAG 141
     pub max_message_size : Option<i32>, // FIELD_MAXMESSAGESIZE 383
-    pub no_msg_types : Option<Vec<NoMsgTypes14Fields>>, // FIELD_NOMSGTYPES 0
+    pub no_msg_types : Option<Vec<NoMsgTypes3Fields>>, // FIELD_NOMSGTYPES 0
 
 }
-
-
-
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
-pub struct NewsFields {
-    pub orig_time : Option<UtcDateTime>, // FIELD_ORIGTIME 42
-    pub urgency : Option<FieldUrgencyEnum>, // FIELD_URGENCY 61
-    pub headline : String, // FIELD_HEADLINE 148
-    pub encoded_headline_len : Option<usize>, // FIELD_ENCODEDHEADLINELEN 358
-    pub encoded_headline : Option<String>, // FIELD_ENCODEDHEADLINE 359
-    pub no_routing_ids : Option<Vec<NoRoutingIDs27Fields>>, // FIELD_NOROUTINGIDS 0
-    pub no_related_sym : Option<Vec<NoRelatedSym25Fields>>, // FIELD_NORELATEDSYM 0
-    pub lines_of_text : Vec<LinesOfText1Fields>, // FIELD_LINESOFTEXT 0
-    pub urllink : Option<String>, // FIELD_URLLINK 149
-    pub raw_data_length : Option<usize>, // FIELD_RAWDATALENGTH 95
-    pub raw_data : Option<String>, // FIELD_RAWDATA 96
-
-}
-
-
-
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
-pub struct EmailFields {
-    pub email_thread_id : String, // FIELD_EMAILTHREADID 164
-    pub email_type : FieldEmailTypeEnum, // FIELD_EMAILTYPE 94
-    pub orig_time : Option<UtcDateTime>, // FIELD_ORIGTIME 42
-    pub subject : String, // FIELD_SUBJECT 147
-    pub encoded_subject_len : Option<usize>, // FIELD_ENCODEDSUBJECTLEN 356
-    pub encoded_subject : Option<String>, // FIELD_ENCODEDSUBJECT 357
-    pub no_routing_ids : Option<Vec<NoRoutingIDs27Fields>>, // FIELD_NOROUTINGIDS 0
-    pub no_related_sym : Option<Vec<NoRelatedSym25Fields>>, // FIELD_NORELATEDSYM 0
-    pub order_id : Option<String>, // FIELD_ORDERID 37
-    pub cl_ord_id : Option<String>, // FIELD_CLORDID 11
-    pub lines_of_text : Vec<LinesOfText1Fields>, // FIELD_LINESOFTEXT 0
-    pub raw_data_length : Option<usize>, // FIELD_RAWDATALENGTH 95
-    pub raw_data : Option<String>, // FIELD_RAWDATA 96
-
-}
-
-
 
 #[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
 pub struct NewOrderSingleFields {
@@ -480,7 +335,7 @@ pub struct NewOrderSingleFields {
     pub client_id : Option<String>, // FIELD_CLIENTID 109
     pub exec_broker : Option<String>, // FIELD_EXECBROKER 76
     pub account : Option<String>, // FIELD_ACCOUNT 1
-    pub no_allocs : Option<Vec<NoAllocs2Fields>>, // FIELD_NOALLOCS 0
+    pub no_allocs : Option<Vec<NoAllocs1Fields>>, // FIELD_NOALLOCS 0
     pub settlmnt_typ : Option<FieldSettlmntTypEnum>, // FIELD_SETTLMNTTYP 63
     pub fut_sett_date : Option<UtcDateTime>, // FIELD_FUTSETTDATE 64
     pub handl_inst : FieldHandlInstEnum, // FIELD_HANDLINST 21
@@ -488,7 +343,7 @@ pub struct NewOrderSingleFields {
     pub min_qty : Option<f32>, // FIELD_MINQTY 110
     pub max_floor : Option<f32>, // FIELD_MAXFLOOR 111
     pub ex_destination : Option<String>, // FIELD_EXDESTINATION 100
-    pub no_trading_sessions : Option<Vec<NoTradingSessions29Fields>>, // FIELD_NOTRADINGSESSIONS 0
+    pub no_trading_sessions : Option<Vec<NoTradingSessions5Fields>>, // FIELD_NOTRADINGSESSIONS 0
     pub process_code : Option<FieldProcessCodeEnum>, // FIELD_PROCESSCODE 81
     pub symbol : String, // FIELD_SYMBOL 55
     pub symbol_sfx : Option<String>, // FIELD_SYMBOLSFX 65
@@ -550,8 +405,6 @@ pub struct NewOrderSingleFields {
 
 }
 
-
-
 #[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
 pub struct NewOrderListFields {
     pub list_id : String, // FIELD_LISTID 66
@@ -565,11 +418,9 @@ pub struct NewOrderListFields {
     pub encoded_list_exec_inst_len : Option<usize>, // FIELD_ENCODEDLISTEXECINSTLEN 352
     pub encoded_list_exec_inst : Option<String>, // FIELD_ENCODEDLISTEXECINST 353
     pub tot_no_orders : i32, // FIELD_TOTNOORDERS 68
-    pub no_orders : Vec<NoOrders16Fields>, // FIELD_NOORDERS 0
+    pub no_orders : Vec<NoOrders4Fields>, // FIELD_NOORDERS 0
 
 }
-
-
 
 #[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
 pub struct OrderCancelRequestFields {
@@ -611,8 +462,6 @@ pub struct OrderCancelRequestFields {
 
 }
 
-
-
 #[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
 pub struct OrderCancelReplaceRequestFields {
     pub order_id : Option<String>, // FIELD_ORDERID 37
@@ -622,7 +471,7 @@ pub struct OrderCancelReplaceRequestFields {
     pub cl_ord_id : String, // FIELD_CLORDID 11
     pub list_id : Option<String>, // FIELD_LISTID 66
     pub account : Option<String>, // FIELD_ACCOUNT 1
-    pub no_allocs : Option<Vec<NoAllocs2Fields>>, // FIELD_NOALLOCS 0
+    pub no_allocs : Option<Vec<NoAllocs1Fields>>, // FIELD_NOALLOCS 0
     pub settlmnt_typ : Option<FieldSettlmntTypEnum>, // FIELD_SETTLMNTTYP 63
     pub fut_sett_date : Option<UtcDateTime>, // FIELD_FUTSETTDATE 64
     pub handl_inst : FieldHandlInstEnum, // FIELD_HANDLINST 21
@@ -630,7 +479,7 @@ pub struct OrderCancelReplaceRequestFields {
     pub min_qty : Option<f32>, // FIELD_MINQTY 110
     pub max_floor : Option<f32>, // FIELD_MAXFLOOR 111
     pub ex_destination : Option<String>, // FIELD_EXDESTINATION 100
-    pub no_trading_sessions : Option<Vec<NoTradingSessions29Fields>>, // FIELD_NOTRADINGSESSIONS 0
+    pub no_trading_sessions : Option<Vec<NoTradingSessions5Fields>>, // FIELD_NOTRADINGSESSIONS 0
     pub symbol : String, // FIELD_SYMBOL 55
     pub symbol_sfx : Option<String>, // FIELD_SYMBOLSFX 65
     pub security_id : Option<String>, // FIELD_SECURITYID 48
@@ -688,8 +537,6 @@ pub struct OrderCancelReplaceRequestFields {
 
 }
 
-
-
 #[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
 pub struct OrderStatusRequestFields {
     pub order_id : Option<String>, // FIELD_ORDERID 37
@@ -721,650 +568,6 @@ pub struct OrderStatusRequestFields {
 }
 
 
-
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
-pub struct AllocationFields {
-    pub alloc_id : String, // FIELD_ALLOCID 70
-    pub alloc_trans_type : FieldAllocTransTypeEnum, // FIELD_ALLOCTRANSTYPE 71
-    pub ref_alloc_id : Option<String>, // FIELD_REFALLOCID 72
-    pub alloc_link_id : Option<String>, // FIELD_ALLOCLINKID 196
-    pub alloc_link_type : Option<FieldAllocLinkTypeEnum>, // FIELD_ALLOCLINKTYPE 197
-    pub no_orders : Option<Vec<NoOrders17Fields>>, // FIELD_NOORDERS 0
-    pub no_execs : Option<Vec<NoExecs8Fields>>, // FIELD_NOEXECS 0
-    pub side : FieldSideEnum, // FIELD_SIDE 54
-    pub symbol : String, // FIELD_SYMBOL 55
-    pub symbol_sfx : Option<String>, // FIELD_SYMBOLSFX 65
-    pub security_id : Option<String>, // FIELD_SECURITYID 48
-    pub idsource : Option<FieldIDSourceEnum>, // FIELD_IDSOURCE 22
-    pub security_type : Option<FieldSecurityTypeEnum>, // FIELD_SECURITYTYPE 167
-    pub maturity_month_year : Option<UtcDate>, // FIELD_MATURITYMONTHYEAR 200
-    pub maturity_day : Option<i32>, // FIELD_MATURITYDAY 205
-    pub put_or_call : Option<FieldPutOrCallEnum>, // FIELD_PUTORCALL 201
-    pub strike_price : Option<f32>, // FIELD_STRIKEPRICE 202
-    pub opt_attribute : Option<char>, // FIELD_OPTATTRIBUTE 206
-    pub contract_multiplier : Option<f32>, // FIELD_CONTRACTMULTIPLIER 231
-    pub coupon_rate : Option<f32>, // FIELD_COUPONRATE 223
-    pub security_exchange : Option<String>, // FIELD_SECURITYEXCHANGE 207
-    pub issuer : Option<String>, // FIELD_ISSUER 106
-    pub encoded_issuer_len : Option<usize>, // FIELD_ENCODEDISSUERLEN 348
-    pub encoded_issuer : Option<String>, // FIELD_ENCODEDISSUER 349
-    pub security_desc : Option<String>, // FIELD_SECURITYDESC 107
-    pub encoded_security_desc_len : Option<usize>, // FIELD_ENCODEDSECURITYDESCLEN 350
-    pub encoded_security_desc : Option<String>, // FIELD_ENCODEDSECURITYDESC 351
-    pub shares : f32, // FIELD_SHARES 53
-    pub last_mkt : Option<String>, // FIELD_LASTMKT 30
-    pub trading_session_id : Option<String>, // FIELD_TRADINGSESSIONID 336
-    pub avg_px : f32, // FIELD_AVGPX 6
-    pub currency : Option<f32>, // FIELD_CURRENCY 15
-    pub avg_prx_precision : Option<i32>, // FIELD_AVGPRXPRECISION 74
-    pub trade_date : UtcDateTime, // FIELD_TRADEDATE 75
-    pub transact_time : Option<UtcDateTime>, // FIELD_TRANSACTTIME 60
-    pub settlmnt_typ : Option<FieldSettlmntTypEnum>, // FIELD_SETTLMNTTYP 63
-    pub fut_sett_date : Option<UtcDateTime>, // FIELD_FUTSETTDATE 64
-    pub gross_trade_amt : Option<f32>, // FIELD_GROSSTRADEAMT 381
-    pub net_money : Option<f32>, // FIELD_NETMONEY 118
-    pub open_close : Option<FieldOpenCloseEnum>, // FIELD_OPENCLOSE 77
-    pub text : Option<String>, // FIELD_TEXT 58
-    pub encoded_text_len : Option<usize>, // FIELD_ENCODEDTEXTLEN 354
-    pub encoded_text : Option<String>, // FIELD_ENCODEDTEXT 355
-    pub num_days_interest : Option<i32>, // FIELD_NUMDAYSINTEREST 157
-    pub accrued_interest_rate : Option<f32>, // FIELD_ACCRUEDINTERESTRATE 158
-    pub no_allocs : Option<Vec<NoAllocs3Fields>>, // FIELD_NOALLOCS 0
-
-}
-
-
-
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
-pub struct ListCancelRequestFields {
-    pub list_id : String, // FIELD_LISTID 66
-    pub transact_time : UtcDateTime, // FIELD_TRANSACTTIME 60
-    pub text : Option<String>, // FIELD_TEXT 58
-    pub encoded_text_len : Option<usize>, // FIELD_ENCODEDTEXTLEN 354
-    pub encoded_text : Option<String>, // FIELD_ENCODEDTEXT 355
-
-}
-
-
-
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
-pub struct ListExecuteFields {
-    pub list_id : String, // FIELD_LISTID 66
-    pub client_bid_id : Option<String>, // FIELD_CLIENTBIDID 391
-    pub bid_id : Option<String>, // FIELD_BIDID 390
-    pub transact_time : UtcDateTime, // FIELD_TRANSACTTIME 60
-    pub text : Option<String>, // FIELD_TEXT 58
-    pub encoded_text_len : Option<usize>, // FIELD_ENCODEDTEXTLEN 354
-    pub encoded_text : Option<String>, // FIELD_ENCODEDTEXT 355
-
-}
-
-
-
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
-pub struct ListStatusRequestFields {
-    pub list_id : String, // FIELD_LISTID 66
-    pub text : Option<String>, // FIELD_TEXT 58
-    pub encoded_text_len : Option<usize>, // FIELD_ENCODEDTEXTLEN 354
-    pub encoded_text : Option<String>, // FIELD_ENCODEDTEXT 355
-
-}
-
-
-
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
-pub struct ListStatusFields {
-    pub list_id : String, // FIELD_LISTID 66
-    pub list_status_type : i32, // FIELD_LISTSTATUSTYPE 429
-    pub no_rpts : i32, // FIELD_NORPTS 82
-    pub list_order_status : i32, // FIELD_LISTORDERSTATUS 431
-    pub rpt_seq : i32, // FIELD_RPTSEQ 83
-    pub list_status_text : Option<String>, // FIELD_LISTSTATUSTEXT 444
-    pub encoded_list_status_text_len : Option<usize>, // FIELD_ENCODEDLISTSTATUSTEXTLEN 445
-    pub encoded_list_status_text : Option<String>, // FIELD_ENCODEDLISTSTATUSTEXT 446
-    pub transact_time : Option<UtcDateTime>, // FIELD_TRANSACTTIME 60
-    pub tot_no_orders : i32, // FIELD_TOTNOORDERS 68
-    pub no_orders : Vec<NoOrders15Fields>, // FIELD_NOORDERS 0
-
-}
-
-
-
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
-pub struct AllocationInstructionAckFields {
-    pub client_id : Option<String>, // FIELD_CLIENTID 109
-    pub exec_broker : Option<String>, // FIELD_EXECBROKER 76
-    pub alloc_id : String, // FIELD_ALLOCID 70
-    pub trade_date : UtcDateTime, // FIELD_TRADEDATE 75
-    pub transact_time : Option<UtcDateTime>, // FIELD_TRANSACTTIME 60
-    pub alloc_status : FieldAllocStatusEnum, // FIELD_ALLOCSTATUS 87
-    pub alloc_rej_code : Option<FieldAllocRejCodeEnum>, // FIELD_ALLOCREJCODE 88
-    pub text : Option<String>, // FIELD_TEXT 58
-    pub encoded_text_len : Option<usize>, // FIELD_ENCODEDTEXTLEN 354
-    pub encoded_text : Option<String>, // FIELD_ENCODEDTEXT 355
-
-}
-
-
-
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
-pub struct DontKnowTradeFields {
-    pub order_id : String, // FIELD_ORDERID 37
-    pub exec_id : String, // FIELD_EXECID 17
-    pub dkreason : FieldDKReasonEnum, // FIELD_DKREASON 127
-    pub symbol : String, // FIELD_SYMBOL 55
-    pub symbol_sfx : Option<String>, // FIELD_SYMBOLSFX 65
-    pub security_id : Option<String>, // FIELD_SECURITYID 48
-    pub idsource : Option<FieldIDSourceEnum>, // FIELD_IDSOURCE 22
-    pub security_type : Option<FieldSecurityTypeEnum>, // FIELD_SECURITYTYPE 167
-    pub maturity_month_year : Option<UtcDate>, // FIELD_MATURITYMONTHYEAR 200
-    pub maturity_day : Option<i32>, // FIELD_MATURITYDAY 205
-    pub put_or_call : Option<FieldPutOrCallEnum>, // FIELD_PUTORCALL 201
-    pub strike_price : Option<f32>, // FIELD_STRIKEPRICE 202
-    pub opt_attribute : Option<char>, // FIELD_OPTATTRIBUTE 206
-    pub contract_multiplier : Option<f32>, // FIELD_CONTRACTMULTIPLIER 231
-    pub coupon_rate : Option<f32>, // FIELD_COUPONRATE 223
-    pub security_exchange : Option<String>, // FIELD_SECURITYEXCHANGE 207
-    pub issuer : Option<String>, // FIELD_ISSUER 106
-    pub encoded_issuer_len : Option<usize>, // FIELD_ENCODEDISSUERLEN 348
-    pub encoded_issuer : Option<String>, // FIELD_ENCODEDISSUER 349
-    pub security_desc : Option<String>, // FIELD_SECURITYDESC 107
-    pub encoded_security_desc_len : Option<usize>, // FIELD_ENCODEDSECURITYDESCLEN 350
-    pub encoded_security_desc : Option<String>, // FIELD_ENCODEDSECURITYDESC 351
-    pub side : FieldSideEnum, // FIELD_SIDE 54
-    pub order_qty : Option<f32>, // FIELD_ORDERQTY 38
-    pub cash_order_qty : Option<f32>, // FIELD_CASHORDERQTY 152
-    pub last_shares : Option<f32>, // FIELD_LASTSHARES 32
-    pub last_px : Option<f32>, // FIELD_LASTPX 31
-    pub text : Option<String>, // FIELD_TEXT 58
-    pub encoded_text_len : Option<usize>, // FIELD_ENCODEDTEXTLEN 354
-    pub encoded_text : Option<String>, // FIELD_ENCODEDTEXT 355
-
-}
-
-
-
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
-pub struct QuoteRequestFields {
-    pub quote_req_id : String, // FIELD_QUOTEREQID 131
-    pub no_related_sym : Vec<NoRelatedSym24Fields>, // FIELD_NORELATEDSYM 0
-
-}
-
-
-
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
-pub struct QuoteFields {
-    pub quote_req_id : Option<String>, // FIELD_QUOTEREQID 131
-    pub quote_id : String, // FIELD_QUOTEID 117
-    pub quote_response_level : Option<FieldQuoteResponseLevelEnum>, // FIELD_QUOTERESPONSELEVEL 301
-    pub trading_session_id : Option<String>, // FIELD_TRADINGSESSIONID 336
-    pub symbol : String, // FIELD_SYMBOL 55
-    pub symbol_sfx : Option<String>, // FIELD_SYMBOLSFX 65
-    pub security_id : Option<String>, // FIELD_SECURITYID 48
-    pub idsource : Option<FieldIDSourceEnum>, // FIELD_IDSOURCE 22
-    pub security_type : Option<FieldSecurityTypeEnum>, // FIELD_SECURITYTYPE 167
-    pub maturity_month_year : Option<UtcDate>, // FIELD_MATURITYMONTHYEAR 200
-    pub maturity_day : Option<i32>, // FIELD_MATURITYDAY 205
-    pub put_or_call : Option<FieldPutOrCallEnum>, // FIELD_PUTORCALL 201
-    pub strike_price : Option<f32>, // FIELD_STRIKEPRICE 202
-    pub opt_attribute : Option<char>, // FIELD_OPTATTRIBUTE 206
-    pub contract_multiplier : Option<f32>, // FIELD_CONTRACTMULTIPLIER 231
-    pub coupon_rate : Option<f32>, // FIELD_COUPONRATE 223
-    pub security_exchange : Option<String>, // FIELD_SECURITYEXCHANGE 207
-    pub issuer : Option<String>, // FIELD_ISSUER 106
-    pub encoded_issuer_len : Option<usize>, // FIELD_ENCODEDISSUERLEN 348
-    pub encoded_issuer : Option<String>, // FIELD_ENCODEDISSUER 349
-    pub security_desc : Option<String>, // FIELD_SECURITYDESC 107
-    pub encoded_security_desc_len : Option<usize>, // FIELD_ENCODEDSECURITYDESCLEN 350
-    pub encoded_security_desc : Option<String>, // FIELD_ENCODEDSECURITYDESC 351
-    pub bid_px : Option<f32>, // FIELD_BIDPX 132
-    pub offer_px : Option<f32>, // FIELD_OFFERPX 133
-    pub bid_size : Option<f32>, // FIELD_BIDSIZE 134
-    pub offer_size : Option<f32>, // FIELD_OFFERSIZE 135
-    pub valid_until_time : Option<UtcDateTime>, // FIELD_VALIDUNTILTIME 62
-    pub bid_spot_rate : Option<f32>, // FIELD_BIDSPOTRATE 188
-    pub offer_spot_rate : Option<f32>, // FIELD_OFFERSPOTRATE 190
-    pub bid_forward_points : Option<f32>, // FIELD_BIDFORWARDPOINTS 189
-    pub offer_forward_points : Option<f32>, // FIELD_OFFERFORWARDPOINTS 191
-    pub transact_time : Option<UtcDateTime>, // FIELD_TRANSACTTIME 60
-    pub fut_sett_date : Option<UtcDateTime>, // FIELD_FUTSETTDATE 64
-    pub ord_type : Option<FieldOrdTypeEnum>, // FIELD_ORDTYPE 40
-    pub fut_sett_date2 : Option<UtcDateTime>, // FIELD_FUTSETTDATE2 193
-    pub order_qty2 : Option<f32>, // FIELD_ORDERQTY2 192
-    pub currency : Option<f32>, // FIELD_CURRENCY 15
-
-}
-
-
-
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
-pub struct SettlementInstructionsFields {
-    pub settl_inst_id : String, // FIELD_SETTLINSTID 162
-    pub settl_inst_trans_type : FieldSettlInstTransTypeEnum, // FIELD_SETTLINSTTRANSTYPE 163
-    pub settl_inst_ref_id : String, // FIELD_SETTLINSTREFID 214
-    pub settl_inst_mode : FieldSettlInstModeEnum, // FIELD_SETTLINSTMODE 160
-    pub settl_inst_source : FieldSettlInstSourceEnum, // FIELD_SETTLINSTSOURCE 165
-    pub alloc_account : String, // FIELD_ALLOCACCOUNT 79
-    pub settl_location : Option<FieldSettlLocationEnum>, // FIELD_SETTLLOCATION 166
-    pub trade_date : Option<UtcDateTime>, // FIELD_TRADEDATE 75
-    pub alloc_id : Option<String>, // FIELD_ALLOCID 70
-    pub last_mkt : Option<String>, // FIELD_LASTMKT 30
-    pub trading_session_id : Option<String>, // FIELD_TRADINGSESSIONID 336
-    pub side : Option<FieldSideEnum>, // FIELD_SIDE 54
-    pub security_type : Option<FieldSecurityTypeEnum>, // FIELD_SECURITYTYPE 167
-    pub effective_time : Option<UtcDateTime>, // FIELD_EFFECTIVETIME 168
-    pub transact_time : UtcDateTime, // FIELD_TRANSACTTIME 60
-    pub client_id : Option<String>, // FIELD_CLIENTID 109
-    pub exec_broker : Option<String>, // FIELD_EXECBROKER 76
-    pub stand_inst_db_type : Option<FieldStandInstDbTypeEnum>, // FIELD_STANDINSTDBTYPE 169
-    pub stand_inst_db_name : Option<String>, // FIELD_STANDINSTDBNAME 170
-    pub stand_inst_db_id : Option<String>, // FIELD_STANDINSTDBID 171
-    pub settl_delivery_type : Option<i32>, // FIELD_SETTLDELIVERYTYPE 172
-    pub settl_depository_code : Option<String>, // FIELD_SETTLDEPOSITORYCODE 173
-    pub settl_brkr_code : Option<String>, // FIELD_SETTLBRKRCODE 174
-    pub settl_inst_code : Option<String>, // FIELD_SETTLINSTCODE 175
-    pub security_settl_agent_name : Option<String>, // FIELD_SECURITYSETTLAGENTNAME 176
-    pub security_settl_agent_code : Option<String>, // FIELD_SECURITYSETTLAGENTCODE 177
-    pub security_settl_agent_acct_num : Option<String>, // FIELD_SECURITYSETTLAGENTACCTNUM 178
-    pub security_settl_agent_acct_name : Option<String>, // FIELD_SECURITYSETTLAGENTACCTNAME 179
-    pub security_settl_agent_contact_name : Option<String>, // FIELD_SECURITYSETTLAGENTCONTACTNAME 180
-    pub security_settl_agent_contact_phone : Option<String>, // FIELD_SECURITYSETTLAGENTCONTACTPHONE 181
-    pub cash_settl_agent_name : Option<String>, // FIELD_CASHSETTLAGENTNAME 182
-    pub cash_settl_agent_code : Option<String>, // FIELD_CASHSETTLAGENTCODE 183
-    pub cash_settl_agent_acct_num : Option<String>, // FIELD_CASHSETTLAGENTACCTNUM 184
-    pub cash_settl_agent_acct_name : Option<String>, // FIELD_CASHSETTLAGENTACCTNAME 185
-    pub cash_settl_agent_contact_name : Option<String>, // FIELD_CASHSETTLAGENTCONTACTNAME 186
-    pub cash_settl_agent_contact_phone : Option<String>, // FIELD_CASHSETTLAGENTCONTACTPHONE 187
-
-}
-
-
-
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
-pub struct MarketDataRequestFields {
-    pub mdreq_id : String, // FIELD_MDREQID 262
-    pub subscription_request_type : FieldSubscriptionRequestTypeEnum, // FIELD_SUBSCRIPTIONREQUESTTYPE 263
-    pub market_depth : i32, // FIELD_MARKETDEPTH 264
-    pub mdupdate_type : Option<FieldMDUpdateTypeEnum>, // FIELD_MDUPDATETYPE 265
-    pub aggregated_book : Option<bool>, // FIELD_AGGREGATEDBOOK 266
-    pub no_mdentry_types : Vec<NoMDEntryTypes12Fields>, // FIELD_NOMDENTRYTYPES 0
-    pub no_related_sym : Vec<NoRelatedSym23Fields>, // FIELD_NORELATEDSYM 0
-
-}
-
-
-
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
-pub struct MarketDataSnapshotFullRefreshFields {
-    pub mdreq_id : Option<String>, // FIELD_MDREQID 262
-    pub symbol : String, // FIELD_SYMBOL 55
-    pub symbol_sfx : Option<String>, // FIELD_SYMBOLSFX 65
-    pub security_id : Option<String>, // FIELD_SECURITYID 48
-    pub idsource : Option<FieldIDSourceEnum>, // FIELD_IDSOURCE 22
-    pub security_type : Option<FieldSecurityTypeEnum>, // FIELD_SECURITYTYPE 167
-    pub maturity_month_year : Option<UtcDate>, // FIELD_MATURITYMONTHYEAR 200
-    pub maturity_day : Option<i32>, // FIELD_MATURITYDAY 205
-    pub put_or_call : Option<FieldPutOrCallEnum>, // FIELD_PUTORCALL 201
-    pub strike_price : Option<f32>, // FIELD_STRIKEPRICE 202
-    pub opt_attribute : Option<char>, // FIELD_OPTATTRIBUTE 206
-    pub contract_multiplier : Option<f32>, // FIELD_CONTRACTMULTIPLIER 231
-    pub coupon_rate : Option<f32>, // FIELD_COUPONRATE 223
-    pub security_exchange : Option<String>, // FIELD_SECURITYEXCHANGE 207
-    pub issuer : Option<String>, // FIELD_ISSUER 106
-    pub encoded_issuer_len : Option<usize>, // FIELD_ENCODEDISSUERLEN 348
-    pub encoded_issuer : Option<String>, // FIELD_ENCODEDISSUER 349
-    pub security_desc : Option<String>, // FIELD_SECURITYDESC 107
-    pub encoded_security_desc_len : Option<usize>, // FIELD_ENCODEDSECURITYDESCLEN 350
-    pub encoded_security_desc : Option<String>, // FIELD_ENCODEDSECURITYDESC 351
-    pub financial_status : Option<FieldFinancialStatusEnum>, // FIELD_FINANCIALSTATUS 291
-    pub corporate_action : Option<FieldCorporateActionEnum>, // FIELD_CORPORATEACTION 292
-    pub total_volume_traded : Option<f32>, // FIELD_TOTALVOLUMETRADED 387
-    pub no_mdentries : Vec<NoMDEntries10Fields>, // FIELD_NOMDENTRIES 0
-
-}
-
-
-
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
-pub struct MarketDataIncrementalRefreshFields {
-    pub mdreq_id : Option<String>, // FIELD_MDREQID 262
-    pub no_mdentries : Vec<NoMDEntries11Fields>, // FIELD_NOMDENTRIES 0
-
-}
-
-
-
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
-pub struct MarketDataRequestRejectFields {
-    pub mdreq_id : String, // FIELD_MDREQID 262
-    pub mdreq_rej_reason : Option<FieldMDReqRejReasonEnum>, // FIELD_MDREQREJREASON 281
-    pub text : Option<String>, // FIELD_TEXT 58
-    pub encoded_text_len : Option<usize>, // FIELD_ENCODEDTEXTLEN 354
-    pub encoded_text : Option<String>, // FIELD_ENCODEDTEXT 355
-
-}
-
-
-
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
-pub struct QuoteCancelFields {
-    pub quote_req_id : Option<String>, // FIELD_QUOTEREQID 131
-    pub quote_id : String, // FIELD_QUOTEID 117
-    pub quote_cancel_type : FieldQuoteCancelTypeEnum, // FIELD_QUOTECANCELTYPE 298
-    pub quote_response_level : Option<FieldQuoteResponseLevelEnum>, // FIELD_QUOTERESPONSELEVEL 301
-    pub trading_session_id : Option<String>, // FIELD_TRADINGSESSIONID 336
-    pub no_quote_entries : Vec<NoQuoteEntries20Fields>, // FIELD_NOQUOTEENTRIES 0
-
-}
-
-
-
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
-pub struct QuoteStatusRequestFields {
-    pub quote_id : Option<String>, // FIELD_QUOTEID 117
-    pub symbol : String, // FIELD_SYMBOL 55
-    pub symbol_sfx : Option<String>, // FIELD_SYMBOLSFX 65
-    pub security_id : Option<String>, // FIELD_SECURITYID 48
-    pub idsource : Option<FieldIDSourceEnum>, // FIELD_IDSOURCE 22
-    pub security_type : Option<FieldSecurityTypeEnum>, // FIELD_SECURITYTYPE 167
-    pub maturity_month_year : Option<UtcDate>, // FIELD_MATURITYMONTHYEAR 200
-    pub maturity_day : Option<i32>, // FIELD_MATURITYDAY 205
-    pub put_or_call : Option<FieldPutOrCallEnum>, // FIELD_PUTORCALL 201
-    pub strike_price : Option<f32>, // FIELD_STRIKEPRICE 202
-    pub opt_attribute : Option<char>, // FIELD_OPTATTRIBUTE 206
-    pub contract_multiplier : Option<f32>, // FIELD_CONTRACTMULTIPLIER 231
-    pub coupon_rate : Option<f32>, // FIELD_COUPONRATE 223
-    pub security_exchange : Option<String>, // FIELD_SECURITYEXCHANGE 207
-    pub issuer : Option<String>, // FIELD_ISSUER 106
-    pub encoded_issuer_len : Option<usize>, // FIELD_ENCODEDISSUERLEN 348
-    pub encoded_issuer : Option<String>, // FIELD_ENCODEDISSUER 349
-    pub security_desc : Option<String>, // FIELD_SECURITYDESC 107
-    pub encoded_security_desc_len : Option<usize>, // FIELD_ENCODEDSECURITYDESCLEN 350
-    pub encoded_security_desc : Option<String>, // FIELD_ENCODEDSECURITYDESC 351
-    pub side : Option<FieldSideEnum>, // FIELD_SIDE 54
-    pub trading_session_id : Option<String>, // FIELD_TRADINGSESSIONID 336
-
-}
-
-
-
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
-pub struct QuoteAcknowledgementFields {
-    pub quote_req_id : Option<String>, // FIELD_QUOTEREQID 131
-    pub quote_id : Option<String>, // FIELD_QUOTEID 117
-    pub quote_ack_status : FieldQuoteAckStatusEnum, // FIELD_QUOTEACKSTATUS 297
-    pub quote_reject_reason : Option<FieldQuoteRejectReasonEnum>, // FIELD_QUOTEREJECTREASON 300
-    pub quote_response_level : Option<FieldQuoteResponseLevelEnum>, // FIELD_QUOTERESPONSELEVEL 301
-    pub trading_session_id : Option<String>, // FIELD_TRADINGSESSIONID 336
-    pub text : Option<String>, // FIELD_TEXT 58
-    pub no_quote_sets : Option<Vec<NoQuoteSets22Fields>>, // FIELD_NOQUOTESETS 0
-
-}
-
-
-
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
-pub struct SecurityDefinitionRequestFields {
-    pub security_req_id : String, // FIELD_SECURITYREQID 320
-    pub security_request_type : FieldSecurityRequestTypeEnum, // FIELD_SECURITYREQUESTTYPE 321
-    pub symbol : Option<String>, // FIELD_SYMBOL 55
-    pub symbol_sfx : Option<String>, // FIELD_SYMBOLSFX 65
-    pub security_id : Option<String>, // FIELD_SECURITYID 48
-    pub idsource : Option<FieldIDSourceEnum>, // FIELD_IDSOURCE 22
-    pub security_type : Option<FieldSecurityTypeEnum>, // FIELD_SECURITYTYPE 167
-    pub maturity_month_year : Option<UtcDate>, // FIELD_MATURITYMONTHYEAR 200
-    pub maturity_day : Option<i32>, // FIELD_MATURITYDAY 205
-    pub put_or_call : Option<FieldPutOrCallEnum>, // FIELD_PUTORCALL 201
-    pub strike_price : Option<f32>, // FIELD_STRIKEPRICE 202
-    pub opt_attribute : Option<char>, // FIELD_OPTATTRIBUTE 206
-    pub contract_multiplier : Option<f32>, // FIELD_CONTRACTMULTIPLIER 231
-    pub coupon_rate : Option<f32>, // FIELD_COUPONRATE 223
-    pub security_exchange : Option<String>, // FIELD_SECURITYEXCHANGE 207
-    pub issuer : Option<String>, // FIELD_ISSUER 106
-    pub encoded_issuer_len : Option<usize>, // FIELD_ENCODEDISSUERLEN 348
-    pub encoded_issuer : Option<String>, // FIELD_ENCODEDISSUER 349
-    pub security_desc : Option<String>, // FIELD_SECURITYDESC 107
-    pub encoded_security_desc_len : Option<usize>, // FIELD_ENCODEDSECURITYDESCLEN 350
-    pub encoded_security_desc : Option<String>, // FIELD_ENCODEDSECURITYDESC 351
-    pub currency : Option<f32>, // FIELD_CURRENCY 15
-    pub text : Option<String>, // FIELD_TEXT 58
-    pub encoded_text_len : Option<usize>, // FIELD_ENCODEDTEXTLEN 354
-    pub encoded_text : Option<String>, // FIELD_ENCODEDTEXT 355
-    pub trading_session_id : Option<String>, // FIELD_TRADINGSESSIONID 336
-    pub no_related_sym : Option<Vec<NoRelatedSym26Fields>>, // FIELD_NORELATEDSYM 0
-
-}
-
-
-
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
-pub struct SecurityDefinitionFields {
-    pub security_req_id : String, // FIELD_SECURITYREQID 320
-    pub security_response_id : String, // FIELD_SECURITYRESPONSEID 322
-    pub security_response_type : Option<FieldSecurityResponseTypeEnum>, // FIELD_SECURITYRESPONSETYPE 323
-    pub total_num_securities : i32, // FIELD_TOTALNUMSECURITIES 393
-    pub symbol : Option<String>, // FIELD_SYMBOL 55
-    pub symbol_sfx : Option<String>, // FIELD_SYMBOLSFX 65
-    pub security_id : Option<String>, // FIELD_SECURITYID 48
-    pub idsource : Option<FieldIDSourceEnum>, // FIELD_IDSOURCE 22
-    pub security_type : Option<FieldSecurityTypeEnum>, // FIELD_SECURITYTYPE 167
-    pub maturity_month_year : Option<UtcDate>, // FIELD_MATURITYMONTHYEAR 200
-    pub maturity_day : Option<i32>, // FIELD_MATURITYDAY 205
-    pub put_or_call : Option<FieldPutOrCallEnum>, // FIELD_PUTORCALL 201
-    pub strike_price : Option<f32>, // FIELD_STRIKEPRICE 202
-    pub opt_attribute : Option<char>, // FIELD_OPTATTRIBUTE 206
-    pub contract_multiplier : Option<f32>, // FIELD_CONTRACTMULTIPLIER 231
-    pub coupon_rate : Option<f32>, // FIELD_COUPONRATE 223
-    pub security_exchange : Option<String>, // FIELD_SECURITYEXCHANGE 207
-    pub issuer : Option<String>, // FIELD_ISSUER 106
-    pub encoded_issuer_len : Option<usize>, // FIELD_ENCODEDISSUERLEN 348
-    pub encoded_issuer : Option<String>, // FIELD_ENCODEDISSUER 349
-    pub security_desc : Option<String>, // FIELD_SECURITYDESC 107
-    pub encoded_security_desc_len : Option<usize>, // FIELD_ENCODEDSECURITYDESCLEN 350
-    pub encoded_security_desc : Option<String>, // FIELD_ENCODEDSECURITYDESC 351
-    pub currency : Option<f32>, // FIELD_CURRENCY 15
-    pub trading_session_id : Option<String>, // FIELD_TRADINGSESSIONID 336
-    pub text : Option<String>, // FIELD_TEXT 58
-    pub encoded_text_len : Option<usize>, // FIELD_ENCODEDTEXTLEN 354
-    pub encoded_text : Option<String>, // FIELD_ENCODEDTEXT 355
-    pub no_related_sym : Option<Vec<NoRelatedSym26Fields>>, // FIELD_NORELATEDSYM 0
-
-}
-
-
-
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
-pub struct SecurityStatusRequestFields {
-    pub security_status_req_id : String, // FIELD_SECURITYSTATUSREQID 324
-    pub symbol : String, // FIELD_SYMBOL 55
-    pub symbol_sfx : Option<String>, // FIELD_SYMBOLSFX 65
-    pub security_id : Option<String>, // FIELD_SECURITYID 48
-    pub idsource : Option<FieldIDSourceEnum>, // FIELD_IDSOURCE 22
-    pub security_type : Option<FieldSecurityTypeEnum>, // FIELD_SECURITYTYPE 167
-    pub maturity_month_year : Option<UtcDate>, // FIELD_MATURITYMONTHYEAR 200
-    pub maturity_day : Option<i32>, // FIELD_MATURITYDAY 205
-    pub put_or_call : Option<FieldPutOrCallEnum>, // FIELD_PUTORCALL 201
-    pub strike_price : Option<f32>, // FIELD_STRIKEPRICE 202
-    pub opt_attribute : Option<char>, // FIELD_OPTATTRIBUTE 206
-    pub contract_multiplier : Option<f32>, // FIELD_CONTRACTMULTIPLIER 231
-    pub coupon_rate : Option<f32>, // FIELD_COUPONRATE 223
-    pub security_exchange : Option<String>, // FIELD_SECURITYEXCHANGE 207
-    pub issuer : Option<String>, // FIELD_ISSUER 106
-    pub encoded_issuer_len : Option<usize>, // FIELD_ENCODEDISSUERLEN 348
-    pub encoded_issuer : Option<String>, // FIELD_ENCODEDISSUER 349
-    pub security_desc : Option<String>, // FIELD_SECURITYDESC 107
-    pub encoded_security_desc_len : Option<usize>, // FIELD_ENCODEDSECURITYDESCLEN 350
-    pub encoded_security_desc : Option<String>, // FIELD_ENCODEDSECURITYDESC 351
-    pub currency : Option<f32>, // FIELD_CURRENCY 15
-    pub subscription_request_type : FieldSubscriptionRequestTypeEnum, // FIELD_SUBSCRIPTIONREQUESTTYPE 263
-    pub trading_session_id : Option<String>, // FIELD_TRADINGSESSIONID 336
-
-}
-
-
-
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
-pub struct SecurityStatusFields {
-    pub security_status_req_id : Option<String>, // FIELD_SECURITYSTATUSREQID 324
-    pub symbol : String, // FIELD_SYMBOL 55
-    pub symbol_sfx : Option<String>, // FIELD_SYMBOLSFX 65
-    pub security_id : Option<String>, // FIELD_SECURITYID 48
-    pub idsource : Option<FieldIDSourceEnum>, // FIELD_IDSOURCE 22
-    pub security_type : Option<FieldSecurityTypeEnum>, // FIELD_SECURITYTYPE 167
-    pub maturity_month_year : Option<UtcDate>, // FIELD_MATURITYMONTHYEAR 200
-    pub maturity_day : Option<i32>, // FIELD_MATURITYDAY 205
-    pub put_or_call : Option<FieldPutOrCallEnum>, // FIELD_PUTORCALL 201
-    pub strike_price : Option<f32>, // FIELD_STRIKEPRICE 202
-    pub opt_attribute : Option<char>, // FIELD_OPTATTRIBUTE 206
-    pub contract_multiplier : Option<f32>, // FIELD_CONTRACTMULTIPLIER 231
-    pub coupon_rate : Option<f32>, // FIELD_COUPONRATE 223
-    pub security_exchange : Option<String>, // FIELD_SECURITYEXCHANGE 207
-    pub issuer : Option<String>, // FIELD_ISSUER 106
-    pub encoded_issuer_len : Option<usize>, // FIELD_ENCODEDISSUERLEN 348
-    pub encoded_issuer : Option<String>, // FIELD_ENCODEDISSUER 349
-    pub security_desc : Option<String>, // FIELD_SECURITYDESC 107
-    pub encoded_security_desc_len : Option<usize>, // FIELD_ENCODEDSECURITYDESCLEN 350
-    pub encoded_security_desc : Option<String>, // FIELD_ENCODEDSECURITYDESC 351
-    pub currency : Option<f32>, // FIELD_CURRENCY 15
-    pub trading_session_id : Option<String>, // FIELD_TRADINGSESSIONID 336
-    pub unsolicited_indicator : Option<bool>, // FIELD_UNSOLICITEDINDICATOR 325
-    pub security_trading_status : Option<FieldSecurityTradingStatusEnum>, // FIELD_SECURITYTRADINGSTATUS 326
-    pub financial_status : Option<FieldFinancialStatusEnum>, // FIELD_FINANCIALSTATUS 291
-    pub corporate_action : Option<FieldCorporateActionEnum>, // FIELD_CORPORATEACTION 292
-    pub halt_reason_char : Option<FieldHaltReasonCharEnum>, // FIELD_HALTREASONCHAR 327
-    pub in_view_of_common : Option<bool>, // FIELD_INVIEWOFCOMMON 328
-    pub due_to_related : Option<bool>, // FIELD_DUETORELATED 329
-    pub buy_volume : Option<f32>, // FIELD_BUYVOLUME 330
-    pub sell_volume : Option<f32>, // FIELD_SELLVOLUME 331
-    pub high_px : Option<f32>, // FIELD_HIGHPX 332
-    pub low_px : Option<f32>, // FIELD_LOWPX 333
-    pub last_px : Option<f32>, // FIELD_LASTPX 31
-    pub transact_time : Option<UtcDateTime>, // FIELD_TRANSACTTIME 60
-    pub adjustment : Option<FieldAdjustmentEnum>, // FIELD_ADJUSTMENT 334
-
-}
-
-
-
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
-pub struct TradingSessionStatusRequestFields {
-    pub trad_ses_req_id : String, // FIELD_TRADSESREQID 335
-    pub trading_session_id : Option<String>, // FIELD_TRADINGSESSIONID 336
-    pub trad_ses_method : Option<FieldTradSesMethodEnum>, // FIELD_TRADSESMETHOD 338
-    pub trad_ses_mode : Option<FieldTradSesModeEnum>, // FIELD_TRADSESMODE 339
-    pub subscription_request_type : FieldSubscriptionRequestTypeEnum, // FIELD_SUBSCRIPTIONREQUESTTYPE 263
-
-}
-
-
-
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
-pub struct TradingSessionStatusFields {
-    pub trad_ses_req_id : Option<String>, // FIELD_TRADSESREQID 335
-    pub trading_session_id : String, // FIELD_TRADINGSESSIONID 336
-    pub trad_ses_method : Option<FieldTradSesMethodEnum>, // FIELD_TRADSESMETHOD 338
-    pub trad_ses_mode : Option<FieldTradSesModeEnum>, // FIELD_TRADSESMODE 339
-    pub unsolicited_indicator : Option<bool>, // FIELD_UNSOLICITEDINDICATOR 325
-    pub trad_ses_status : FieldTradSesStatusEnum, // FIELD_TRADSESSTATUS 340
-    pub trad_ses_start_time : Option<UtcDateTime>, // FIELD_TRADSESSTARTTIME 341
-    pub trad_ses_open_time : Option<UtcDateTime>, // FIELD_TRADSESOPENTIME 342
-    pub trad_ses_pre_close_time : Option<UtcDateTime>, // FIELD_TRADSESPRECLOSETIME 343
-    pub trad_ses_close_time : Option<UtcDateTime>, // FIELD_TRADSESCLOSETIME 344
-    pub trad_ses_end_time : Option<UtcDateTime>, // FIELD_TRADSESENDTIME 345
-    pub total_volume_traded : Option<f32>, // FIELD_TOTALVOLUMETRADED 387
-    pub text : Option<String>, // FIELD_TEXT 58
-    pub encoded_text_len : Option<usize>, // FIELD_ENCODEDTEXTLEN 354
-    pub encoded_text : Option<String>, // FIELD_ENCODEDTEXT 355
-
-}
-
-
-
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
-pub struct MassQuoteFields {
-    pub quote_req_id : Option<String>, // FIELD_QUOTEREQID 131
-    pub quote_id : String, // FIELD_QUOTEID 117
-    pub quote_response_level : Option<FieldQuoteResponseLevelEnum>, // FIELD_QUOTERESPONSELEVEL 301
-    pub def_bid_size : Option<f32>, // FIELD_DEFBIDSIZE 293
-    pub def_offer_size : Option<f32>, // FIELD_DEFOFFERSIZE 294
-    pub no_quote_sets : Vec<NoQuoteSets21Fields>, // FIELD_NOQUOTESETS 0
-
-}
-
-
-
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
-pub struct BusinessMessageRejectFields {
-    pub ref_seq_num : Option<i32>, // FIELD_REFSEQNUM 45
-    pub ref_msg_type : String, // FIELD_REFMSGTYPE 372
-    pub business_reject_ref_id : Option<String>, // FIELD_BUSINESSREJECTREFID 379
-    pub business_reject_reason : FieldBusinessRejectReasonEnum, // FIELD_BUSINESSREJECTREASON 380
-    pub text : Option<String>, // FIELD_TEXT 58
-    pub encoded_text_len : Option<usize>, // FIELD_ENCODEDTEXTLEN 354
-    pub encoded_text : Option<String>, // FIELD_ENCODEDTEXT 355
-
-}
-
-
-
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
-pub struct BidRequestFields {
-    pub bid_id : Option<String>, // FIELD_BIDID 390
-    pub client_bid_id : String, // FIELD_CLIENTBIDID 391
-    pub bid_request_trans_type : FieldBidRequestTransTypeEnum, // FIELD_BIDREQUESTTRANSTYPE 374
-    pub list_name : Option<String>, // FIELD_LISTNAME 392
-    pub total_num_securities : i32, // FIELD_TOTALNUMSECURITIES 393
-    pub bid_type : i32, // FIELD_BIDTYPE 394
-    pub num_tickets : Option<i32>, // FIELD_NUMTICKETS 395
-    pub currency : Option<f32>, // FIELD_CURRENCY 15
-    pub side_value1 : Option<f32>, // FIELD_SIDEVALUE1 396
-    pub side_value2 : Option<f32>, // FIELD_SIDEVALUE2 397
-    pub no_bid_descriptors : Option<Vec<NoBidDescriptors6Fields>>, // FIELD_NOBIDDESCRIPTORS 0
-    pub no_bid_components : Option<Vec<NoBidComponents5Fields>>, // FIELD_NOBIDCOMPONENTS 0
-    pub liquidity_ind_type : Option<FieldLiquidityIndTypeEnum>, // FIELD_LIQUIDITYINDTYPE 409
-    pub wt_average_liquidity : Option<f32>, // FIELD_WTAVERAGELIQUIDITY 410
-    pub exchange_for_physical : Option<bool>, // FIELD_EXCHANGEFORPHYSICAL 411
-    pub out_main_cntry_uindex : Option<f32>, // FIELD_OUTMAINCNTRYUINDEX 412
-    pub cross_percent : Option<f32>, // FIELD_CROSSPERCENT 413
-    pub prog_rpt_reqs : Option<FieldProgRptReqsEnum>, // FIELD_PROGRPTREQS 414
-    pub prog_period_interval : Option<i32>, // FIELD_PROGPERIODINTERVAL 415
-    pub inc_tax_ind : Option<FieldIncTaxIndEnum>, // FIELD_INCTAXIND 416
-    pub forex_req : Option<bool>, // FIELD_FOREXREQ 121
-    pub num_bidders : Option<i32>, // FIELD_NUMBIDDERS 417
-    pub trade_date : Option<UtcDateTime>, // FIELD_TRADEDATE 75
-    pub trade_type : FieldTradeTypeEnum, // FIELD_TRADETYPE 418
-    pub basis_px_type : FieldBasisPxTypeEnum, // FIELD_BASISPXTYPE 419
-    pub strike_time : Option<UtcDateTime>, // FIELD_STRIKETIME 443
-    pub text : Option<String>, // FIELD_TEXT 58
-    pub encoded_text_len : Option<usize>, // FIELD_ENCODEDTEXTLEN 354
-    pub encoded_text : Option<String>, // FIELD_ENCODEDTEXT 355
-
-}
-
-
-
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
-pub struct BidResponseFields {
-    pub bid_id : Option<String>, // FIELD_BIDID 390
-    pub client_bid_id : Option<String>, // FIELD_CLIENTBIDID 391
-    pub no_bid_components : Vec<NoBidComponents4Fields>, // FIELD_NOBIDCOMPONENTS 0
-
-}
-
-
-
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
-pub struct ListStrikePriceFields {
-    pub list_id : String, // FIELD_LISTID 66
-    pub tot_no_strikes : i32, // FIELD_TOTNOSTRIKES 422
-    pub no_strikes : Vec<NoStrikes28Fields>, // FIELD_NOSTRIKES 0
-
-}
-
-
-
-
 // components struct Fields
 
 
@@ -1376,251 +579,18 @@ pub struct ListStrikePriceFields {
 
 
 #[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
-pub struct NoBidDescriptors6Fields {
-    pub bid_descriptor_type : Option<i32>, // FIELD_BIDDESCRIPTORTYPE 399
-    pub bid_descriptor : Option<String>, // FIELD_BIDDESCRIPTOR 400
-    pub side_value_ind : Option<i32>, // FIELD_SIDEVALUEIND 401
-    pub liquidity_value : Option<f32>, // FIELD_LIQUIDITYVALUE 404
-    pub liquidity_num_securities : Option<i32>, // FIELD_LIQUIDITYNUMSECURITIES 441
-    pub liquidity_pct_low : Option<f32>, // FIELD_LIQUIDITYPCTLOW 402
-    pub liquidity_pct_high : Option<f32>, // FIELD_LIQUIDITYPCTHIGH 403
-    pub efptracking_error : Option<f32>, // FIELD_EFPTRACKINGERROR 405
-    pub fair_value : Option<f32>, // FIELD_FAIRVALUE 406
-    pub outside_index_pct : Option<f32>, // FIELD_OUTSIDEINDEXPCT 407
-    pub value_of_futures : Option<f32>, // FIELD_VALUEOFFUTURES 408
+pub struct NoContraBrokers2Fields {
+    pub contra_broker : Option<String>, // FIELD_CONTRABROKER 375
+    pub contra_trader : Option<String>, // FIELD_CONTRATRADER 337
+    pub contra_trade_qty : Option<f32>, // FIELD_CONTRATRADEQTY 437
+    pub contra_trade_time : Option<UtcDateTime>, // FIELD_CONTRATRADETIME 438
 
 }
 
 
 
 #[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
-pub struct NoRelatedSym24Fields {
-    pub symbol : String, // FIELD_SYMBOL 55
-    pub symbol_sfx : Option<String>, // FIELD_SYMBOLSFX 65
-    pub security_id : Option<String>, // FIELD_SECURITYID 48
-    pub idsource : Option<FieldIDSourceEnum>, // FIELD_IDSOURCE 22
-    pub security_type : Option<FieldSecurityTypeEnum>, // FIELD_SECURITYTYPE 167
-    pub maturity_month_year : Option<UtcDate>, // FIELD_MATURITYMONTHYEAR 200
-    pub maturity_day : Option<i32>, // FIELD_MATURITYDAY 205
-    pub put_or_call : Option<FieldPutOrCallEnum>, // FIELD_PUTORCALL 201
-    pub strike_price : Option<f32>, // FIELD_STRIKEPRICE 202
-    pub opt_attribute : Option<char>, // FIELD_OPTATTRIBUTE 206
-    pub contract_multiplier : Option<f32>, // FIELD_CONTRACTMULTIPLIER 231
-    pub coupon_rate : Option<f32>, // FIELD_COUPONRATE 223
-    pub security_exchange : Option<String>, // FIELD_SECURITYEXCHANGE 207
-    pub issuer : Option<String>, // FIELD_ISSUER 106
-    pub encoded_issuer_len : Option<usize>, // FIELD_ENCODEDISSUERLEN 348
-    pub encoded_issuer : Option<String>, // FIELD_ENCODEDISSUER 349
-    pub security_desc : Option<String>, // FIELD_SECURITYDESC 107
-    pub encoded_security_desc_len : Option<usize>, // FIELD_ENCODEDSECURITYDESCLEN 350
-    pub encoded_security_desc : Option<String>, // FIELD_ENCODEDSECURITYDESC 351
-    pub prev_close_px : Option<f32>, // FIELD_PREVCLOSEPX 140
-    pub quote_request_type : Option<FieldQuoteRequestTypeEnum>, // FIELD_QUOTEREQUESTTYPE 303
-    pub trading_session_id : Option<String>, // FIELD_TRADINGSESSIONID 336
-    pub side : Option<FieldSideEnum>, // FIELD_SIDE 54
-    pub order_qty : Option<f32>, // FIELD_ORDERQTY 38
-    pub fut_sett_date : Option<UtcDateTime>, // FIELD_FUTSETTDATE 64
-    pub ord_type : Option<FieldOrdTypeEnum>, // FIELD_ORDTYPE 40
-    pub fut_sett_date2 : Option<UtcDateTime>, // FIELD_FUTSETTDATE2 193
-    pub order_qty2 : Option<f32>, // FIELD_ORDERQTY2 192
-    pub expire_time : Option<UtcDateTime>, // FIELD_EXPIRETIME 126
-    pub transact_time : Option<UtcDateTime>, // FIELD_TRANSACTTIME 60
-    pub currency : Option<f32>, // FIELD_CURRENCY 15
-
-}
-
-
-
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
-pub struct NoIOIQualifiers9Fields {
-    pub ioiqualifier : Option<FieldIOIQualifierEnum>, // FIELD_IOIQUALIFIER 104
-
-}
-
-
-
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
-pub struct NoBidComponents4Fields {
-    pub commission : f32, // FIELD_COMMISSION 12
-    pub comm_type : FieldCommTypeEnum, // FIELD_COMMTYPE 13
-    pub list_id : Option<String>, // FIELD_LISTID 66
-    pub country : Option<String>, // FIELD_COUNTRY 421
-    pub side : Option<FieldSideEnum>, // FIELD_SIDE 54
-    pub price : Option<f32>, // FIELD_PRICE 44
-    pub price_type : Option<FieldPriceTypeEnum>, // FIELD_PRICETYPE 423
-    pub fair_value : Option<f32>, // FIELD_FAIRVALUE 406
-    pub net_gross_ind : Option<FieldNetGrossIndEnum>, // FIELD_NETGROSSIND 430
-    pub settlmnt_typ : Option<FieldSettlmntTypEnum>, // FIELD_SETTLMNTTYP 63
-    pub fut_sett_date : Option<UtcDateTime>, // FIELD_FUTSETTDATE 64
-    pub trading_session_id : Option<String>, // FIELD_TRADINGSESSIONID 336
-    pub text : Option<String>, // FIELD_TEXT 58
-    pub encoded_text_len : Option<usize>, // FIELD_ENCODEDTEXTLEN 354
-    pub encoded_text : Option<String>, // FIELD_ENCODEDTEXT 355
-
-}
-
-
-
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
-pub struct NoMDEntries11Fields {
-    pub mdupdate_action : FieldMDUpdateActionEnum, // FIELD_MDUPDATEACTION 279
-    pub delete_reason : Option<FieldDeleteReasonEnum>, // FIELD_DELETEREASON 285
-    pub mdentry_type : Option<FieldMDEntryTypeEnum>, // FIELD_MDENTRYTYPE 269
-    pub mdentry_id : Option<String>, // FIELD_MDENTRYID 278
-    pub mdentry_ref_id : Option<String>, // FIELD_MDENTRYREFID 280
-    pub symbol : Option<String>, // FIELD_SYMBOL 55
-    pub symbol_sfx : Option<String>, // FIELD_SYMBOLSFX 65
-    pub security_id : Option<String>, // FIELD_SECURITYID 48
-    pub idsource : Option<FieldIDSourceEnum>, // FIELD_IDSOURCE 22
-    pub security_type : Option<FieldSecurityTypeEnum>, // FIELD_SECURITYTYPE 167
-    pub maturity_month_year : Option<UtcDate>, // FIELD_MATURITYMONTHYEAR 200
-    pub maturity_day : Option<i32>, // FIELD_MATURITYDAY 205
-    pub put_or_call : Option<FieldPutOrCallEnum>, // FIELD_PUTORCALL 201
-    pub strike_price : Option<f32>, // FIELD_STRIKEPRICE 202
-    pub opt_attribute : Option<char>, // FIELD_OPTATTRIBUTE 206
-    pub contract_multiplier : Option<f32>, // FIELD_CONTRACTMULTIPLIER 231
-    pub coupon_rate : Option<f32>, // FIELD_COUPONRATE 223
-    pub security_exchange : Option<String>, // FIELD_SECURITYEXCHANGE 207
-    pub issuer : Option<String>, // FIELD_ISSUER 106
-    pub encoded_issuer_len : Option<usize>, // FIELD_ENCODEDISSUERLEN 348
-    pub encoded_issuer : Option<String>, // FIELD_ENCODEDISSUER 349
-    pub security_desc : Option<String>, // FIELD_SECURITYDESC 107
-    pub encoded_security_desc_len : Option<usize>, // FIELD_ENCODEDSECURITYDESCLEN 350
-    pub encoded_security_desc : Option<String>, // FIELD_ENCODEDSECURITYDESC 351
-    pub financial_status : Option<FieldFinancialStatusEnum>, // FIELD_FINANCIALSTATUS 291
-    pub corporate_action : Option<FieldCorporateActionEnum>, // FIELD_CORPORATEACTION 292
-    pub mdentry_px : Option<f32>, // FIELD_MDENTRYPX 270
-    pub currency : Option<f32>, // FIELD_CURRENCY 15
-    pub mdentry_size : Option<f32>, // FIELD_MDENTRYSIZE 271
-    pub mdentry_date : Option<UtcDate>, // FIELD_MDENTRYDATE 272
-    pub mdentry_time : Option<UtcTime>, // FIELD_MDENTRYTIME 273
-    pub tick_direction : Option<FieldTickDirectionEnum>, // FIELD_TICKDIRECTION 274
-    pub mdmkt : Option<String>, // FIELD_MDMKT 275
-    pub trading_session_id : Option<String>, // FIELD_TRADINGSESSIONID 336
-    pub quote_condition : Option<FieldQuoteConditionEnum>, // FIELD_QUOTECONDITION 276
-    pub trade_condition : Option<FieldTradeConditionEnum>, // FIELD_TRADECONDITION 277
-    pub mdentry_originator : Option<String>, // FIELD_MDENTRYORIGINATOR 282
-    pub location_id : Option<String>, // FIELD_LOCATIONID 283
-    pub desk_id : Option<String>, // FIELD_DESKID 284
-    pub open_close_settle_flag : Option<FieldOpenCloseSettleFlagEnum>, // FIELD_OPENCLOSESETTLEFLAG 286
-    pub time_in_force : Option<FieldTimeInForceEnum>, // FIELD_TIMEINFORCE 59
-    pub expire_date : Option<UtcDateTime>, // FIELD_EXPIREDATE 432
-    pub expire_time : Option<UtcDateTime>, // FIELD_EXPIRETIME 126
-    pub min_qty : Option<f32>, // FIELD_MINQTY 110
-    pub exec_inst : Option<FieldExecInstEnum>, // FIELD_EXECINST 18
-    pub seller_days : Option<i32>, // FIELD_SELLERDAYS 287
-    pub order_id : Option<String>, // FIELD_ORDERID 37
-    pub quote_entry_id : Option<String>, // FIELD_QUOTEENTRYID 299
-    pub mdentry_buyer : Option<String>, // FIELD_MDENTRYBUYER 288
-    pub mdentry_seller : Option<String>, // FIELD_MDENTRYSELLER 289
-    pub number_of_orders : Option<i32>, // FIELD_NUMBEROFORDERS 346
-    pub mdentry_position_no : Option<i32>, // FIELD_MDENTRYPOSITIONNO 290
-    pub total_volume_traded : Option<f32>, // FIELD_TOTALVOLUMETRADED 387
-    pub text : Option<String>, // FIELD_TEXT 58
-    pub encoded_text_len : Option<usize>, // FIELD_ENCODEDTEXTLEN 354
-    pub encoded_text : Option<String>, // FIELD_ENCODEDTEXT 355
-
-}
-
-
-
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
-pub struct NoBidComponents5Fields {
-    pub list_id : Option<String>, // FIELD_LISTID 66
-    pub side : Option<FieldSideEnum>, // FIELD_SIDE 54
-    pub trading_session_id : Option<String>, // FIELD_TRADINGSESSIONID 336
-    pub net_gross_ind : Option<FieldNetGrossIndEnum>, // FIELD_NETGROSSIND 430
-    pub settlmnt_typ : Option<FieldSettlmntTypEnum>, // FIELD_SETTLMNTTYP 63
-    pub fut_sett_date : Option<UtcDateTime>, // FIELD_FUTSETTDATE 64
-    pub account : Option<String>, // FIELD_ACCOUNT 1
-
-}
-
-
-
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
-pub struct NoRoutingIDs27Fields {
-    pub routing_type : Option<FieldRoutingTypeEnum>, // FIELD_ROUTINGTYPE 216
-    pub routing_id : Option<String>, // FIELD_ROUTINGID 217
-
-}
-
-
-
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
-pub struct LinesOfText1Fields {
-    pub text : String, // FIELD_TEXT 58
-    pub encoded_text_len : Option<usize>, // FIELD_ENCODEDTEXTLEN 354
-    pub encoded_text : Option<String>, // FIELD_ENCODEDTEXT 355
-
-}
-
-
-
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
-pub struct NoOrders15Fields {
-    pub cl_ord_id : String, // FIELD_CLORDID 11
-    pub cum_qty : f32, // FIELD_CUMQTY 14
-    pub ord_status : FieldOrdStatusEnum, // FIELD_ORDSTATUS 39
-    pub leaves_qty : f32, // FIELD_LEAVESQTY 151
-    pub cxl_qty : f32, // FIELD_CXLQTY 84
-    pub avg_px : f32, // FIELD_AVGPX 6
-    pub ord_rej_reason : Option<FieldOrdRejReasonEnum>, // FIELD_ORDREJREASON 103
-    pub text : Option<String>, // FIELD_TEXT 58
-    pub encoded_text_len : Option<usize>, // FIELD_ENCODEDTEXTLEN 354
-    pub encoded_text : Option<String>, // FIELD_ENCODEDTEXT 355
-
-}
-
-
-
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
-pub struct NoMiscFees13Fields {
-    pub misc_fee_amt : Option<f32>, // FIELD_MISCFEEAMT 137
-    pub misc_fee_curr : Option<f32>, // FIELD_MISCFEECURR 138
-    pub misc_fee_type : Option<FieldMiscFeeTypeEnum>, // FIELD_MISCFEETYPE 139
-
-}
-
-
-
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
-pub struct NoMDEntryTypes12Fields {
-    pub mdentry_type : FieldMDEntryTypeEnum, // FIELD_MDENTRYTYPE 269
-
-}
-
-
-
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
-pub struct NoRelatedSym23Fields {
-    pub symbol : String, // FIELD_SYMBOL 55
-    pub symbol_sfx : Option<String>, // FIELD_SYMBOLSFX 65
-    pub security_id : Option<String>, // FIELD_SECURITYID 48
-    pub idsource : Option<FieldIDSourceEnum>, // FIELD_IDSOURCE 22
-    pub security_type : Option<FieldSecurityTypeEnum>, // FIELD_SECURITYTYPE 167
-    pub maturity_month_year : Option<UtcDate>, // FIELD_MATURITYMONTHYEAR 200
-    pub maturity_day : Option<i32>, // FIELD_MATURITYDAY 205
-    pub put_or_call : Option<FieldPutOrCallEnum>, // FIELD_PUTORCALL 201
-    pub strike_price : Option<f32>, // FIELD_STRIKEPRICE 202
-    pub opt_attribute : Option<char>, // FIELD_OPTATTRIBUTE 206
-    pub contract_multiplier : Option<f32>, // FIELD_CONTRACTMULTIPLIER 231
-    pub coupon_rate : Option<f32>, // FIELD_COUPONRATE 223
-    pub security_exchange : Option<String>, // FIELD_SECURITYEXCHANGE 207
-    pub issuer : Option<String>, // FIELD_ISSUER 106
-    pub encoded_issuer_len : Option<usize>, // FIELD_ENCODEDISSUERLEN 348
-    pub encoded_issuer : Option<String>, // FIELD_ENCODEDISSUER 349
-    pub security_desc : Option<String>, // FIELD_SECURITYDESC 107
-    pub encoded_security_desc_len : Option<usize>, // FIELD_ENCODEDSECURITYDESCLEN 350
-    pub encoded_security_desc : Option<String>, // FIELD_ENCODEDSECURITYDESC 351
-    pub trading_session_id : Option<String>, // FIELD_TRADINGSESSIONID 336
-
-}
-
-
-
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
-pub struct NoAllocs2Fields {
+pub struct NoAllocs1Fields {
     pub alloc_account : Option<String>, // FIELD_ALLOCACCOUNT 79
     pub alloc_shares : Option<f32>, // FIELD_ALLOCSHARES 80
 
@@ -1629,14 +599,31 @@ pub struct NoAllocs2Fields {
 
 
 #[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
-pub struct NoOrders16Fields {
+pub struct NoMsgTypes3Fields {
+    pub ref_msg_type : Option<String>, // FIELD_REFMSGTYPE 372
+    pub msg_direction : Option<FieldMsgDirectionEnum>, // FIELD_MSGDIRECTION 385
+
+}
+
+
+
+#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
+pub struct NoTradingSessions5Fields {
+    pub trading_session_id : Option<String>, // FIELD_TRADINGSESSIONID 336
+
+}
+
+
+
+#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
+pub struct NoOrders4Fields {
     pub cl_ord_id : String, // FIELD_CLORDID 11
     pub list_seq_no : i32, // FIELD_LISTSEQNO 67
     pub settl_inst_mode : Option<FieldSettlInstModeEnum>, // FIELD_SETTLINSTMODE 160
     pub client_id : Option<String>, // FIELD_CLIENTID 109
     pub exec_broker : Option<String>, // FIELD_EXECBROKER 76
     pub account : Option<String>, // FIELD_ACCOUNT 1
-    pub no_allocs : Option<Vec<NoAllocs2Fields>>, // FIELD_NOALLOCS 0
+    pub no_allocs : Option<Vec<NoAllocs1Fields>>, // FIELD_NOALLOCS 0
     pub settlmnt_typ : Option<FieldSettlmntTypEnum>, // FIELD_SETTLMNTTYP 63
     pub fut_sett_date : Option<UtcDateTime>, // FIELD_FUTSETTDATE 64
     pub handl_inst : Option<FieldHandlInstEnum>, // FIELD_HANDLINST 21
@@ -1644,7 +631,7 @@ pub struct NoOrders16Fields {
     pub min_qty : Option<f32>, // FIELD_MINQTY 110
     pub max_floor : Option<f32>, // FIELD_MAXFLOOR 111
     pub ex_destination : Option<String>, // FIELD_EXDESTINATION 100
-    pub no_trading_sessions : Option<Vec<NoTradingSessions29Fields>>, // FIELD_NOTRADINGSESSIONS 0
+    pub no_trading_sessions : Option<Vec<NoTradingSessions5Fields>>, // FIELD_NOTRADINGSESSIONS 0
     pub process_code : Option<FieldProcessCodeEnum>, // FIELD_PROCESSCODE 81
     pub symbol : String, // FIELD_SYMBOL 55
     pub symbol_sfx : Option<String>, // FIELD_SYMBOLSFX 65
@@ -1709,384 +696,21 @@ pub struct NoOrders16Fields {
 
 
 
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
-pub struct NoOrders17Fields {
-    pub cl_ord_id : Option<String>, // FIELD_CLORDID 11
-    pub order_id : Option<String>, // FIELD_ORDERID 37
-    pub secondary_order_id : Option<String>, // FIELD_SECONDARYORDERID 198
-    pub list_id : Option<String>, // FIELD_LISTID 66
-    pub wave_no : Option<String>, // FIELD_WAVENO 105
-
-}
-
-
-
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
-pub struct NoExecs8Fields {
-    pub last_shares : Option<f32>, // FIELD_LASTSHARES 32
-    pub exec_id : Option<String>, // FIELD_EXECID 17
-    pub last_px : Option<f32>, // FIELD_LASTPX 31
-    pub last_capacity : Option<FieldLastCapacityEnum>, // FIELD_LASTCAPACITY 29
-
-}
-
-
-
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
-pub struct NoTradingSessions29Fields {
-    pub trading_session_id : Option<String>, // FIELD_TRADINGSESSIONID 336
-
-}
-
-
-
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
-pub struct NoContraBrokers7Fields {
-    pub contra_broker : Option<String>, // FIELD_CONTRABROKER 375
-    pub contra_trader : Option<String>, // FIELD_CONTRATRADER 337
-    pub contra_trade_qty : Option<f32>, // FIELD_CONTRATRADEQTY 437
-    pub contra_trade_time : Option<UtcDateTime>, // FIELD_CONTRATRADETIME 438
-
-}
-
-
-
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
-pub struct NoQuoteEntries19Fields {
-    pub quote_entry_id : String, // FIELD_QUOTEENTRYID 299
-    pub symbol : Option<String>, // FIELD_SYMBOL 55
-    pub symbol_sfx : Option<String>, // FIELD_SYMBOLSFX 65
-    pub security_id : Option<String>, // FIELD_SECURITYID 48
-    pub idsource : Option<FieldIDSourceEnum>, // FIELD_IDSOURCE 22
-    pub security_type : Option<FieldSecurityTypeEnum>, // FIELD_SECURITYTYPE 167
-    pub maturity_month_year : Option<UtcDate>, // FIELD_MATURITYMONTHYEAR 200
-    pub maturity_day : Option<i32>, // FIELD_MATURITYDAY 205
-    pub put_or_call : Option<FieldPutOrCallEnum>, // FIELD_PUTORCALL 201
-    pub strike_price : Option<f32>, // FIELD_STRIKEPRICE 202
-    pub opt_attribute : Option<char>, // FIELD_OPTATTRIBUTE 206
-    pub contract_multiplier : Option<f32>, // FIELD_CONTRACTMULTIPLIER 231
-    pub coupon_rate : Option<f32>, // FIELD_COUPONRATE 223
-    pub security_exchange : Option<String>, // FIELD_SECURITYEXCHANGE 207
-    pub issuer : Option<String>, // FIELD_ISSUER 106
-    pub encoded_issuer_len : Option<usize>, // FIELD_ENCODEDISSUERLEN 348
-    pub encoded_issuer : Option<String>, // FIELD_ENCODEDISSUER 349
-    pub security_desc : Option<String>, // FIELD_SECURITYDESC 107
-    pub encoded_security_desc_len : Option<usize>, // FIELD_ENCODEDSECURITYDESCLEN 350
-    pub encoded_security_desc : Option<String>, // FIELD_ENCODEDSECURITYDESC 351
-    pub bid_px : Option<f32>, // FIELD_BIDPX 132
-    pub offer_px : Option<f32>, // FIELD_OFFERPX 133
-    pub bid_size : Option<f32>, // FIELD_BIDSIZE 134
-    pub offer_size : Option<f32>, // FIELD_OFFERSIZE 135
-    pub valid_until_time : Option<UtcDateTime>, // FIELD_VALIDUNTILTIME 62
-    pub bid_spot_rate : Option<f32>, // FIELD_BIDSPOTRATE 188
-    pub offer_spot_rate : Option<f32>, // FIELD_OFFERSPOTRATE 190
-    pub bid_forward_points : Option<f32>, // FIELD_BIDFORWARDPOINTS 189
-    pub offer_forward_points : Option<f32>, // FIELD_OFFERFORWARDPOINTS 191
-    pub transact_time : Option<UtcDateTime>, // FIELD_TRANSACTTIME 60
-    pub trading_session_id : Option<String>, // FIELD_TRADINGSESSIONID 336
-    pub fut_sett_date : Option<UtcDateTime>, // FIELD_FUTSETTDATE 64
-    pub ord_type : Option<FieldOrdTypeEnum>, // FIELD_ORDTYPE 40
-    pub fut_sett_date2 : Option<UtcDateTime>, // FIELD_FUTSETTDATE2 193
-    pub order_qty2 : Option<f32>, // FIELD_ORDERQTY2 192
-    pub currency : Option<f32>, // FIELD_CURRENCY 15
-
-}
-
-
-
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
-pub struct NoQuoteEntries20Fields {
-    pub symbol : String, // FIELD_SYMBOL 55
-    pub symbol_sfx : Option<String>, // FIELD_SYMBOLSFX 65
-    pub security_id : Option<String>, // FIELD_SECURITYID 48
-    pub idsource : Option<FieldIDSourceEnum>, // FIELD_IDSOURCE 22
-    pub security_type : Option<FieldSecurityTypeEnum>, // FIELD_SECURITYTYPE 167
-    pub maturity_month_year : Option<UtcDate>, // FIELD_MATURITYMONTHYEAR 200
-    pub maturity_day : Option<i32>, // FIELD_MATURITYDAY 205
-    pub put_or_call : Option<FieldPutOrCallEnum>, // FIELD_PUTORCALL 201
-    pub strike_price : Option<f32>, // FIELD_STRIKEPRICE 202
-    pub opt_attribute : Option<char>, // FIELD_OPTATTRIBUTE 206
-    pub contract_multiplier : Option<f32>, // FIELD_CONTRACTMULTIPLIER 231
-    pub coupon_rate : Option<f32>, // FIELD_COUPONRATE 223
-    pub security_exchange : Option<String>, // FIELD_SECURITYEXCHANGE 207
-    pub issuer : Option<String>, // FIELD_ISSUER 106
-    pub encoded_issuer_len : Option<usize>, // FIELD_ENCODEDISSUERLEN 348
-    pub encoded_issuer : Option<String>, // FIELD_ENCODEDISSUER 349
-    pub security_desc : Option<String>, // FIELD_SECURITYDESC 107
-    pub encoded_security_desc_len : Option<usize>, // FIELD_ENCODEDSECURITYDESCLEN 350
-    pub encoded_security_desc : Option<String>, // FIELD_ENCODEDSECURITYDESC 351
-    pub underlying_symbol : Option<String>, // FIELD_UNDERLYINGSYMBOL 311
-
-}
-
-
-
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
-pub struct NoRelatedSym25Fields {
-    pub relatd_sym : Option<String>, // FIELD_RELATDSYM 46
-    pub symbol_sfx : Option<String>, // FIELD_SYMBOLSFX 65
-    pub security_id : Option<String>, // FIELD_SECURITYID 48
-    pub idsource : Option<FieldIDSourceEnum>, // FIELD_IDSOURCE 22
-    pub security_type : Option<FieldSecurityTypeEnum>, // FIELD_SECURITYTYPE 167
-    pub maturity_month_year : Option<UtcDate>, // FIELD_MATURITYMONTHYEAR 200
-    pub maturity_day : Option<i32>, // FIELD_MATURITYDAY 205
-    pub put_or_call : Option<FieldPutOrCallEnum>, // FIELD_PUTORCALL 201
-    pub strike_price : Option<f32>, // FIELD_STRIKEPRICE 202
-    pub opt_attribute : Option<char>, // FIELD_OPTATTRIBUTE 206
-    pub contract_multiplier : Option<f32>, // FIELD_CONTRACTMULTIPLIER 231
-    pub coupon_rate : Option<f32>, // FIELD_COUPONRATE 223
-    pub security_exchange : Option<String>, // FIELD_SECURITYEXCHANGE 207
-    pub issuer : Option<String>, // FIELD_ISSUER 106
-    pub encoded_issuer_len : Option<usize>, // FIELD_ENCODEDISSUERLEN 348
-    pub encoded_issuer : Option<String>, // FIELD_ENCODEDISSUER 349
-    pub security_desc : Option<String>, // FIELD_SECURITYDESC 107
-    pub encoded_security_desc_len : Option<usize>, // FIELD_ENCODEDSECURITYDESCLEN 350
-    pub encoded_security_desc : Option<String>, // FIELD_ENCODEDSECURITYDESC 351
-
-}
-
-
-
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
-pub struct NoQuoteSets22Fields {
-    pub quote_set_id : Option<String>, // FIELD_QUOTESETID 302
-    pub underlying_symbol : Option<String>, // FIELD_UNDERLYINGSYMBOL 311
-    pub underlying_symbol_sfx : Option<String>, // FIELD_UNDERLYINGSYMBOLSFX 312
-    pub underlying_security_id : Option<String>, // FIELD_UNDERLYINGSECURITYID 309
-    pub underlying_idsource : Option<String>, // FIELD_UNDERLYINGIDSOURCE 305
-    pub underlying_security_type : Option<String>, // FIELD_UNDERLYINGSECURITYTYPE 310
-    pub underlying_maturity_month_year : Option<UtcDate>, // FIELD_UNDERLYINGMATURITYMONTHYEAR 313
-    pub underlying_maturity_day : Option<i32>, // FIELD_UNDERLYINGMATURITYDAY 314
-    pub underlying_put_or_call : Option<i32>, // FIELD_UNDERLYINGPUTORCALL 315
-    pub underlying_strike_price : Option<f32>, // FIELD_UNDERLYINGSTRIKEPRICE 316
-    pub underlying_opt_attribute : Option<char>, // FIELD_UNDERLYINGOPTATTRIBUTE 317
-    pub underlying_contract_multiplier : Option<f32>, // FIELD_UNDERLYINGCONTRACTMULTIPLIER 436
-    pub underlying_coupon_rate : Option<f32>, // FIELD_UNDERLYINGCOUPONRATE 435
-    pub underlying_security_exchange : Option<String>, // FIELD_UNDERLYINGSECURITYEXCHANGE 308
-    pub underlying_issuer : Option<String>, // FIELD_UNDERLYINGISSUER 306
-    pub encoded_underlying_issuer_len : Option<usize>, // FIELD_ENCODEDUNDERLYINGISSUERLEN 362
-    pub encoded_underlying_issuer : Option<String>, // FIELD_ENCODEDUNDERLYINGISSUER 363
-    pub underlying_security_desc : Option<String>, // FIELD_UNDERLYINGSECURITYDESC 307
-    pub encoded_underlying_security_desc_len : Option<usize>, // FIELD_ENCODEDUNDERLYINGSECURITYDESCLEN 364
-    pub encoded_underlying_security_desc : Option<String>, // FIELD_ENCODEDUNDERLYINGSECURITYDESC 365
-    pub tot_quote_entries : Option<i32>, // FIELD_TOTQUOTEENTRIES 304
-    pub no_quote_entries : Option<Vec<NoQuoteEntries18Fields>>, // FIELD_NOQUOTEENTRIES 0
-
-}
-
-
-
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
-pub struct NoMsgTypes14Fields {
-    pub ref_msg_type : Option<String>, // FIELD_REFMSGTYPE 372
-    pub msg_direction : Option<FieldMsgDirectionEnum>, // FIELD_MSGDIRECTION 385
-
-}
-
-
-
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
-pub struct NoRelatedSym26Fields {
-    pub underlying_symbol : Option<String>, // FIELD_UNDERLYINGSYMBOL 311
-    pub underlying_symbol_sfx : Option<String>, // FIELD_UNDERLYINGSYMBOLSFX 312
-    pub underlying_security_id : Option<String>, // FIELD_UNDERLYINGSECURITYID 309
-    pub underlying_idsource : Option<String>, // FIELD_UNDERLYINGIDSOURCE 305
-    pub underlying_security_type : Option<String>, // FIELD_UNDERLYINGSECURITYTYPE 310
-    pub underlying_maturity_month_year : Option<UtcDate>, // FIELD_UNDERLYINGMATURITYMONTHYEAR 313
-    pub underlying_maturity_day : Option<i32>, // FIELD_UNDERLYINGMATURITYDAY 314
-    pub underlying_put_or_call : Option<i32>, // FIELD_UNDERLYINGPUTORCALL 315
-    pub underlying_strike_price : Option<f32>, // FIELD_UNDERLYINGSTRIKEPRICE 316
-    pub underlying_opt_attribute : Option<char>, // FIELD_UNDERLYINGOPTATTRIBUTE 317
-    pub underlying_contract_multiplier : Option<f32>, // FIELD_UNDERLYINGCONTRACTMULTIPLIER 436
-    pub underlying_coupon_rate : Option<f32>, // FIELD_UNDERLYINGCOUPONRATE 435
-    pub underlying_security_exchange : Option<String>, // FIELD_UNDERLYINGSECURITYEXCHANGE 308
-    pub underlying_issuer : Option<String>, // FIELD_UNDERLYINGISSUER 306
-    pub encoded_underlying_issuer_len : Option<usize>, // FIELD_ENCODEDUNDERLYINGISSUERLEN 362
-    pub encoded_underlying_issuer : Option<String>, // FIELD_ENCODEDUNDERLYINGISSUER 363
-    pub underlying_security_desc : Option<String>, // FIELD_UNDERLYINGSECURITYDESC 307
-    pub encoded_underlying_security_desc_len : Option<usize>, // FIELD_ENCODEDUNDERLYINGSECURITYDESCLEN 364
-    pub encoded_underlying_security_desc : Option<String>, // FIELD_ENCODEDUNDERLYINGSECURITYDESC 365
-    pub ratio_qty : Option<f32>, // FIELD_RATIOQTY 319
-    pub side : Option<FieldSideEnum>, // FIELD_SIDE 54
-    pub underlying_currency : Option<f32>, // FIELD_UNDERLYINGCURRENCY 318
-
-}
-
-
-
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
-pub struct NoQuoteEntries18Fields {
-    pub quote_entry_id : Option<String>, // FIELD_QUOTEENTRYID 299
-    pub symbol : Option<String>, // FIELD_SYMBOL 55
-    pub symbol_sfx : Option<String>, // FIELD_SYMBOLSFX 65
-    pub security_id : Option<String>, // FIELD_SECURITYID 48
-    pub idsource : Option<FieldIDSourceEnum>, // FIELD_IDSOURCE 22
-    pub security_type : Option<FieldSecurityTypeEnum>, // FIELD_SECURITYTYPE 167
-    pub maturity_month_year : Option<UtcDate>, // FIELD_MATURITYMONTHYEAR 200
-    pub maturity_day : Option<i32>, // FIELD_MATURITYDAY 205
-    pub put_or_call : Option<FieldPutOrCallEnum>, // FIELD_PUTORCALL 201
-    pub strike_price : Option<f32>, // FIELD_STRIKEPRICE 202
-    pub opt_attribute : Option<char>, // FIELD_OPTATTRIBUTE 206
-    pub contract_multiplier : Option<f32>, // FIELD_CONTRACTMULTIPLIER 231
-    pub coupon_rate : Option<f32>, // FIELD_COUPONRATE 223
-    pub security_exchange : Option<String>, // FIELD_SECURITYEXCHANGE 207
-    pub issuer : Option<String>, // FIELD_ISSUER 106
-    pub encoded_issuer_len : Option<usize>, // FIELD_ENCODEDISSUERLEN 348
-    pub encoded_issuer : Option<String>, // FIELD_ENCODEDISSUER 349
-    pub security_desc : Option<String>, // FIELD_SECURITYDESC 107
-    pub encoded_security_desc_len : Option<usize>, // FIELD_ENCODEDSECURITYDESCLEN 350
-    pub encoded_security_desc : Option<String>, // FIELD_ENCODEDSECURITYDESC 351
-    pub quote_entry_reject_reason : Option<FieldQuoteEntryRejectReasonEnum>, // FIELD_QUOTEENTRYREJECTREASON 368
-
-}
-
-
-
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
-pub struct NoStrikes28Fields {
-    pub symbol : String, // FIELD_SYMBOL 55
-    pub symbol_sfx : Option<String>, // FIELD_SYMBOLSFX 65
-    pub security_id : Option<String>, // FIELD_SECURITYID 48
-    pub idsource : Option<FieldIDSourceEnum>, // FIELD_IDSOURCE 22
-    pub security_type : Option<FieldSecurityTypeEnum>, // FIELD_SECURITYTYPE 167
-    pub maturity_month_year : Option<UtcDate>, // FIELD_MATURITYMONTHYEAR 200
-    pub maturity_day : Option<i32>, // FIELD_MATURITYDAY 205
-    pub put_or_call : Option<FieldPutOrCallEnum>, // FIELD_PUTORCALL 201
-    pub strike_price : Option<f32>, // FIELD_STRIKEPRICE 202
-    pub opt_attribute : Option<char>, // FIELD_OPTATTRIBUTE 206
-    pub contract_multiplier : Option<f32>, // FIELD_CONTRACTMULTIPLIER 231
-    pub coupon_rate : Option<f32>, // FIELD_COUPONRATE 223
-    pub security_exchange : Option<String>, // FIELD_SECURITYEXCHANGE 207
-    pub issuer : Option<String>, // FIELD_ISSUER 106
-    pub encoded_issuer_len : Option<usize>, // FIELD_ENCODEDISSUERLEN 348
-    pub encoded_issuer : Option<String>, // FIELD_ENCODEDISSUER 349
-    pub security_desc : Option<String>, // FIELD_SECURITYDESC 107
-    pub encoded_security_desc_len : Option<usize>, // FIELD_ENCODEDSECURITYDESCLEN 350
-    pub encoded_security_desc : Option<String>, // FIELD_ENCODEDSECURITYDESC 351
-    pub prev_close_px : Option<f32>, // FIELD_PREVCLOSEPX 140
-    pub cl_ord_id : Option<String>, // FIELD_CLORDID 11
-    pub side : Option<FieldSideEnum>, // FIELD_SIDE 54
-    pub price : f32, // FIELD_PRICE 44
-    pub currency : Option<f32>, // FIELD_CURRENCY 15
-    pub text : Option<String>, // FIELD_TEXT 58
-    pub encoded_text_len : Option<usize>, // FIELD_ENCODEDTEXTLEN 354
-    pub encoded_text : Option<String>, // FIELD_ENCODEDTEXT 355
-
-}
-
-
-
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
-pub struct NoMDEntries10Fields {
-    pub mdentry_type : FieldMDEntryTypeEnum, // FIELD_MDENTRYTYPE 269
-    pub mdentry_px : f32, // FIELD_MDENTRYPX 270
-    pub currency : Option<f32>, // FIELD_CURRENCY 15
-    pub mdentry_size : Option<f32>, // FIELD_MDENTRYSIZE 271
-    pub mdentry_date : Option<UtcDate>, // FIELD_MDENTRYDATE 272
-    pub mdentry_time : Option<UtcTime>, // FIELD_MDENTRYTIME 273
-    pub tick_direction : Option<FieldTickDirectionEnum>, // FIELD_TICKDIRECTION 274
-    pub mdmkt : Option<String>, // FIELD_MDMKT 275
-    pub trading_session_id : Option<String>, // FIELD_TRADINGSESSIONID 336
-    pub quote_condition : Option<FieldQuoteConditionEnum>, // FIELD_QUOTECONDITION 276
-    pub trade_condition : Option<FieldTradeConditionEnum>, // FIELD_TRADECONDITION 277
-    pub mdentry_originator : Option<String>, // FIELD_MDENTRYORIGINATOR 282
-    pub location_id : Option<String>, // FIELD_LOCATIONID 283
-    pub desk_id : Option<String>, // FIELD_DESKID 284
-    pub open_close_settle_flag : Option<FieldOpenCloseSettleFlagEnum>, // FIELD_OPENCLOSESETTLEFLAG 286
-    pub time_in_force : Option<FieldTimeInForceEnum>, // FIELD_TIMEINFORCE 59
-    pub expire_date : Option<UtcDateTime>, // FIELD_EXPIREDATE 432
-    pub expire_time : Option<UtcDateTime>, // FIELD_EXPIRETIME 126
-    pub min_qty : Option<f32>, // FIELD_MINQTY 110
-    pub exec_inst : Option<FieldExecInstEnum>, // FIELD_EXECINST 18
-    pub seller_days : Option<i32>, // FIELD_SELLERDAYS 287
-    pub order_id : Option<String>, // FIELD_ORDERID 37
-    pub quote_entry_id : Option<String>, // FIELD_QUOTEENTRYID 299
-    pub mdentry_buyer : Option<String>, // FIELD_MDENTRYBUYER 288
-    pub mdentry_seller : Option<String>, // FIELD_MDENTRYSELLER 289
-    pub number_of_orders : Option<i32>, // FIELD_NUMBEROFORDERS 346
-    pub mdentry_position_no : Option<i32>, // FIELD_MDENTRYPOSITIONNO 290
-    pub text : Option<String>, // FIELD_TEXT 58
-    pub encoded_text_len : Option<usize>, // FIELD_ENCODEDTEXTLEN 354
-    pub encoded_text : Option<String>, // FIELD_ENCODEDTEXT 355
-
-}
-
-
-
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
-pub struct NoQuoteSets21Fields {
-    pub quote_set_id : String, // FIELD_QUOTESETID 302
-    pub underlying_symbol : String, // FIELD_UNDERLYINGSYMBOL 311
-    pub underlying_symbol_sfx : Option<String>, // FIELD_UNDERLYINGSYMBOLSFX 312
-    pub underlying_security_id : Option<String>, // FIELD_UNDERLYINGSECURITYID 309
-    pub underlying_idsource : Option<String>, // FIELD_UNDERLYINGIDSOURCE 305
-    pub underlying_security_type : Option<String>, // FIELD_UNDERLYINGSECURITYTYPE 310
-    pub underlying_maturity_month_year : Option<UtcDate>, // FIELD_UNDERLYINGMATURITYMONTHYEAR 313
-    pub underlying_maturity_day : Option<i32>, // FIELD_UNDERLYINGMATURITYDAY 314
-    pub underlying_put_or_call : Option<i32>, // FIELD_UNDERLYINGPUTORCALL 315
-    pub underlying_strike_price : Option<f32>, // FIELD_UNDERLYINGSTRIKEPRICE 316
-    pub underlying_opt_attribute : Option<char>, // FIELD_UNDERLYINGOPTATTRIBUTE 317
-    pub underlying_contract_multiplier : Option<f32>, // FIELD_UNDERLYINGCONTRACTMULTIPLIER 436
-    pub underlying_coupon_rate : Option<f32>, // FIELD_UNDERLYINGCOUPONRATE 435
-    pub underlying_security_exchange : Option<String>, // FIELD_UNDERLYINGSECURITYEXCHANGE 308
-    pub underlying_issuer : Option<String>, // FIELD_UNDERLYINGISSUER 306
-    pub encoded_underlying_issuer_len : Option<usize>, // FIELD_ENCODEDUNDERLYINGISSUERLEN 362
-    pub encoded_underlying_issuer : Option<String>, // FIELD_ENCODEDUNDERLYINGISSUER 363
-    pub underlying_security_desc : Option<String>, // FIELD_UNDERLYINGSECURITYDESC 307
-    pub encoded_underlying_security_desc_len : Option<usize>, // FIELD_ENCODEDUNDERLYINGSECURITYDESCLEN 364
-    pub encoded_underlying_security_desc : Option<String>, // FIELD_ENCODEDUNDERLYINGSECURITYDESC 365
-    pub quote_set_valid_until_time : Option<UtcDateTime>, // FIELD_QUOTESETVALIDUNTILTIME 367
-    pub tot_quote_entries : i32, // FIELD_TOTQUOTEENTRIES 304
-    pub no_quote_entries : Vec<NoQuoteEntries19Fields>, // FIELD_NOQUOTEENTRIES 0
-
-}
-
-
-
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
-pub struct NoAllocs3Fields {
-    pub alloc_account : Option<String>, // FIELD_ALLOCACCOUNT 79
-    pub alloc_price : Option<f32>, // FIELD_ALLOCPRICE 366
-    pub alloc_shares : f32, // FIELD_ALLOCSHARES 80
-    pub process_code : Option<FieldProcessCodeEnum>, // FIELD_PROCESSCODE 81
-    pub broker_of_credit : Option<String>, // FIELD_BROKEROFCREDIT 92
-    pub notify_broker_of_credit : Option<bool>, // FIELD_NOTIFYBROKEROFCREDIT 208
-    pub alloc_handl_inst : Option<FieldAllocHandlInstEnum>, // FIELD_ALLOCHANDLINST 209
-    pub alloc_text : Option<String>, // FIELD_ALLOCTEXT 161
-    pub encoded_alloc_text_len : Option<usize>, // FIELD_ENCODEDALLOCTEXTLEN 360
-    pub encoded_alloc_text : Option<String>, // FIELD_ENCODEDALLOCTEXT 361
-    pub exec_broker : Option<String>, // FIELD_EXECBROKER 76
-    pub client_id : Option<String>, // FIELD_CLIENTID 109
-    pub commission : Option<f32>, // FIELD_COMMISSION 12
-    pub comm_type : Option<FieldCommTypeEnum>, // FIELD_COMMTYPE 13
-    pub alloc_avg_px : Option<f32>, // FIELD_ALLOCAVGPX 153
-    pub alloc_net_money : Option<f32>, // FIELD_ALLOCNETMONEY 154
-    pub settl_curr_amt : Option<f32>, // FIELD_SETTLCURRAMT 119
-    pub settl_currency : Option<f32>, // FIELD_SETTLCURRENCY 120
-    pub settl_curr_fx_rate : Option<f32>, // FIELD_SETTLCURRFXRATE 155
-    pub settl_curr_fx_rate_calc : Option<FieldSettlCurrFxRateCalcEnum>, // FIELD_SETTLCURRFXRATECALC 156
-    pub accrued_interest_amt : Option<f32>, // FIELD_ACCRUEDINTERESTAMT 159
-    pub settl_inst_mode : Option<FieldSettlInstModeEnum>, // FIELD_SETTLINSTMODE 160
-    pub no_misc_fees : Option<Vec<NoMiscFees13Fields>>, // FIELD_NOMISCFEES 0
-
-}
-
-
-
-
-
-
-
 
 // Fields Constants / enums
 
 const FIELD_ACCOUNT : u32 = 1; // STRING
 
+
 const FIELD_ADVID : u32 = 2; // STRING
+
 
 const FIELD_ADVREFID : u32 = 3; // STRING
 
+
 const FIELD_ADVSIDE : u32 = 4; // CHAR
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldAdvSideEnum {
     Buy, // = "B"
@@ -2142,6 +766,8 @@ impl Default for FieldAdvSideEnum {
     }
 }
 const FIELD_ADVTRANSTYPE : u32 = 5; // STRING
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldAdvTransTypeEnum {
     Cancel, // = "C"
@@ -2193,19 +819,28 @@ impl Default for FieldAdvTransTypeEnum {
 }
 const FIELD_AVGPX : u32 = 6; // PRICE
 
+
 const FIELD_BEGINSEQNO : u32 = 7; // INT
+
 
 const FIELD_BEGINSTRING : u32 = 8; // STRING
 
+
 const FIELD_BODYLENGTH : u32 = 9; // INT
+
 
 const FIELD_CHECKSUM : u32 = 10; // STRING
 
+
 const FIELD_CLORDID : u32 = 11; // STRING
+
 
 const FIELD_COMMISSION : u32 = 12; // AMT
 
+
 const FIELD_COMMTYPE : u32 = 13; // CHAR
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldCommTypeEnum {
     PerShare, // = "1"
@@ -2257,13 +892,19 @@ impl Default for FieldCommTypeEnum {
 }
 const FIELD_CUMQTY : u32 = 14; // QTY
 
+
 const FIELD_CURRENCY : u32 = 15; // CURRENCY
+
 
 const FIELD_ENDSEQNO : u32 = 16; // INT
 
+
 const FIELD_EXECID : u32 = 17; // STRING
 
+
 const FIELD_EXECINST : u32 = 18; // MULTIPLEVALUESTRING
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldExecInstEnum {
     StayOnOfferside, // = "0"
@@ -2445,7 +1086,10 @@ impl Default for FieldExecInstEnum {
 }
 const FIELD_EXECREFID : u32 = 19; // STRING
 
+
 const FIELD_EXECTRANSTYPE : u32 = 20; // CHAR
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldExecTransTypeEnum {
     New, // = "0"
@@ -2501,6 +1145,8 @@ impl Default for FieldExecTransTypeEnum {
     }
 }
 const FIELD_HANDLINST : u32 = 21; // CHAR
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldHandlInstEnum {
     AutomatedExecutionOrderPrivateNoBrokerIntervention, // = "1"
@@ -2551,6 +1197,8 @@ impl Default for FieldHandlInstEnum {
     }
 }
 const FIELD_IDSOURCE : u32 = 22; // STRING
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldIDSourceEnum {
     Cusip, // = "1"
@@ -2632,9 +1280,13 @@ impl Default for FieldIDSourceEnum {
 }
 const FIELD_IOIID : u32 = 23; // STRING
 
+
 const FIELD_IOIOTHSVC : u32 = 24; // CHAR
 
+
 const FIELD_IOIQLTYIND : u32 = 25; // CHAR
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldIOIQltyIndEnum {
     High, // = "H"
@@ -2686,7 +1338,10 @@ impl Default for FieldIOIQltyIndEnum {
 }
 const FIELD_IOIREFID : u32 = 26; // STRING
 
+
 const FIELD_IOISHARES : u32 = 27; // STRING
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldIOISharesEnum {
     Large, // = "L"
@@ -2737,6 +1392,8 @@ impl Default for FieldIOISharesEnum {
     }
 }
 const FIELD_IOITRANSTYPE : u32 = 28; // CHAR
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldIOITransTypeEnum {
     Cancel, // = "C"
@@ -2787,6 +1444,8 @@ impl Default for FieldIOITransTypeEnum {
     }
 }
 const FIELD_LASTCAPACITY : u32 = 29; // CHAR
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldLastCapacityEnum {
     Agent, // = "1"
@@ -2843,15 +1502,22 @@ impl Default for FieldLastCapacityEnum {
 }
 const FIELD_LASTMKT : u32 = 30; // EXCHANGE
 
+
 const FIELD_LASTPX : u32 = 31; // PRICE
+
 
 const FIELD_LASTSHARES : u32 = 32; // QTY
 
+
 const FIELD_LINESOFTEXT : u32 = 33; // INT
+
 
 const FIELD_MSGSEQNUM : u32 = 34; // INT
 
+
 const FIELD_MSGTYPE : u32 = 35; // STRING
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldMsgTypeEnum {
     Heartbeat, // = "0"
@@ -3118,11 +1784,16 @@ impl Default for FieldMsgTypeEnum {
 }
 const FIELD_NEWSEQNO : u32 = 36; // INT
 
+
 const FIELD_ORDERID : u32 = 37; // STRING
+
 
 const FIELD_ORDERQTY : u32 = 38; // QTY
 
+
 const FIELD_ORDSTATUS : u32 = 39; // CHAR
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldOrdStatusEnum {
     New, // = "0"
@@ -3233,6 +1904,8 @@ impl Default for FieldOrdStatusEnum {
     }
 }
 const FIELD_ORDTYPE : u32 = 40; // CHAR
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldOrdTypeEnum {
     Market, // = "1"
@@ -3364,17 +2037,25 @@ impl Default for FieldOrdTypeEnum {
 }
 const FIELD_ORIGCLORDID : u32 = 41; // STRING
 
+
 const FIELD_ORIGTIME : u32 = 42; // UTCTIMESTAMP
+
 
 const FIELD_POSSDUPFLAG : u32 = 43; // BOOLEAN
 
+
 const FIELD_PRICE : u32 = 44; // PRICE
+
 
 const FIELD_REFSEQNUM : u32 = 45; // INT
 
+
 const FIELD_RELATDSYM : u32 = 46; // STRING
 
+
 const FIELD_RULE80A : u32 = 47; // CHAR
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldRule80AEnum {
     AgencySingleOrder, // = "A"
@@ -3526,17 +2207,25 @@ impl Default for FieldRule80AEnum {
 }
 const FIELD_SECURITYID : u32 = 48; // STRING
 
+
 const FIELD_SENDERCOMPID : u32 = 49; // STRING
+
 
 const FIELD_SENDERSUBID : u32 = 50; // STRING
 
+
 const FIELD_SENDINGDATE : u32 = 51; // LOCALMKTDATE
+
 
 const FIELD_SENDINGTIME : u32 = 52; // UTCTIMESTAMP
 
+
 const FIELD_SHARES : u32 = 53; // QTY
 
+
 const FIELD_SIDE : u32 = 54; // CHAR
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldSideEnum {
     Buy, // = "1"
@@ -3618,13 +2307,19 @@ impl Default for FieldSideEnum {
 }
 const FIELD_SYMBOL : u32 = 55; // STRING
 
+
 const FIELD_TARGETCOMPID : u32 = 56; // STRING
+
 
 const FIELD_TARGETSUBID : u32 = 57; // STRING
 
+
 const FIELD_TEXT : u32 = 58; // STRING
 
+
 const FIELD_TIMEINFORCE : u32 = 59; // CHAR
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldTimeInForceEnum {
     Day, // = "0"
@@ -3696,7 +2391,10 @@ impl Default for FieldTimeInForceEnum {
 }
 const FIELD_TRANSACTTIME : u32 = 60; // UTCTIMESTAMP
 
+
 const FIELD_URGENCY : u32 = 61; // CHAR
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldUrgencyEnum {
     Normal, // = "0"
@@ -3748,7 +2446,10 @@ impl Default for FieldUrgencyEnum {
 }
 const FIELD_VALIDUNTILTIME : u32 = 62; // UTCTIMESTAMP
 
+
 const FIELD_SETTLMNTTYP : u32 = 63; // CHAR
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldSettlmntTypEnum {
     Regular, // = "0"
@@ -3835,19 +2536,28 @@ impl Default for FieldSettlmntTypEnum {
 }
 const FIELD_FUTSETTDATE : u32 = 64; // LOCALMKTDATE
 
+
 const FIELD_SYMBOLSFX : u32 = 65; // STRING
+
 
 const FIELD_LISTID : u32 = 66; // STRING
 
+
 const FIELD_LISTSEQNO : u32 = 67; // INT
+
 
 const FIELD_TOTNOORDERS : u32 = 68; // INT
 
+
 const FIELD_LISTEXECINST : u32 = 69; // STRING
+
 
 const FIELD_ALLOCID : u32 = 70; // STRING
 
+
 const FIELD_ALLOCTRANSTYPE : u32 = 71; // CHAR
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldAllocTransTypeEnum {
     New, // = "0"
@@ -3914,15 +2624,22 @@ impl Default for FieldAllocTransTypeEnum {
 }
 const FIELD_REFALLOCID : u32 = 72; // STRING
 
+
 const FIELD_NOORDERS : u32 = 73; // INT
+
 
 const FIELD_AVGPRXPRECISION : u32 = 74; // INT
 
+
 const FIELD_TRADEDATE : u32 = 75; // LOCALMKTDATE
+
 
 const FIELD_EXECBROKER : u32 = 76; // STRING
 
+
 const FIELD_OPENCLOSE : u32 = 77; // CHAR
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldOpenCloseEnum {
     Close, // = "C"
@@ -3969,11 +2686,16 @@ impl Default for FieldOpenCloseEnum {
 }
 const FIELD_NOALLOCS : u32 = 78; // INT
 
+
 const FIELD_ALLOCACCOUNT : u32 = 79; // STRING
+
 
 const FIELD_ALLOCSHARES : u32 = 80; // QTY
 
+
 const FIELD_PROCESSCODE : u32 = 81; // CHAR
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldProcessCodeEnum {
     Regular, // = "0"
@@ -4045,15 +2767,22 @@ impl Default for FieldProcessCodeEnum {
 }
 const FIELD_NORPTS : u32 = 82; // INT
 
+
 const FIELD_RPTSEQ : u32 = 83; // INT
+
 
 const FIELD_CXLQTY : u32 = 84; // QTY
 
+
 const FIELD_NODLVYINST : u32 = 85; // INT
+
 
 const FIELD_DLVYINST : u32 = 86; // STRING
 
+
 const FIELD_ALLOCSTATUS : u32 = 87; // INT
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldAllocStatusEnum {
     Accepted, // = "0"
@@ -4109,6 +2838,8 @@ impl Default for FieldAllocStatusEnum {
     }
 }
 const FIELD_ALLOCREJCODE : u32 = 88; // INT
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldAllocRejCodeEnum {
     UnknownAccount, // = "0"
@@ -4185,15 +2916,22 @@ impl Default for FieldAllocRejCodeEnum {
 }
 const FIELD_SIGNATURE : u32 = 89; // DATA
 
+
 const FIELD_SECUREDATALEN : u32 = 90; // LENGTH
+
 
 const FIELD_SECUREDATA : u32 = 91; // DATA
 
+
 const FIELD_BROKEROFCREDIT : u32 = 92; // STRING
+
 
 const FIELD_SIGNATURELENGTH : u32 = 93; // LENGTH
 
+
 const FIELD_EMAILTYPE : u32 = 94; // CHAR
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldEmailTypeEnum {
     New, // = "0"
@@ -4245,11 +2983,16 @@ impl Default for FieldEmailTypeEnum {
 }
 const FIELD_RAWDATALENGTH : u32 = 95; // LENGTH
 
+
 const FIELD_RAWDATA : u32 = 96; // DATA
+
 
 const FIELD_POSSRESEND : u32 = 97; // BOOLEAN
 
+
 const FIELD_ENCRYPTMETHOD : u32 = 98; // INT
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldEncryptMethodEnum {
     None, // = "0"
@@ -4321,9 +3064,13 @@ impl Default for FieldEncryptMethodEnum {
 }
 const FIELD_STOPPX : u32 = 99; // PRICE
 
+
 const FIELD_EXDESTINATION : u32 = 100; // EXCHANGE
 
+
 const FIELD_CXLREJREASON : u32 = 102; // INT
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldCxlRejReasonEnum {
     TooLateToCancel, // = "0"
@@ -4379,6 +3126,8 @@ impl Default for FieldCxlRejReasonEnum {
     }
 }
 const FIELD_ORDREJREASON : u32 = 103; // INT
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldOrdRejReasonEnum {
     BrokerOption, // = "0"
@@ -4459,6 +3208,8 @@ impl Default for FieldOrdRejReasonEnum {
     }
 }
 const FIELD_IOIQUALIFIER : u32 = 104; // CHAR
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldIOIQualifierEnum {
     AllOrNone, // = "A"
@@ -4575,49 +3326,73 @@ impl Default for FieldIOIQualifierEnum {
 }
 const FIELD_WAVENO : u32 = 105; // STRING
 
+
 const FIELD_ISSUER : u32 = 106; // STRING
+
 
 const FIELD_SECURITYDESC : u32 = 107; // STRING
 
+
 const FIELD_HEARTBTINT : u32 = 108; // INT
+
 
 const FIELD_CLIENTID : u32 = 109; // STRING
 
+
 const FIELD_MINQTY : u32 = 110; // QTY
+
 
 const FIELD_MAXFLOOR : u32 = 111; // QTY
 
+
 const FIELD_TESTREQID : u32 = 112; // STRING
+
 
 const FIELD_REPORTTOEXCH : u32 = 113; // BOOLEAN
 
+
 const FIELD_LOCATEREQD : u32 = 114; // BOOLEAN
+
 
 const FIELD_ONBEHALFOFCOMPID : u32 = 115; // STRING
 
+
 const FIELD_ONBEHALFOFSUBID : u32 = 116; // STRING
+
 
 const FIELD_QUOTEID : u32 = 117; // STRING
 
+
 const FIELD_NETMONEY : u32 = 118; // AMT
+
 
 const FIELD_SETTLCURRAMT : u32 = 119; // AMT
 
+
 const FIELD_SETTLCURRENCY : u32 = 120; // CURRENCY
+
 
 const FIELD_FOREXREQ : u32 = 121; // BOOLEAN
 
+
 const FIELD_ORIGSENDINGTIME : u32 = 122; // UTCTIMESTAMP
+
 
 const FIELD_GAPFILLFLAG : u32 = 123; // BOOLEAN
 
+
 const FIELD_NOEXECS : u32 = 124; // INT
+
 
 const FIELD_CXLTYPE : u32 = 125; // CHAR
 
+
 const FIELD_EXPIRETIME : u32 = 126; // UTCTIMESTAMP
 
+
 const FIELD_DKREASON : u32 = 127; // CHAR
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldDKReasonEnum {
     UnknownSymbol, // = "A"
@@ -4684,27 +3459,40 @@ impl Default for FieldDKReasonEnum {
 }
 const FIELD_DELIVERTOCOMPID : u32 = 128; // STRING
 
+
 const FIELD_DELIVERTOSUBID : u32 = 129; // STRING
+
 
 const FIELD_IOINATURALFLAG : u32 = 130; // BOOLEAN
 
+
 const FIELD_QUOTEREQID : u32 = 131; // STRING
+
 
 const FIELD_BIDPX : u32 = 132; // PRICE
 
+
 const FIELD_OFFERPX : u32 = 133; // PRICE
+
 
 const FIELD_BIDSIZE : u32 = 134; // QTY
 
+
 const FIELD_OFFERSIZE : u32 = 135; // QTY
+
 
 const FIELD_NOMISCFEES : u32 = 136; // INT
 
+
 const FIELD_MISCFEEAMT : u32 = 137; // AMT
+
 
 const FIELD_MISCFEECURR : u32 = 138; // CURRENCY
 
+
 const FIELD_MISCFEETYPE : u32 = 139; // CHAR
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldMiscFeeTypeEnum {
     Regulatory, // = "1"
@@ -4786,25 +3574,37 @@ impl Default for FieldMiscFeeTypeEnum {
 }
 const FIELD_PREVCLOSEPX : u32 = 140; // PRICE
 
+
 const FIELD_RESETSEQNUMFLAG : u32 = 141; // BOOLEAN
+
 
 const FIELD_SENDERLOCATIONID : u32 = 142; // STRING
 
+
 const FIELD_TARGETLOCATIONID : u32 = 143; // STRING
+
 
 const FIELD_ONBEHALFOFLOCATIONID : u32 = 144; // STRING
 
+
 const FIELD_DELIVERTOLOCATIONID : u32 = 145; // STRING
+
 
 const FIELD_NORELATEDSYM : u32 = 146; // INT
 
+
 const FIELD_SUBJECT : u32 = 147; // STRING
+
 
 const FIELD_HEADLINE : u32 = 148; // STRING
 
+
 const FIELD_URLLINK : u32 = 149; // STRING
 
+
 const FIELD_EXECTYPE : u32 = 150; // CHAR
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldExecTypeEnum {
     New, // = "0"
@@ -4916,15 +3716,22 @@ impl Default for FieldExecTypeEnum {
 }
 const FIELD_LEAVESQTY : u32 = 151; // QTY
 
+
 const FIELD_CASHORDERQTY : u32 = 152; // QTY
+
 
 const FIELD_ALLOCAVGPX : u32 = 153; // PRICE
 
+
 const FIELD_ALLOCNETMONEY : u32 = 154; // AMT
+
 
 const FIELD_SETTLCURRFXRATE : u32 = 155; // FLOAT
 
+
 const FIELD_SETTLCURRFXRATECALC : u32 = 156; // CHAR
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldSettlCurrFxRateCalcEnum {
     Multiply, // = "M"
@@ -4971,11 +3778,16 @@ impl Default for FieldSettlCurrFxRateCalcEnum {
 }
 const FIELD_NUMDAYSINTEREST : u32 = 157; // INT
 
+
 const FIELD_ACCRUEDINTERESTRATE : u32 = 158; // FLOAT
+
 
 const FIELD_ACCRUEDINTERESTAMT : u32 = 159; // AMT
 
+
 const FIELD_SETTLINSTMODE : u32 = 160; // CHAR
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldSettlInstModeEnum {
     Default, // = "0"
@@ -5032,9 +3844,13 @@ impl Default for FieldSettlInstModeEnum {
 }
 const FIELD_ALLOCTEXT : u32 = 161; // STRING
 
+
 const FIELD_SETTLINSTID : u32 = 162; // STRING
 
+
 const FIELD_SETTLINSTTRANSTYPE : u32 = 163; // CHAR
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldSettlInstTransTypeEnum {
     Cancel, // = "C"
@@ -5086,7 +3902,10 @@ impl Default for FieldSettlInstTransTypeEnum {
 }
 const FIELD_EMAILTHREADID : u32 = 164; // STRING
 
+
 const FIELD_SETTLINSTSOURCE : u32 = 165; // CHAR
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldSettlInstSourceEnum {
     BrokersInstructions, // = "1"
@@ -5132,6 +3951,8 @@ impl Default for FieldSettlInstSourceEnum {
     }
 }
 const FIELD_SETTLLOCATION : u32 = 166; // STRING
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldSettlLocationEnum {
     Cedel, // = "CED"
@@ -5202,6 +4023,8 @@ impl Default for FieldSettlLocationEnum {
     }
 }
 const FIELD_SECURITYTYPE : u32 = 167; // STRING
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldSecurityTypeEnum {
     WildcardEntry, // = "?"
@@ -5403,7 +4226,10 @@ impl Default for FieldSecurityTypeEnum {
 }
 const FIELD_EFFECTIVETIME : u32 = 168; // UTCTIMESTAMP
 
+
 const FIELD_STANDINSTDBTYPE : u32 = 169; // INT
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldStandInstDbTypeEnum {
     Other, // = "0"
@@ -5460,59 +4286,88 @@ impl Default for FieldStandInstDbTypeEnum {
 }
 const FIELD_STANDINSTDBNAME : u32 = 170; // STRING
 
+
 const FIELD_STANDINSTDBID : u32 = 171; // STRING
+
 
 const FIELD_SETTLDELIVERYTYPE : u32 = 172; // INT
 
+
 const FIELD_SETTLDEPOSITORYCODE : u32 = 173; // STRING
+
 
 const FIELD_SETTLBRKRCODE : u32 = 174; // STRING
 
+
 const FIELD_SETTLINSTCODE : u32 = 175; // STRING
+
 
 const FIELD_SECURITYSETTLAGENTNAME : u32 = 176; // STRING
 
+
 const FIELD_SECURITYSETTLAGENTCODE : u32 = 177; // STRING
+
 
 const FIELD_SECURITYSETTLAGENTACCTNUM : u32 = 178; // STRING
 
+
 const FIELD_SECURITYSETTLAGENTACCTNAME : u32 = 179; // STRING
+
 
 const FIELD_SECURITYSETTLAGENTCONTACTNAME : u32 = 180; // STRING
 
+
 const FIELD_SECURITYSETTLAGENTCONTACTPHONE : u32 = 181; // STRING
+
 
 const FIELD_CASHSETTLAGENTNAME : u32 = 182; // STRING
 
+
 const FIELD_CASHSETTLAGENTCODE : u32 = 183; // STRING
+
 
 const FIELD_CASHSETTLAGENTACCTNUM : u32 = 184; // STRING
 
+
 const FIELD_CASHSETTLAGENTACCTNAME : u32 = 185; // STRING
+
 
 const FIELD_CASHSETTLAGENTCONTACTNAME : u32 = 186; // STRING
 
+
 const FIELD_CASHSETTLAGENTCONTACTPHONE : u32 = 187; // STRING
+
 
 const FIELD_BIDSPOTRATE : u32 = 188; // PRICE
 
+
 const FIELD_BIDFORWARDPOINTS : u32 = 189; // PRICEOFFSET
+
 
 const FIELD_OFFERSPOTRATE : u32 = 190; // PRICE
 
+
 const FIELD_OFFERFORWARDPOINTS : u32 = 191; // PRICEOFFSET
+
 
 const FIELD_ORDERQTY2 : u32 = 192; // QTY
 
+
 const FIELD_FUTSETTDATE2 : u32 = 193; // LOCALMKTDATE
+
 
 const FIELD_LASTSPOTRATE : u32 = 194; // PRICE
 
+
 const FIELD_LASTFORWARDPOINTS : u32 = 195; // PRICEOFFSET
+
 
 const FIELD_ALLOCLINKID : u32 = 196; // STRING
 
+
 const FIELD_ALLOCLINKTYPE : u32 = 197; // INT
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldAllocLinkTypeEnum {
     FXNetting, // = "0"
@@ -5559,11 +4414,16 @@ impl Default for FieldAllocLinkTypeEnum {
 }
 const FIELD_SECONDARYORDERID : u32 = 198; // STRING
 
+
 const FIELD_NOIOIQUALIFIERS : u32 = 199; // INT
+
 
 const FIELD_MATURITYMONTHYEAR : u32 = 200; // MONTHYEAR
 
+
 const FIELD_PUTORCALL : u32 = 201; // INT
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldPutOrCallEnum {
     Put, // = "0"
@@ -5610,7 +4470,10 @@ impl Default for FieldPutOrCallEnum {
 }
 const FIELD_STRIKEPRICE : u32 = 202; // PRICE
 
+
 const FIELD_COVEREDORUNCOVERED : u32 = 203; // INT
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldCoveredOrUncoveredEnum {
     Covered, // = "0"
@@ -5656,6 +4519,8 @@ impl Default for FieldCoveredOrUncoveredEnum {
     }
 }
 const FIELD_CUSTOMERORFIRM : u32 = 204; // INT
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldCustomerOrFirmEnum {
     Customer, // = "0"
@@ -5702,13 +4567,19 @@ impl Default for FieldCustomerOrFirmEnum {
 }
 const FIELD_MATURITYDAY : u32 = 205; // DAYOFMONTH
 
+
 const FIELD_OPTATTRIBUTE : u32 = 206; // CHAR
+
 
 const FIELD_SECURITYEXCHANGE : u32 = 207; // EXCHANGE
 
+
 const FIELD_NOTIFYBROKEROFCREDIT : u32 = 208; // BOOLEAN
 
+
 const FIELD_ALLOCHANDLINST : u32 = 209; // INT
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldAllocHandlInstEnum {
     Match, // = "1"
@@ -5760,17 +4631,25 @@ impl Default for FieldAllocHandlInstEnum {
 }
 const FIELD_MAXSHOW : u32 = 210; // QTY
 
+
 const FIELD_PEGDIFFERENCE : u32 = 211; // PRICEOFFSET
+
 
 const FIELD_XMLDATALEN : u32 = 212; // LENGTH
 
+
 const FIELD_XMLDATA : u32 = 213; // DATA
+
 
 const FIELD_SETTLINSTREFID : u32 = 214; // STRING
 
+
 const FIELD_NOROUTINGIDS : u32 = 215; // INT
 
+
 const FIELD_ROUTINGTYPE : u32 = 216; // INT
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldRoutingTypeEnum {
     TargetFirm, // = "1"
@@ -5827,9 +4706,13 @@ impl Default for FieldRoutingTypeEnum {
 }
 const FIELD_ROUTINGID : u32 = 217; // STRING
 
+
 const FIELD_SPREADTOBENCHMARK : u32 = 218; // PRICEOFFSET
 
+
 const FIELD_BENCHMARK : u32 = 219; // CHAR
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldBenchmarkEnum {
     Curve, // = "1"
@@ -5911,11 +4794,16 @@ impl Default for FieldBenchmarkEnum {
 }
 const FIELD_COUPONRATE : u32 = 223; // FLOAT
 
+
 const FIELD_CONTRACTMULTIPLIER : u32 = 231; // FLOAT
+
 
 const FIELD_MDREQID : u32 = 262; // STRING
 
+
 const FIELD_SUBSCRIPTIONREQUESTTYPE : u32 = 263; // CHAR
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldSubscriptionRequestTypeEnum {
     Snapshot, // = "0"
@@ -5967,7 +4855,10 @@ impl Default for FieldSubscriptionRequestTypeEnum {
 }
 const FIELD_MARKETDEPTH : u32 = 264; // INT
 
+
 const FIELD_MDUPDATETYPE : u32 = 265; // INT
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldMDUpdateTypeEnum {
     FullRefresh, // = "0"
@@ -6014,11 +4905,16 @@ impl Default for FieldMDUpdateTypeEnum {
 }
 const FIELD_AGGREGATEDBOOK : u32 = 266; // BOOLEAN
 
+
 const FIELD_NOMDENTRYTYPES : u32 = 267; // INT
+
 
 const FIELD_NOMDENTRIES : u32 = 268; // INT
 
+
 const FIELD_MDENTRYTYPE : u32 = 269; // CHAR
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldMDEntryTypeEnum {
     Bid, // = "0"
@@ -6105,13 +5001,19 @@ impl Default for FieldMDEntryTypeEnum {
 }
 const FIELD_MDENTRYPX : u32 = 270; // PRICE
 
+
 const FIELD_MDENTRYSIZE : u32 = 271; // QTY
+
 
 const FIELD_MDENTRYDATE : u32 = 272; // UTCDATE
 
+
 const FIELD_MDENTRYTIME : u32 = 273; // UTCTIMEONLY
 
+
 const FIELD_TICKDIRECTION : u32 = 274; // CHAR
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldTickDirectionEnum {
     PlusTick, // = "0"
@@ -6168,7 +5070,10 @@ impl Default for FieldTickDirectionEnum {
 }
 const FIELD_MDMKT : u32 = 275; // EXCHANGE
 
+
 const FIELD_QUOTECONDITION : u32 = 276; // MULTIPLEVALUESTRING
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldQuoteConditionEnum {
     Open, // = "A"
@@ -6249,6 +5154,8 @@ impl Default for FieldQuoteConditionEnum {
     }
 }
 const FIELD_TRADECONDITION : u32 = 277; // MULTIPLEVALUESTRING
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldTradeConditionEnum {
     Cash, // = "A"
@@ -6355,7 +5262,10 @@ impl Default for FieldTradeConditionEnum {
 }
 const FIELD_MDENTRYID : u32 = 278; // STRING
 
+
 const FIELD_MDUPDATEACTION : u32 = 279; // CHAR
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldMDUpdateActionEnum {
     New, // = "0"
@@ -6407,7 +5317,10 @@ impl Default for FieldMDUpdateActionEnum {
 }
 const FIELD_MDENTRYREFID : u32 = 280; // STRING
 
+
 const FIELD_MDREQREJREASON : u32 = 281; // CHAR
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldMDReqRejReasonEnum {
     UnknownSymbol, // = "0"
@@ -6489,11 +5402,16 @@ impl Default for FieldMDReqRejReasonEnum {
 }
 const FIELD_MDENTRYORIGINATOR : u32 = 282; // STRING
 
+
 const FIELD_LOCATIONID : u32 = 283; // STRING
+
 
 const FIELD_DESKID : u32 = 284; // STRING
 
+
 const FIELD_DELETEREASON : u32 = 285; // CHAR
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldDeleteReasonEnum {
     Cancelation, // = "0"
@@ -6539,6 +5457,8 @@ impl Default for FieldDeleteReasonEnum {
     }
 }
 const FIELD_OPENCLOSESETTLEFLAG : u32 = 286; // CHAR
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldOpenCloseSettleFlagEnum {
     DailyOpen, // = "0"
@@ -6590,13 +5510,19 @@ impl Default for FieldOpenCloseSettleFlagEnum {
 }
 const FIELD_SELLERDAYS : u32 = 287; // INT
 
+
 const FIELD_MDENTRYBUYER : u32 = 288; // STRING
+
 
 const FIELD_MDENTRYSELLER : u32 = 289; // STRING
 
+
 const FIELD_MDENTRYPOSITIONNO : u32 = 290; // INT
 
+
 const FIELD_FINANCIALSTATUS : u32 = 291; // CHAR
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldFinancialStatusEnum {
     Bankrupt, // = "1"
@@ -6637,6 +5563,8 @@ impl Default for FieldFinancialStatusEnum {
     }
 }
 const FIELD_CORPORATEACTION : u32 = 292; // CHAR
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldCorporateActionEnum {
     ExDividend, // = "A"
@@ -6698,13 +5626,19 @@ impl Default for FieldCorporateActionEnum {
 }
 const FIELD_DEFBIDSIZE : u32 = 293; // QTY
 
+
 const FIELD_DEFOFFERSIZE : u32 = 294; // QTY
+
 
 const FIELD_NOQUOTEENTRIES : u32 = 295; // INT
 
+
 const FIELD_NOQUOTESETS : u32 = 296; // INT
 
+
 const FIELD_QUOTEACKSTATUS : u32 = 297; // INT
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldQuoteAckStatusEnum {
     Accepted, // = "0"
@@ -6770,6 +5704,8 @@ impl Default for FieldQuoteAckStatusEnum {
     }
 }
 const FIELD_QUOTECANCELTYPE : u32 = 298; // INT
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldQuoteCancelTypeEnum {
     CancelForSymbol, // = "1"
@@ -6826,7 +5762,10 @@ impl Default for FieldQuoteCancelTypeEnum {
 }
 const FIELD_QUOTEENTRYID : u32 = 299; // STRING
 
+
 const FIELD_QUOTEREJECTREASON : u32 = 300; // INT
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldQuoteRejectReasonEnum {
     UnknownSymbol, // = "1"
@@ -6907,6 +5846,8 @@ impl Default for FieldQuoteRejectReasonEnum {
     }
 }
 const FIELD_QUOTERESPONSELEVEL : u32 = 301; // INT
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldQuoteResponseLevelEnum {
     NoAcknowledgement, // = "0"
@@ -6958,7 +5899,10 @@ impl Default for FieldQuoteResponseLevelEnum {
 }
 const FIELD_QUOTESETID : u32 = 302; // STRING
 
+
 const FIELD_QUOTEREQUESTTYPE : u32 = 303; // INT
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldQuoteRequestTypeEnum {
     Manual, // = "1"
@@ -7005,39 +5949,58 @@ impl Default for FieldQuoteRequestTypeEnum {
 }
 const FIELD_TOTQUOTEENTRIES : u32 = 304; // INT
 
+
 const FIELD_UNDERLYINGIDSOURCE : u32 = 305; // STRING
+
 
 const FIELD_UNDERLYINGISSUER : u32 = 306; // STRING
 
+
 const FIELD_UNDERLYINGSECURITYDESC : u32 = 307; // STRING
+
 
 const FIELD_UNDERLYINGSECURITYEXCHANGE : u32 = 308; // EXCHANGE
 
+
 const FIELD_UNDERLYINGSECURITYID : u32 = 309; // STRING
+
 
 const FIELD_UNDERLYINGSECURITYTYPE : u32 = 310; // STRING
 
+
 const FIELD_UNDERLYINGSYMBOL : u32 = 311; // STRING
+
 
 const FIELD_UNDERLYINGSYMBOLSFX : u32 = 312; // STRING
 
+
 const FIELD_UNDERLYINGMATURITYMONTHYEAR : u32 = 313; // MONTHYEAR
+
 
 const FIELD_UNDERLYINGMATURITYDAY : u32 = 314; // DAYOFMONTH
 
+
 const FIELD_UNDERLYINGPUTORCALL : u32 = 315; // INT
+
 
 const FIELD_UNDERLYINGSTRIKEPRICE : u32 = 316; // PRICE
 
+
 const FIELD_UNDERLYINGOPTATTRIBUTE : u32 = 317; // CHAR
+
 
 const FIELD_UNDERLYINGCURRENCY : u32 = 318; // CURRENCY
 
+
 const FIELD_RATIOQTY : u32 = 319; // QTY
+
 
 const FIELD_SECURITYREQID : u32 = 320; // STRING
 
+
 const FIELD_SECURITYREQUESTTYPE : u32 = 321; // INT
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldSecurityRequestTypeEnum {
     RequestSecurityIdentityAndSpecifications, // = "0"
@@ -7094,7 +6057,10 @@ impl Default for FieldSecurityRequestTypeEnum {
 }
 const FIELD_SECURITYRESPONSEID : u32 = 322; // STRING
 
+
 const FIELD_SECURITYRESPONSETYPE : u32 = 323; // INT
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldSecurityResponseTypeEnum {
     AcceptSecurityProposalAsIs, // = "1"
@@ -7161,9 +6127,13 @@ impl Default for FieldSecurityResponseTypeEnum {
 }
 const FIELD_SECURITYSTATUSREQID : u32 = 324; // STRING
 
+
 const FIELD_UNSOLICITEDINDICATOR : u32 = 325; // BOOLEAN
 
+
 const FIELD_SECURITYTRADINGSTATUS : u32 = 326; // INT
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldSecurityTradingStatusEnum {
     OpeningDelay, // = "1"
@@ -7294,6 +6264,8 @@ impl Default for FieldSecurityTradingStatusEnum {
     }
 }
 const FIELD_HALTREASONCHAR : u32 = 327; // CHAR
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldHaltReasonCharEnum {
     NewsDissemination, // = "D"
@@ -7360,17 +6332,25 @@ impl Default for FieldHaltReasonCharEnum {
 }
 const FIELD_INVIEWOFCOMMON : u32 = 328; // BOOLEAN
 
+
 const FIELD_DUETORELATED : u32 = 329; // BOOLEAN
+
 
 const FIELD_BUYVOLUME : u32 = 330; // QTY
 
+
 const FIELD_SELLVOLUME : u32 = 331; // QTY
+
 
 const FIELD_HIGHPX : u32 = 332; // PRICE
 
+
 const FIELD_LOWPX : u32 = 333; // PRICE
 
+
 const FIELD_ADJUSTMENT : u32 = 334; // INT
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldAdjustmentEnum {
     Cancel, // = "1"
@@ -7422,11 +6402,16 @@ impl Default for FieldAdjustmentEnum {
 }
 const FIELD_TRADSESREQID : u32 = 335; // STRING
 
+
 const FIELD_TRADINGSESSIONID : u32 = 336; // STRING
+
 
 const FIELD_CONTRATRADER : u32 = 337; // STRING
 
+
 const FIELD_TRADSESMETHOD : u32 = 338; // INT
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldTradSesMethodEnum {
     Electronic, // = "1"
@@ -7477,6 +6462,8 @@ impl Default for FieldTradSesMethodEnum {
     }
 }
 const FIELD_TRADSESMODE : u32 = 339; // INT
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldTradSesModeEnum {
     Testing, // = "1"
@@ -7527,6 +6514,8 @@ impl Default for FieldTradSesModeEnum {
     }
 }
 const FIELD_TRADSESSTATUS : u32 = 340; // INT
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldTradSesStatusEnum {
     Halted, // = "1"
@@ -7588,17 +6577,25 @@ impl Default for FieldTradSesStatusEnum {
 }
 const FIELD_TRADSESSTARTTIME : u32 = 341; // UTCTIMESTAMP
 
+
 const FIELD_TRADSESOPENTIME : u32 = 342; // UTCTIMESTAMP
+
 
 const FIELD_TRADSESPRECLOSETIME : u32 = 343; // UTCTIMESTAMP
 
+
 const FIELD_TRADSESCLOSETIME : u32 = 344; // UTCTIMESTAMP
+
 
 const FIELD_TRADSESENDTIME : u32 = 345; // UTCTIMESTAMP
 
+
 const FIELD_NUMBEROFORDERS : u32 = 346; // INT
 
+
 const FIELD_MESSAGEENCODING : u32 = 347; // STRING
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldMessageEncodingEnum {
     EucJp, // = "EUC-JP"
@@ -7655,45 +6652,67 @@ impl Default for FieldMessageEncodingEnum {
 }
 const FIELD_ENCODEDISSUERLEN : u32 = 348; // LENGTH
 
+
 const FIELD_ENCODEDISSUER : u32 = 349; // DATA
+
 
 const FIELD_ENCODEDSECURITYDESCLEN : u32 = 350; // LENGTH
 
+
 const FIELD_ENCODEDSECURITYDESC : u32 = 351; // DATA
+
 
 const FIELD_ENCODEDLISTEXECINSTLEN : u32 = 352; // LENGTH
 
+
 const FIELD_ENCODEDLISTEXECINST : u32 = 353; // DATA
+
 
 const FIELD_ENCODEDTEXTLEN : u32 = 354; // LENGTH
 
+
 const FIELD_ENCODEDTEXT : u32 = 355; // DATA
+
 
 const FIELD_ENCODEDSUBJECTLEN : u32 = 356; // LENGTH
 
+
 const FIELD_ENCODEDSUBJECT : u32 = 357; // DATA
+
 
 const FIELD_ENCODEDHEADLINELEN : u32 = 358; // LENGTH
 
+
 const FIELD_ENCODEDHEADLINE : u32 = 359; // DATA
+
 
 const FIELD_ENCODEDALLOCTEXTLEN : u32 = 360; // LENGTH
 
+
 const FIELD_ENCODEDALLOCTEXT : u32 = 361; // DATA
+
 
 const FIELD_ENCODEDUNDERLYINGISSUERLEN : u32 = 362; // LENGTH
 
+
 const FIELD_ENCODEDUNDERLYINGISSUER : u32 = 363; // DATA
+
 
 const FIELD_ENCODEDUNDERLYINGSECURITYDESCLEN : u32 = 364; // LENGTH
 
+
 const FIELD_ENCODEDUNDERLYINGSECURITYDESC : u32 = 365; // DATA
+
 
 const FIELD_ALLOCPRICE : u32 = 366; // PRICE
 
+
 const FIELD_QUOTESETVALIDUNTILTIME : u32 = 367; // UTCTIMESTAMP
 
+
 const FIELD_QUOTEENTRYREJECTREASON : u32 = 368; // INT
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldQuoteEntryRejectReasonEnum {
     UnknownSymbol, // = "1"
@@ -7775,13 +6794,19 @@ impl Default for FieldQuoteEntryRejectReasonEnum {
 }
 const FIELD_LASTMSGSEQNUMPROCESSED : u32 = 369; // INT
 
+
 const FIELD_ONBEHALFOFSENDINGTIME : u32 = 370; // UTCTIMESTAMP
+
 
 const FIELD_REFTAGID : u32 = 371; // INT
 
+
 const FIELD_REFMSGTYPE : u32 = 372; // STRING
 
+
 const FIELD_SESSIONREJECTREASON : u32 = 373; // INT
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldSessionRejectReasonEnum {
     InvalidTagNumber, // = "0"
@@ -7877,6 +6902,8 @@ impl Default for FieldSessionRejectReasonEnum {
     }
 }
 const FIELD_BIDREQUESTTRANSTYPE : u32 = 374; // CHAR
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldBidRequestTransTypeEnum {
     Cancel, // = "C"
@@ -7923,11 +6950,16 @@ impl Default for FieldBidRequestTransTypeEnum {
 }
 const FIELD_CONTRABROKER : u32 = 375; // STRING
 
+
 const FIELD_COMPLIANCEID : u32 = 376; // STRING
+
 
 const FIELD_SOLICITEDFLAG : u32 = 377; // BOOLEAN
 
+
 const FIELD_EXECRESTATEMENTREASON : u32 = 378; // INT
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldExecRestatementReasonEnum {
     GtCorporateAction, // = "0"
@@ -7994,7 +7026,10 @@ impl Default for FieldExecRestatementReasonEnum {
 }
 const FIELD_BUSINESSREJECTREFID : u32 = 379; // STRING
 
+
 const FIELD_BUSINESSREJECTREASON : u32 = 380; // INT
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldBusinessRejectReasonEnum {
     Other, // = "0"
@@ -8061,13 +7096,19 @@ impl Default for FieldBusinessRejectReasonEnum {
 }
 const FIELD_GROSSTRADEAMT : u32 = 381; // AMT
 
+
 const FIELD_NOCONTRABROKERS : u32 = 382; // INT
+
 
 const FIELD_MAXMESSAGESIZE : u32 = 383; // INT
 
+
 const FIELD_NOMSGTYPES : u32 = 384; // INT
 
+
 const FIELD_MSGDIRECTION : u32 = 385; // CHAR
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldMsgDirectionEnum {
     Receive, // = "R"
@@ -8114,9 +7155,13 @@ impl Default for FieldMsgDirectionEnum {
 }
 const FIELD_NOTRADINGSESSIONS : u32 = 386; // INT
 
+
 const FIELD_TOTALVOLUMETRADED : u32 = 387; // QTY
 
+
 const FIELD_DISCRETIONINST : u32 = 388; // CHAR
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldDiscretionInstEnum {
     RelatedToDisplayedPrice, // = "0"
@@ -8183,45 +7228,67 @@ impl Default for FieldDiscretionInstEnum {
 }
 const FIELD_DISCRETIONOFFSET : u32 = 389; // PRICEOFFSET
 
+
 const FIELD_BIDID : u32 = 390; // STRING
+
 
 const FIELD_CLIENTBIDID : u32 = 391; // STRING
 
+
 const FIELD_LISTNAME : u32 = 392; // STRING
+
 
 const FIELD_TOTALNUMSECURITIES : u32 = 393; // INT
 
+
 const FIELD_BIDTYPE : u32 = 394; // INT
+
 
 const FIELD_NUMTICKETS : u32 = 395; // INT
 
+
 const FIELD_SIDEVALUE1 : u32 = 396; // AMT
+
 
 const FIELD_SIDEVALUE2 : u32 = 397; // AMT
 
+
 const FIELD_NOBIDDESCRIPTORS : u32 = 398; // INT
+
 
 const FIELD_BIDDESCRIPTORTYPE : u32 = 399; // INT
 
+
 const FIELD_BIDDESCRIPTOR : u32 = 400; // STRING
+
 
 const FIELD_SIDEVALUEIND : u32 = 401; // INT
 
+
 const FIELD_LIQUIDITYPCTLOW : u32 = 402; // FLOAT
+
 
 const FIELD_LIQUIDITYPCTHIGH : u32 = 403; // FLOAT
 
+
 const FIELD_LIQUIDITYVALUE : u32 = 404; // AMT
+
 
 const FIELD_EFPTRACKINGERROR : u32 = 405; // FLOAT
 
+
 const FIELD_FAIRVALUE : u32 = 406; // AMT
+
 
 const FIELD_OUTSIDEINDEXPCT : u32 = 407; // FLOAT
 
+
 const FIELD_VALUEOFFUTURES : u32 = 408; // AMT
 
+
 const FIELD_LIQUIDITYINDTYPE : u32 = 409; // INT
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldLiquidityIndTypeEnum {
     A5DayMovingAverage, // = "1"
@@ -8278,13 +7345,19 @@ impl Default for FieldLiquidityIndTypeEnum {
 }
 const FIELD_WTAVERAGELIQUIDITY : u32 = 410; // FLOAT
 
+
 const FIELD_EXCHANGEFORPHYSICAL : u32 = 411; // BOOLEAN
+
 
 const FIELD_OUTMAINCNTRYUINDEX : u32 = 412; // AMT
 
+
 const FIELD_CROSSPERCENT : u32 = 413; // FLOAT
 
+
 const FIELD_PROGRPTREQS : u32 = 414; // INT
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldProgRptReqsEnum {
     BuysideExplicitlyRequestsStatusUsingStatusrequest, // = "1"
@@ -8336,7 +7409,10 @@ impl Default for FieldProgRptReqsEnum {
 }
 const FIELD_PROGPERIODINTERVAL : u32 = 415; // INT
 
+
 const FIELD_INCTAXIND : u32 = 416; // INT
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldIncTaxIndEnum {
     Net, // = "1"
@@ -8383,7 +7459,10 @@ impl Default for FieldIncTaxIndEnum {
 }
 const FIELD_NUMBIDDERS : u32 = 417; // INT
 
+
 const FIELD_TRADETYPE : u32 = 418; // CHAR
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldTradeTypeEnum {
     Agency, // = "A"
@@ -8439,6 +7518,8 @@ impl Default for FieldTradeTypeEnum {
     }
 }
 const FIELD_BASISPXTYPE : u32 = 419; // CHAR
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldBasisPxTypeEnum {
     ClosingPriceAtMorningSession, // = "2"
@@ -8540,11 +7621,16 @@ impl Default for FieldBasisPxTypeEnum {
 }
 const FIELD_NOBIDCOMPONENTS : u32 = 420; // INT
 
+
 const FIELD_COUNTRY : u32 = 421; // STRING
+
 
 const FIELD_TOTNOSTRIKES : u32 = 422; // INT
 
+
 const FIELD_PRICETYPE : u32 = 423; // INT
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldPriceTypeEnum {
     Percentage, // = "1"
@@ -8596,11 +7682,16 @@ impl Default for FieldPriceTypeEnum {
 }
 const FIELD_DAYORDERQTY : u32 = 424; // QTY
 
+
 const FIELD_DAYCUMQTY : u32 = 425; // QTY
+
 
 const FIELD_DAYAVGPX : u32 = 426; // PRICE
 
+
 const FIELD_GTBOOKINGINST : u32 = 427; // INT
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldGTBookingInstEnum {
     BookOutAllTradesOnDayOfExecution, // = "0"
@@ -8652,9 +7743,13 @@ impl Default for FieldGTBookingInstEnum {
 }
 const FIELD_NOSTRIKES : u32 = 428; // INT
 
+
 const FIELD_LISTSTATUSTYPE : u32 = 429; // INT
 
+
 const FIELD_NETGROSSIND : u32 = 430; // INT
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldNetGrossIndEnum {
     Net, // = "1"
@@ -8701,9 +7796,13 @@ impl Default for FieldNetGrossIndEnum {
 }
 const FIELD_LISTORDERSTATUS : u32 = 431; // INT
 
+
 const FIELD_EXPIREDATE : u32 = 432; // LOCALMKTDATE
 
+
 const FIELD_LISTEXECINSTTYPE : u32 = 433; // CHAR
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldListExecInstTypeEnum {
     Immediate, // = "1"
@@ -8749,6 +7848,8 @@ impl Default for FieldListExecInstTypeEnum {
     }
 }
 const FIELD_CXLREJRESPONSETO : u32 = 434; // CHAR
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldCxlRejResponseToEnum {
     OrderCancelRequest, // = "1"
@@ -8795,19 +7896,28 @@ impl Default for FieldCxlRejResponseToEnum {
 }
 const FIELD_UNDERLYINGCOUPONRATE : u32 = 435; // FLOAT
 
+
 const FIELD_UNDERLYINGCONTRACTMULTIPLIER : u32 = 436; // FLOAT
+
 
 const FIELD_CONTRATRADEQTY : u32 = 437; // QTY
 
+
 const FIELD_CONTRATRADETIME : u32 = 438; // UTCTIMESTAMP
+
 
 const FIELD_CLEARINGFIRM : u32 = 439; // STRING
 
+
 const FIELD_CLEARINGACCOUNT : u32 = 440; // STRING
+
 
 const FIELD_LIQUIDITYNUMSECURITIES : u32 = 441; // INT
 
+
 const FIELD_MULTILEGREPORTINGTYPE : u32 = 442; // CHAR
+
+
 #[derive(PartialEq,Debug,Serialize,Deserialize,Clone,Copy)]
 pub enum FieldMultiLegReportingTypeEnum {
     SingleSecurity, // = "1"
@@ -8859,15 +7969,18 @@ impl Default for FieldMultiLegReportingTypeEnum {
 }
 const FIELD_STRIKETIME : u32 = 443; // UTCTIMESTAMP
 
+
 const FIELD_LISTSTATUSTEXT : u32 = 444; // STRING
 
+
 const FIELD_ENCODEDLISTSTATUSTEXTLEN : u32 = 445; // LENGTH
+
 
 const FIELD_ENCODEDLISTSTATUSTEXT : u32 = 446; // DATA
 
 
-// TODO impl of ToString trait for the enum. Is std::fmt::Display an alternative for less allocs?
-// TODO impl of FromStr trait for the enum.
+
+
 // TODO: If type=Mulstring needs to impl trait BitOr as well
 
 #[derive(Serialize,Deserialize)]
@@ -9195,12 +8308,6 @@ pub fn build_fix_message( msg_type: &str, flds: &Vec<FieldVal> ) -> FixMessage {
             FixMessage::Logout(Box::new( fields ))
         },
 
-        "6" => {
-            let mut consumer = FixConsumer::new(flds);
-            let fields = parse_message_ioifields( &mut consumer );
-            FixMessage::IOI(Box::new( fields ))
-        },
-
         "7" => {
             let mut consumer = FixConsumer::new(flds);
             let fields = parse_message_advertisement_fields( &mut consumer );
@@ -9223,18 +8330,6 @@ pub fn build_fix_message( msg_type: &str, flds: &Vec<FieldVal> ) -> FixMessage {
             let mut consumer = FixConsumer::new(flds);
             let fields = parse_message_logon_fields( &mut consumer );
             FixMessage::Logon(Box::new( fields ))
-        },
-
-        "B" => {
-            let mut consumer = FixConsumer::new(flds);
-            let fields = parse_message_news_fields( &mut consumer );
-            FixMessage::News(Box::new( fields ))
-        },
-
-        "C" => {
-            let mut consumer = FixConsumer::new(flds);
-            let fields = parse_message_email_fields( &mut consumer );
-            FixMessage::Email(Box::new( fields ))
         },
 
         "D" => {
@@ -9265,174 +8360,6 @@ pub fn build_fix_message( msg_type: &str, flds: &Vec<FieldVal> ) -> FixMessage {
             let mut consumer = FixConsumer::new(flds);
             let fields = parse_message_order_status_request_fields( &mut consumer );
             FixMessage::OrderStatusRequest(Box::new( fields ))
-        },
-
-        "J" => {
-            let mut consumer = FixConsumer::new(flds);
-            let fields = parse_message_allocation_fields( &mut consumer );
-            FixMessage::Allocation(Box::new( fields ))
-        },
-
-        "K" => {
-            let mut consumer = FixConsumer::new(flds);
-            let fields = parse_message_list_cancel_request_fields( &mut consumer );
-            FixMessage::ListCancelRequest(Box::new( fields ))
-        },
-
-        "L" => {
-            let mut consumer = FixConsumer::new(flds);
-            let fields = parse_message_list_execute_fields( &mut consumer );
-            FixMessage::ListExecute(Box::new( fields ))
-        },
-
-        "M" => {
-            let mut consumer = FixConsumer::new(flds);
-            let fields = parse_message_list_status_request_fields( &mut consumer );
-            FixMessage::ListStatusRequest(Box::new( fields ))
-        },
-
-        "N" => {
-            let mut consumer = FixConsumer::new(flds);
-            let fields = parse_message_list_status_fields( &mut consumer );
-            FixMessage::ListStatus(Box::new( fields ))
-        },
-
-        "P" => {
-            let mut consumer = FixConsumer::new(flds);
-            let fields = parse_message_allocation_instruction_ack_fields( &mut consumer );
-            FixMessage::AllocationInstructionAck(Box::new( fields ))
-        },
-
-        "Q" => {
-            let mut consumer = FixConsumer::new(flds);
-            let fields = parse_message_dont_know_trade_fields( &mut consumer );
-            FixMessage::DontKnowTrade(Box::new( fields ))
-        },
-
-        "R" => {
-            let mut consumer = FixConsumer::new(flds);
-            let fields = parse_message_quote_request_fields( &mut consumer );
-            FixMessage::QuoteRequest(Box::new( fields ))
-        },
-
-        "S" => {
-            let mut consumer = FixConsumer::new(flds);
-            let fields = parse_message_quote_fields( &mut consumer );
-            FixMessage::Quote(Box::new( fields ))
-        },
-
-        "T" => {
-            let mut consumer = FixConsumer::new(flds);
-            let fields = parse_message_settlement_instructions_fields( &mut consumer );
-            FixMessage::SettlementInstructions(Box::new( fields ))
-        },
-
-        "V" => {
-            let mut consumer = FixConsumer::new(flds);
-            let fields = parse_message_market_data_request_fields( &mut consumer );
-            FixMessage::MarketDataRequest(Box::new( fields ))
-        },
-
-        "W" => {
-            let mut consumer = FixConsumer::new(flds);
-            let fields = parse_message_market_data_snapshot_full_refresh_fields( &mut consumer );
-            FixMessage::MarketDataSnapshotFullRefresh(Box::new( fields ))
-        },
-
-        "X" => {
-            let mut consumer = FixConsumer::new(flds);
-            let fields = parse_message_market_data_incremental_refresh_fields( &mut consumer );
-            FixMessage::MarketDataIncrementalRefresh(Box::new( fields ))
-        },
-
-        "Y" => {
-            let mut consumer = FixConsumer::new(flds);
-            let fields = parse_message_market_data_request_reject_fields( &mut consumer );
-            FixMessage::MarketDataRequestReject(Box::new( fields ))
-        },
-
-        "Z" => {
-            let mut consumer = FixConsumer::new(flds);
-            let fields = parse_message_quote_cancel_fields( &mut consumer );
-            FixMessage::QuoteCancel(Box::new( fields ))
-        },
-
-        "a" => {
-            let mut consumer = FixConsumer::new(flds);
-            let fields = parse_message_quote_status_request_fields( &mut consumer );
-            FixMessage::QuoteStatusRequest(Box::new( fields ))
-        },
-
-        "b" => {
-            let mut consumer = FixConsumer::new(flds);
-            let fields = parse_message_quote_acknowledgement_fields( &mut consumer );
-            FixMessage::QuoteAcknowledgement(Box::new( fields ))
-        },
-
-        "c" => {
-            let mut consumer = FixConsumer::new(flds);
-            let fields = parse_message_security_definition_request_fields( &mut consumer );
-            FixMessage::SecurityDefinitionRequest(Box::new( fields ))
-        },
-
-        "d" => {
-            let mut consumer = FixConsumer::new(flds);
-            let fields = parse_message_security_definition_fields( &mut consumer );
-            FixMessage::SecurityDefinition(Box::new( fields ))
-        },
-
-        "e" => {
-            let mut consumer = FixConsumer::new(flds);
-            let fields = parse_message_security_status_request_fields( &mut consumer );
-            FixMessage::SecurityStatusRequest(Box::new( fields ))
-        },
-
-        "f" => {
-            let mut consumer = FixConsumer::new(flds);
-            let fields = parse_message_security_status_fields( &mut consumer );
-            FixMessage::SecurityStatus(Box::new( fields ))
-        },
-
-        "g" => {
-            let mut consumer = FixConsumer::new(flds);
-            let fields = parse_message_trading_session_status_request_fields( &mut consumer );
-            FixMessage::TradingSessionStatusRequest(Box::new( fields ))
-        },
-
-        "h" => {
-            let mut consumer = FixConsumer::new(flds);
-            let fields = parse_message_trading_session_status_fields( &mut consumer );
-            FixMessage::TradingSessionStatus(Box::new( fields ))
-        },
-
-        "i" => {
-            let mut consumer = FixConsumer::new(flds);
-            let fields = parse_message_mass_quote_fields( &mut consumer );
-            FixMessage::MassQuote(Box::new( fields ))
-        },
-
-        "j" => {
-            let mut consumer = FixConsumer::new(flds);
-            let fields = parse_message_business_message_reject_fields( &mut consumer );
-            FixMessage::BusinessMessageReject(Box::new( fields ))
-        },
-
-        "k" => {
-            let mut consumer = FixConsumer::new(flds);
-            let fields = parse_message_bid_request_fields( &mut consumer );
-            FixMessage::BidRequest(Box::new( fields ))
-        },
-
-        "l" => {
-            let mut consumer = FixConsumer::new(flds);
-            let fields = parse_message_bid_response_fields( &mut consumer );
-            FixMessage::BidResponse(Box::new( fields ))
-        },
-
-        "m" => {
-            let mut consumer = FixConsumer::new(flds);
-            let fields = parse_message_list_strike_price_fields( &mut consumer );
-            FixMessage::ListStrikePrice(Box::new( fields ))
         },
 
         _ => {
@@ -9645,258 +8572,6 @@ fn parse_message_logout_fields( consumer : &mut FixConsumer  ) -> LogoutFields {
         text: text,
         encoded_text_len: encoded_text_len,
         encoded_text: encoded_text,
-    }
-}
-
-
-fn parse_message_ioifields( consumer : &mut FixConsumer  ) -> IOIFields {
-    // fields:
-    let mut ioiid : Option<String> = None;
-    let mut ioitrans_type : Option<FieldIOITransTypeEnum> = None;
-    let mut ioiref_id : Option<String> = None;
-    let mut symbol : Option<String> = None;
-    let mut symbol_sfx : Option<String> = None;
-    let mut security_id : Option<String> = None;
-    let mut idsource : Option<FieldIDSourceEnum> = None;
-    let mut security_type : Option<FieldSecurityTypeEnum> = None;
-    let mut maturity_month_year : Option<UtcDate> = None;
-    let mut maturity_day : Option<i32> = None;
-    let mut put_or_call : Option<FieldPutOrCallEnum> = None;
-    let mut strike_price : Option<f32> = None;
-    let mut opt_attribute : Option<char> = None;
-    let mut contract_multiplier : Option<f32> = None;
-    let mut coupon_rate : Option<f32> = None;
-    let mut security_exchange : Option<String> = None;
-    let mut issuer : Option<String> = None;
-    let mut encoded_issuer_len : Option<usize> = None;
-    let mut encoded_issuer : Option<String> = None;
-    let mut security_desc : Option<String> = None;
-    let mut encoded_security_desc_len : Option<usize> = None;
-    let mut encoded_security_desc : Option<String> = None;
-    let mut side : Option<FieldSideEnum> = None;
-    let mut ioishares : Option<FieldIOISharesEnum> = None;
-    let mut price : Option<f32> = None;
-    let mut currency : Option<f32> = None;
-    let mut valid_until_time : Option<UtcDateTime> = None;
-    let mut ioiqlty_ind : Option<FieldIOIQltyIndEnum> = None;
-    let mut ioinatural_flag : Option<bool> = None;
-    let mut no_ioiqualifiers : Option<Vec<NoIOIQualifiers9Fields>> = None;
-    let mut text : Option<String> = None;
-    let mut encoded_text_len : Option<usize> = None;
-    let mut encoded_text : Option<String> = None;
-    let mut transact_time : Option<UtcDateTime> = None;
-    let mut urllink : Option<String> = None;
-    let mut no_routing_ids : Option<Vec<NoRoutingIDs27Fields>> = None;
-    let mut spread_to_benchmark : Option<f32> = None;
-    let mut benchmark : Option<FieldBenchmarkEnum> = None;
-
-    // loop
-    while let Some(fld) = consumer.next() {
-        match fld {
-            &FieldVal { id: FIELD_IOIID, val: v } => {
-
-                ioiid = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_IOITRANSTYPE, val: v } => {
-
-                ioitrans_type = Some( FieldIOITransTypeEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_IOIREFID, val: v } => {
-
-                ioiref_id = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_SYMBOL, val: v } => {
-
-                symbol = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_SYMBOLSFX, val: v } => {
-
-                symbol_sfx = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_SECURITYID, val: v } => {
-
-                security_id = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_IDSOURCE, val: v } => {
-
-                idsource = Some( FieldIDSourceEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_SECURITYTYPE, val: v } => {
-
-                security_type = Some( FieldSecurityTypeEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_MATURITYMONTHYEAR, val: v } => {
-
-                maturity_month_year = Some( UtcDate::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_MATURITYDAY, val: v } => {
-
-                maturity_day = Some( i32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_PUTORCALL, val: v } => {
-
-                put_or_call = Some( FieldPutOrCallEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_STRIKEPRICE, val: v } => {
-
-                strike_price = Some( f32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_OPTATTRIBUTE, val: v } => {
-
-                opt_attribute = Some( char::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_CONTRACTMULTIPLIER, val: v } => {
-
-                contract_multiplier = Some( f32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_COUPONRATE, val: v } => {
-
-                coupon_rate = Some( f32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_SECURITYEXCHANGE, val: v } => {
-
-                security_exchange = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_ISSUER, val: v } => {
-
-                issuer = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_ENCODEDISSUERLEN, val: v } => {
-
-                encoded_issuer_len = Some( usize::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_ENCODEDISSUER, val: v } => {
-
-                encoded_issuer = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_SECURITYDESC, val: v } => {
-
-                security_desc = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_ENCODEDSECURITYDESCLEN, val: v } => {
-
-                encoded_security_desc_len = Some( usize::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_ENCODEDSECURITYDESC, val: v } => {
-
-                encoded_security_desc = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_SIDE, val: v } => {
-
-                side = Some( FieldSideEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_IOISHARES, val: v } => {
-
-                ioishares = Some( FieldIOISharesEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_PRICE, val: v } => {
-
-                price = Some( f32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_CURRENCY, val: v } => {
-
-                currency = Some( f32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_VALIDUNTILTIME, val: v } => {
-
-                valid_until_time = Some( UtcDateTime::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_IOIQLTYIND, val: v } => {
-
-                ioiqlty_ind = Some( FieldIOIQltyIndEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_IOINATURALFLAG, val: v } => {
-
-                ioinatural_flag = Some( boolconv(v) );
-            },
-            &FieldVal { id: FIELD_NOIOIQUALIFIERS, val: v } => {
-
-                // group
-                let size = usize::from_str(v).unwrap();
-                let subgroup = build_group_no_ioiqualifiers9_fields(consumer, size);
-                no_ioiqualifiers = Some(subgroup);
-            },
-            &FieldVal { id: FIELD_TEXT, val: v } => {
-
-                text = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_ENCODEDTEXTLEN, val: v } => {
-
-                encoded_text_len = Some( usize::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_ENCODEDTEXT, val: v } => {
-
-                encoded_text = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_TRANSACTTIME, val: v } => {
-
-                transact_time = Some( UtcDateTime::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_URLLINK, val: v } => {
-
-                urllink = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_NOROUTINGIDS, val: v } => {
-
-                // group
-                let size = usize::from_str(v).unwrap();
-                let subgroup = build_group_no_routing_ids27_fields(consumer, size);
-                no_routing_ids = Some(subgroup);
-            },
-            &FieldVal { id: FIELD_SPREADTOBENCHMARK, val: v } => {
-
-                spread_to_benchmark = Some( f32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_BENCHMARK, val: v } => {
-
-                benchmark = Some( FieldBenchmarkEnum::from_str(v).unwrap() );
-            },
-            _ => {
-                // unknown field? why? should it be added raw to some list?
-            }
-        }
-    }
-
-    // construction
-    IOIFields {
-        ioiid: ioiid.unwrap() /* better error hdl? */ ,
-        ioitrans_type: ioitrans_type.unwrap() /* better error hdl? */ ,
-        ioiref_id: ioiref_id,
-        symbol: symbol.unwrap() /* better error hdl? */ ,
-        symbol_sfx: symbol_sfx,
-        security_id: security_id,
-        idsource: idsource,
-        security_type: security_type,
-        maturity_month_year: maturity_month_year,
-        maturity_day: maturity_day,
-        put_or_call: put_or_call,
-        strike_price: strike_price,
-        opt_attribute: opt_attribute,
-        contract_multiplier: contract_multiplier,
-        coupon_rate: coupon_rate,
-        security_exchange: security_exchange,
-        issuer: issuer,
-        encoded_issuer_len: encoded_issuer_len,
-        encoded_issuer: encoded_issuer,
-        security_desc: security_desc,
-        encoded_security_desc_len: encoded_security_desc_len,
-        encoded_security_desc: encoded_security_desc,
-        side: side.unwrap() /* better error hdl? */ ,
-        ioishares: ioishares.unwrap() /* better error hdl? */ ,
-        price: price,
-        currency: currency,
-        valid_until_time: valid_until_time,
-        ioiqlty_ind: ioiqlty_ind,
-        ioinatural_flag: ioinatural_flag,
-        no_ioiqualifiers: no_ioiqualifiers,
-        text: text,
-        encoded_text_len: encoded_text_len,
-        encoded_text: encoded_text,
-        transact_time: transact_time,
-        urllink: urllink,
-        no_routing_ids: no_routing_ids,
-        spread_to_benchmark: spread_to_benchmark,
-        benchmark: benchmark,
     }
 }
 
@@ -10131,7 +8806,7 @@ fn parse_message_execution_report_fields( consumer : &mut FixConsumer  ) -> Exec
     let mut orig_cl_ord_id : Option<String> = None;
     let mut client_id : Option<String> = None;
     let mut exec_broker : Option<String> = None;
-    let mut no_contra_brokers : Option<Vec<NoContraBrokers7Fields>> = None;
+    let mut no_contra_brokers : Option<Vec<NoContraBrokers2Fields>> = None;
     let mut list_id : Option<String> = None;
     let mut exec_id : Option<String> = None;
     let mut exec_trans_type : Option<FieldExecTransTypeEnum> = None;
@@ -10249,7 +8924,7 @@ fn parse_message_execution_report_fields( consumer : &mut FixConsumer  ) -> Exec
 
                 // group
                 let size = usize::from_str(v).unwrap();
-                let subgroup = build_group_no_contra_brokers7_fields(consumer, size);
+                let subgroup = build_group_no_contra_brokers2_fields(consumer, size);
                 no_contra_brokers = Some(subgroup);
             },
             &FieldVal { id: FIELD_LISTID, val: v } => {
@@ -10812,7 +9487,7 @@ fn parse_message_logon_fields( consumer : &mut FixConsumer  ) -> LogonFields {
     let mut raw_data : Option<String> = None;
     let mut reset_seq_num_flag : Option<bool> = None;
     let mut max_message_size : Option<i32> = None;
-    let mut no_msg_types : Option<Vec<NoMsgTypes14Fields>> = None;
+    let mut no_msg_types : Option<Vec<NoMsgTypes3Fields>> = None;
 
     // loop
     while let Some(fld) = consumer.next() {
@@ -10845,7 +9520,7 @@ fn parse_message_logon_fields( consumer : &mut FixConsumer  ) -> LogonFields {
 
                 // group
                 let size = usize::from_str(v).unwrap();
-                let subgroup = build_group_no_msg_types14_fields(consumer, size);
+                let subgroup = build_group_no_msg_types3_fields(consumer, size);
                 no_msg_types = Some(subgroup);
             },
             _ => {
@@ -10867,211 +9542,13 @@ fn parse_message_logon_fields( consumer : &mut FixConsumer  ) -> LogonFields {
 }
 
 
-fn parse_message_news_fields( consumer : &mut FixConsumer  ) -> NewsFields {
-    // fields:
-    let mut orig_time : Option<UtcDateTime> = None;
-    let mut urgency : Option<FieldUrgencyEnum> = None;
-    let mut headline : Option<String> = None;
-    let mut encoded_headline_len : Option<usize> = None;
-    let mut encoded_headline : Option<String> = None;
-    let mut no_routing_ids : Option<Vec<NoRoutingIDs27Fields>> = None;
-    let mut no_related_sym : Option<Vec<NoRelatedSym25Fields>> = None;
-    let mut lines_of_text : Option<Vec<LinesOfText1Fields>> = None;
-    let mut urllink : Option<String> = None;
-    let mut raw_data_length : Option<usize> = None;
-    let mut raw_data : Option<String> = None;
-
-    // loop
-    while let Some(fld) = consumer.next() {
-        match fld {
-            &FieldVal { id: FIELD_ORIGTIME, val: v } => {
-
-                orig_time = Some( UtcDateTime::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_URGENCY, val: v } => {
-
-                urgency = Some( FieldUrgencyEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_HEADLINE, val: v } => {
-
-                headline = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_ENCODEDHEADLINELEN, val: v } => {
-
-                encoded_headline_len = Some( usize::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_ENCODEDHEADLINE, val: v } => {
-
-                encoded_headline = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_NOROUTINGIDS, val: v } => {
-
-                // group
-                let size = usize::from_str(v).unwrap();
-                let subgroup = build_group_no_routing_ids27_fields(consumer, size);
-                no_routing_ids = Some(subgroup);
-            },
-            &FieldVal { id: FIELD_NORELATEDSYM, val: v } => {
-
-                // group
-                let size = usize::from_str(v).unwrap();
-                let subgroup = build_group_no_related_sym25_fields(consumer, size);
-                no_related_sym = Some(subgroup);
-            },
-            &FieldVal { id: FIELD_LINESOFTEXT, val: v } => {
-
-                // group
-                let size = usize::from_str(v).unwrap();
-                let subgroup = build_group_lines_of_text1_fields(consumer, size);
-                lines_of_text = Some(subgroup);
-            },
-            &FieldVal { id: FIELD_URLLINK, val: v } => {
-
-                urllink = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_RAWDATALENGTH, val: v } => {
-
-                raw_data_length = Some( usize::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_RAWDATA, val: v } => {
-
-                raw_data = Some( v.to_string() );
-            },
-            _ => {
-                // unknown field? why? should it be added raw to some list?
-            }
-        }
-    }
-
-    // construction
-    NewsFields {
-        orig_time: orig_time,
-        urgency: urgency,
-        headline: headline.unwrap() /* better error hdl? */ ,
-        encoded_headline_len: encoded_headline_len,
-        encoded_headline: encoded_headline,
-        no_routing_ids: no_routing_ids,
-        no_related_sym: no_related_sym,
-        lines_of_text: lines_of_text.unwrap() /* better error hdl? */ ,
-        urllink: urllink,
-        raw_data_length: raw_data_length,
-        raw_data: raw_data,
-    }
-}
-
-
-fn parse_message_email_fields( consumer : &mut FixConsumer  ) -> EmailFields {
-    // fields:
-    let mut email_thread_id : Option<String> = None;
-    let mut email_type : Option<FieldEmailTypeEnum> = None;
-    let mut orig_time : Option<UtcDateTime> = None;
-    let mut subject : Option<String> = None;
-    let mut encoded_subject_len : Option<usize> = None;
-    let mut encoded_subject : Option<String> = None;
-    let mut no_routing_ids : Option<Vec<NoRoutingIDs27Fields>> = None;
-    let mut no_related_sym : Option<Vec<NoRelatedSym25Fields>> = None;
-    let mut order_id : Option<String> = None;
-    let mut cl_ord_id : Option<String> = None;
-    let mut lines_of_text : Option<Vec<LinesOfText1Fields>> = None;
-    let mut raw_data_length : Option<usize> = None;
-    let mut raw_data : Option<String> = None;
-
-    // loop
-    while let Some(fld) = consumer.next() {
-        match fld {
-            &FieldVal { id: FIELD_EMAILTHREADID, val: v } => {
-
-                email_thread_id = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_EMAILTYPE, val: v } => {
-
-                email_type = Some( FieldEmailTypeEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_ORIGTIME, val: v } => {
-
-                orig_time = Some( UtcDateTime::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_SUBJECT, val: v } => {
-
-                subject = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_ENCODEDSUBJECTLEN, val: v } => {
-
-                encoded_subject_len = Some( usize::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_ENCODEDSUBJECT, val: v } => {
-
-                encoded_subject = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_NOROUTINGIDS, val: v } => {
-
-                // group
-                let size = usize::from_str(v).unwrap();
-                let subgroup = build_group_no_routing_ids27_fields(consumer, size);
-                no_routing_ids = Some(subgroup);
-            },
-            &FieldVal { id: FIELD_NORELATEDSYM, val: v } => {
-
-                // group
-                let size = usize::from_str(v).unwrap();
-                let subgroup = build_group_no_related_sym25_fields(consumer, size);
-                no_related_sym = Some(subgroup);
-            },
-            &FieldVal { id: FIELD_ORDERID, val: v } => {
-
-                order_id = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_CLORDID, val: v } => {
-
-                cl_ord_id = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_LINESOFTEXT, val: v } => {
-
-                // group
-                let size = usize::from_str(v).unwrap();
-                let subgroup = build_group_lines_of_text1_fields(consumer, size);
-                lines_of_text = Some(subgroup);
-            },
-            &FieldVal { id: FIELD_RAWDATALENGTH, val: v } => {
-
-                raw_data_length = Some( usize::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_RAWDATA, val: v } => {
-
-                raw_data = Some( v.to_string() );
-            },
-            _ => {
-                // unknown field? why? should it be added raw to some list?
-            }
-        }
-    }
-
-    // construction
-    EmailFields {
-        email_thread_id: email_thread_id.unwrap() /* better error hdl? */ ,
-        email_type: email_type.unwrap() /* better error hdl? */ ,
-        orig_time: orig_time,
-        subject: subject.unwrap() /* better error hdl? */ ,
-        encoded_subject_len: encoded_subject_len,
-        encoded_subject: encoded_subject,
-        no_routing_ids: no_routing_ids,
-        no_related_sym: no_related_sym,
-        order_id: order_id,
-        cl_ord_id: cl_ord_id,
-        lines_of_text: lines_of_text.unwrap() /* better error hdl? */ ,
-        raw_data_length: raw_data_length,
-        raw_data: raw_data,
-    }
-}
-
-
 fn parse_message_new_order_single_fields( consumer : &mut FixConsumer  ) -> NewOrderSingleFields {
     // fields:
     let mut cl_ord_id : Option<String> = None;
     let mut client_id : Option<String> = None;
     let mut exec_broker : Option<String> = None;
     let mut account : Option<String> = None;
-    let mut no_allocs : Option<Vec<NoAllocs2Fields>> = None;
+    let mut no_allocs : Option<Vec<NoAllocs1Fields>> = None;
     let mut settlmnt_typ : Option<FieldSettlmntTypEnum> = None;
     let mut fut_sett_date : Option<UtcDateTime> = None;
     let mut handl_inst : Option<FieldHandlInstEnum> = None;
@@ -11079,7 +9556,7 @@ fn parse_message_new_order_single_fields( consumer : &mut FixConsumer  ) -> NewO
     let mut min_qty : Option<f32> = None;
     let mut max_floor : Option<f32> = None;
     let mut ex_destination : Option<String> = None;
-    let mut no_trading_sessions : Option<Vec<NoTradingSessions29Fields>> = None;
+    let mut no_trading_sessions : Option<Vec<NoTradingSessions5Fields>> = None;
     let mut process_code : Option<FieldProcessCodeEnum> = None;
     let mut symbol : Option<String> = None;
     let mut symbol_sfx : Option<String> = None;
@@ -11162,7 +9639,7 @@ fn parse_message_new_order_single_fields( consumer : &mut FixConsumer  ) -> NewO
 
                 // group
                 let size = usize::from_str(v).unwrap();
-                let subgroup = build_group_no_allocs2_fields(consumer, size);
+                let subgroup = build_group_no_allocs1_fields(consumer, size);
                 no_allocs = Some(subgroup);
             },
             &FieldVal { id: FIELD_SETTLMNTTYP, val: v } => {
@@ -11197,7 +9674,7 @@ fn parse_message_new_order_single_fields( consumer : &mut FixConsumer  ) -> NewO
 
                 // group
                 let size = usize::from_str(v).unwrap();
-                let subgroup = build_group_no_trading_sessions29_fields(consumer, size);
+                let subgroup = build_group_no_trading_sessions5_fields(consumer, size);
                 no_trading_sessions = Some(subgroup);
             },
             &FieldVal { id: FIELD_PROCESSCODE, val: v } => {
@@ -11528,7 +10005,7 @@ fn parse_message_new_order_list_fields( consumer : &mut FixConsumer  ) -> NewOrd
     let mut encoded_list_exec_inst_len : Option<usize> = None;
     let mut encoded_list_exec_inst : Option<String> = None;
     let mut tot_no_orders : Option<i32> = None;
-    let mut no_orders : Option<Vec<NoOrders16Fields>> = None;
+    let mut no_orders : Option<Vec<NoOrders4Fields>> = None;
 
     // loop
     while let Some(fld) = consumer.next() {
@@ -11581,7 +10058,7 @@ fn parse_message_new_order_list_fields( consumer : &mut FixConsumer  ) -> NewOrd
 
                 // group
                 let size = usize::from_str(v).unwrap();
-                let subgroup = build_group_no_orders16_fields(consumer, size);
+                let subgroup = build_group_no_orders4_fields(consumer, size);
                 no_orders = Some(subgroup);
             },
             _ => {
@@ -11845,7 +10322,7 @@ fn parse_message_order_cancel_replace_request_fields( consumer : &mut FixConsume
     let mut cl_ord_id : Option<String> = None;
     let mut list_id : Option<String> = None;
     let mut account : Option<String> = None;
-    let mut no_allocs : Option<Vec<NoAllocs2Fields>> = None;
+    let mut no_allocs : Option<Vec<NoAllocs1Fields>> = None;
     let mut settlmnt_typ : Option<FieldSettlmntTypEnum> = None;
     let mut fut_sett_date : Option<UtcDateTime> = None;
     let mut handl_inst : Option<FieldHandlInstEnum> = None;
@@ -11853,7 +10330,7 @@ fn parse_message_order_cancel_replace_request_fields( consumer : &mut FixConsume
     let mut min_qty : Option<f32> = None;
     let mut max_floor : Option<f32> = None;
     let mut ex_destination : Option<String> = None;
-    let mut no_trading_sessions : Option<Vec<NoTradingSessions29Fields>> = None;
+    let mut no_trading_sessions : Option<Vec<NoTradingSessions5Fields>> = None;
     let mut symbol : Option<String> = None;
     let mut symbol_sfx : Option<String> = None;
     let mut security_id : Option<String> = None;
@@ -11944,7 +10421,7 @@ fn parse_message_order_cancel_replace_request_fields( consumer : &mut FixConsume
 
                 // group
                 let size = usize::from_str(v).unwrap();
-                let subgroup = build_group_no_allocs2_fields(consumer, size);
+                let subgroup = build_group_no_allocs1_fields(consumer, size);
                 no_allocs = Some(subgroup);
             },
             &FieldVal { id: FIELD_SETTLMNTTYP, val: v } => {
@@ -11979,7 +10456,7 @@ fn parse_message_order_cancel_replace_request_fields( consumer : &mut FixConsume
 
                 // group
                 let size = usize::from_str(v).unwrap();
-                let subgroup = build_group_no_trading_sessions29_fields(consumer, size);
+                let subgroup = build_group_no_trading_sessions5_fields(consumer, size);
                 no_trading_sessions = Some(subgroup);
             },
             &FieldVal { id: FIELD_SYMBOL, val: v } => {
@@ -12448,3346 +10925,56 @@ fn parse_message_order_status_request_fields( consumer : &mut FixConsumer  ) -> 
 }
 
 
-fn parse_message_allocation_fields( consumer : &mut FixConsumer  ) -> AllocationFields {
-    // fields:
-    let mut alloc_id : Option<String> = None;
-    let mut alloc_trans_type : Option<FieldAllocTransTypeEnum> = None;
-    let mut ref_alloc_id : Option<String> = None;
-    let mut alloc_link_id : Option<String> = None;
-    let mut alloc_link_type : Option<FieldAllocLinkTypeEnum> = None;
-    let mut no_orders : Option<Vec<NoOrders17Fields>> = None;
-    let mut no_execs : Option<Vec<NoExecs8Fields>> = None;
-    let mut side : Option<FieldSideEnum> = None;
-    let mut symbol : Option<String> = None;
-    let mut symbol_sfx : Option<String> = None;
-    let mut security_id : Option<String> = None;
-    let mut idsource : Option<FieldIDSourceEnum> = None;
-    let mut security_type : Option<FieldSecurityTypeEnum> = None;
-    let mut maturity_month_year : Option<UtcDate> = None;
-    let mut maturity_day : Option<i32> = None;
-    let mut put_or_call : Option<FieldPutOrCallEnum> = None;
-    let mut strike_price : Option<f32> = None;
-    let mut opt_attribute : Option<char> = None;
-    let mut contract_multiplier : Option<f32> = None;
-    let mut coupon_rate : Option<f32> = None;
-    let mut security_exchange : Option<String> = None;
-    let mut issuer : Option<String> = None;
-    let mut encoded_issuer_len : Option<usize> = None;
-    let mut encoded_issuer : Option<String> = None;
-    let mut security_desc : Option<String> = None;
-    let mut encoded_security_desc_len : Option<usize> = None;
-    let mut encoded_security_desc : Option<String> = None;
-    let mut shares : Option<f32> = None;
-    let mut last_mkt : Option<String> = None;
-    let mut trading_session_id : Option<String> = None;
-    let mut avg_px : Option<f32> = None;
-    let mut currency : Option<f32> = None;
-    let mut avg_prx_precision : Option<i32> = None;
-    let mut trade_date : Option<UtcDateTime> = None;
-    let mut transact_time : Option<UtcDateTime> = None;
-    let mut settlmnt_typ : Option<FieldSettlmntTypEnum> = None;
-    let mut fut_sett_date : Option<UtcDateTime> = None;
-    let mut gross_trade_amt : Option<f32> = None;
-    let mut net_money : Option<f32> = None;
-    let mut open_close : Option<FieldOpenCloseEnum> = None;
-    let mut text : Option<String> = None;
-    let mut encoded_text_len : Option<usize> = None;
-    let mut encoded_text : Option<String> = None;
-    let mut num_days_interest : Option<i32> = None;
-    let mut accrued_interest_rate : Option<f32> = None;
-    let mut no_allocs : Option<Vec<NoAllocs3Fields>> = None;
 
-    // loop
-    while let Some(fld) = consumer.next() {
-        match fld {
-            &FieldVal { id: FIELD_ALLOCID, val: v } => {
 
-                alloc_id = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_ALLOCTRANSTYPE, val: v } => {
 
-                alloc_trans_type = Some( FieldAllocTransTypeEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_REFALLOCID, val: v } => {
-
-                ref_alloc_id = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_ALLOCLINKID, val: v } => {
-
-                alloc_link_id = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_ALLOCLINKTYPE, val: v } => {
-
-                alloc_link_type = Some( FieldAllocLinkTypeEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_NOORDERS, val: v } => {
-
-                // group
-                let size = usize::from_str(v).unwrap();
-                let subgroup = build_group_no_orders17_fields(consumer, size);
-                no_orders = Some(subgroup);
-            },
-            &FieldVal { id: FIELD_NOEXECS, val: v } => {
-
-                // group
-                let size = usize::from_str(v).unwrap();
-                let subgroup = build_group_no_execs8_fields(consumer, size);
-                no_execs = Some(subgroup);
-            },
-            &FieldVal { id: FIELD_SIDE, val: v } => {
-
-                side = Some( FieldSideEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_SYMBOL, val: v } => {
-
-                symbol = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_SYMBOLSFX, val: v } => {
-
-                symbol_sfx = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_SECURITYID, val: v } => {
-
-                security_id = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_IDSOURCE, val: v } => {
-
-                idsource = Some( FieldIDSourceEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_SECURITYTYPE, val: v } => {
-
-                security_type = Some( FieldSecurityTypeEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_MATURITYMONTHYEAR, val: v } => {
-
-                maturity_month_year = Some( UtcDate::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_MATURITYDAY, val: v } => {
-
-                maturity_day = Some( i32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_PUTORCALL, val: v } => {
-
-                put_or_call = Some( FieldPutOrCallEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_STRIKEPRICE, val: v } => {
-
-                strike_price = Some( f32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_OPTATTRIBUTE, val: v } => {
-
-                opt_attribute = Some( char::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_CONTRACTMULTIPLIER, val: v } => {
-
-                contract_multiplier = Some( f32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_COUPONRATE, val: v } => {
-
-                coupon_rate = Some( f32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_SECURITYEXCHANGE, val: v } => {
-
-                security_exchange = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_ISSUER, val: v } => {
-
-                issuer = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_ENCODEDISSUERLEN, val: v } => {
-
-                encoded_issuer_len = Some( usize::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_ENCODEDISSUER, val: v } => {
-
-                encoded_issuer = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_SECURITYDESC, val: v } => {
-
-                security_desc = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_ENCODEDSECURITYDESCLEN, val: v } => {
-
-                encoded_security_desc_len = Some( usize::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_ENCODEDSECURITYDESC, val: v } => {
-
-                encoded_security_desc = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_SHARES, val: v } => {
-
-                shares = Some( f32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_LASTMKT, val: v } => {
-
-                last_mkt = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_TRADINGSESSIONID, val: v } => {
-
-                trading_session_id = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_AVGPX, val: v } => {
-
-                avg_px = Some( f32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_CURRENCY, val: v } => {
-
-                currency = Some( f32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_AVGPRXPRECISION, val: v } => {
-
-                avg_prx_precision = Some( i32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_TRADEDATE, val: v } => {
-
-                trade_date = Some( UtcDateTime::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_TRANSACTTIME, val: v } => {
-
-                transact_time = Some( UtcDateTime::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_SETTLMNTTYP, val: v } => {
-
-                settlmnt_typ = Some( FieldSettlmntTypEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_FUTSETTDATE, val: v } => {
-
-                fut_sett_date = Some( UtcDateTime::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_GROSSTRADEAMT, val: v } => {
-
-                gross_trade_amt = Some( f32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_NETMONEY, val: v } => {
-
-                net_money = Some( f32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_OPENCLOSE, val: v } => {
-
-                open_close = Some( FieldOpenCloseEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_TEXT, val: v } => {
-
-                text = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_ENCODEDTEXTLEN, val: v } => {
-
-                encoded_text_len = Some( usize::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_ENCODEDTEXT, val: v } => {
-
-                encoded_text = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_NUMDAYSINTEREST, val: v } => {
-
-                num_days_interest = Some( i32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_ACCRUEDINTERESTRATE, val: v } => {
-
-                accrued_interest_rate = Some( f32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_NOALLOCS, val: v } => {
-
-                // group
-                let size = usize::from_str(v).unwrap();
-                let subgroup = build_group_no_allocs3_fields(consumer, size);
-                no_allocs = Some(subgroup);
-            },
-            _ => {
-                // unknown field? why? should it be added raw to some list?
-            }
-        }
-    }
-
-    // construction
-    AllocationFields {
-        alloc_id: alloc_id.unwrap() /* better error hdl? */ ,
-        alloc_trans_type: alloc_trans_type.unwrap() /* better error hdl? */ ,
-        ref_alloc_id: ref_alloc_id,
-        alloc_link_id: alloc_link_id,
-        alloc_link_type: alloc_link_type,
-        no_orders: no_orders,
-        no_execs: no_execs,
-        side: side.unwrap() /* better error hdl? */ ,
-        symbol: symbol.unwrap() /* better error hdl? */ ,
-        symbol_sfx: symbol_sfx,
-        security_id: security_id,
-        idsource: idsource,
-        security_type: security_type,
-        maturity_month_year: maturity_month_year,
-        maturity_day: maturity_day,
-        put_or_call: put_or_call,
-        strike_price: strike_price,
-        opt_attribute: opt_attribute,
-        contract_multiplier: contract_multiplier,
-        coupon_rate: coupon_rate,
-        security_exchange: security_exchange,
-        issuer: issuer,
-        encoded_issuer_len: encoded_issuer_len,
-        encoded_issuer: encoded_issuer,
-        security_desc: security_desc,
-        encoded_security_desc_len: encoded_security_desc_len,
-        encoded_security_desc: encoded_security_desc,
-        shares: shares.unwrap() /* better error hdl? */ ,
-        last_mkt: last_mkt,
-        trading_session_id: trading_session_id,
-        avg_px: avg_px.unwrap() /* better error hdl? */ ,
-        currency: currency,
-        avg_prx_precision: avg_prx_precision,
-        trade_date: trade_date.unwrap() /* better error hdl? */ ,
-        transact_time: transact_time,
-        settlmnt_typ: settlmnt_typ,
-        fut_sett_date: fut_sett_date,
-        gross_trade_amt: gross_trade_amt,
-        net_money: net_money,
-        open_close: open_close,
-        text: text,
-        encoded_text_len: encoded_text_len,
-        encoded_text: encoded_text,
-        num_days_interest: num_days_interest,
-        accrued_interest_rate: accrued_interest_rate,
-        no_allocs: no_allocs,
-    }
-}
-
-
-fn parse_message_list_cancel_request_fields( consumer : &mut FixConsumer  ) -> ListCancelRequestFields {
-    // fields:
-    let mut list_id : Option<String> = None;
-    let mut transact_time : Option<UtcDateTime> = None;
-    let mut text : Option<String> = None;
-    let mut encoded_text_len : Option<usize> = None;
-    let mut encoded_text : Option<String> = None;
-
-    // loop
-    while let Some(fld) = consumer.next() {
-        match fld {
-            &FieldVal { id: FIELD_LISTID, val: v } => {
-
-                list_id = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_TRANSACTTIME, val: v } => {
-
-                transact_time = Some( UtcDateTime::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_TEXT, val: v } => {
-
-                text = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_ENCODEDTEXTLEN, val: v } => {
-
-                encoded_text_len = Some( usize::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_ENCODEDTEXT, val: v } => {
-
-                encoded_text = Some( v.to_string() );
-            },
-            _ => {
-                // unknown field? why? should it be added raw to some list?
-            }
-        }
-    }
-
-    // construction
-    ListCancelRequestFields {
-        list_id: list_id.unwrap() /* better error hdl? */ ,
-        transact_time: transact_time.unwrap() /* better error hdl? */ ,
-        text: text,
-        encoded_text_len: encoded_text_len,
-        encoded_text: encoded_text,
-    }
-}
-
-
-fn parse_message_list_execute_fields( consumer : &mut FixConsumer  ) -> ListExecuteFields {
-    // fields:
-    let mut list_id : Option<String> = None;
-    let mut client_bid_id : Option<String> = None;
-    let mut bid_id : Option<String> = None;
-    let mut transact_time : Option<UtcDateTime> = None;
-    let mut text : Option<String> = None;
-    let mut encoded_text_len : Option<usize> = None;
-    let mut encoded_text : Option<String> = None;
-
-    // loop
-    while let Some(fld) = consumer.next() {
-        match fld {
-            &FieldVal { id: FIELD_LISTID, val: v } => {
-
-                list_id = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_CLIENTBIDID, val: v } => {
-
-                client_bid_id = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_BIDID, val: v } => {
-
-                bid_id = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_TRANSACTTIME, val: v } => {
-
-                transact_time = Some( UtcDateTime::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_TEXT, val: v } => {
-
-                text = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_ENCODEDTEXTLEN, val: v } => {
-
-                encoded_text_len = Some( usize::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_ENCODEDTEXT, val: v } => {
-
-                encoded_text = Some( v.to_string() );
-            },
-            _ => {
-                // unknown field? why? should it be added raw to some list?
-            }
-        }
-    }
-
-    // construction
-    ListExecuteFields {
-        list_id: list_id.unwrap() /* better error hdl? */ ,
-        client_bid_id: client_bid_id,
-        bid_id: bid_id,
-        transact_time: transact_time.unwrap() /* better error hdl? */ ,
-        text: text,
-        encoded_text_len: encoded_text_len,
-        encoded_text: encoded_text,
-    }
-}
-
-
-fn parse_message_list_status_request_fields( consumer : &mut FixConsumer  ) -> ListStatusRequestFields {
-    // fields:
-    let mut list_id : Option<String> = None;
-    let mut text : Option<String> = None;
-    let mut encoded_text_len : Option<usize> = None;
-    let mut encoded_text : Option<String> = None;
-
-    // loop
-    while let Some(fld) = consumer.next() {
-        match fld {
-            &FieldVal { id: FIELD_LISTID, val: v } => {
-
-                list_id = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_TEXT, val: v } => {
-
-                text = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_ENCODEDTEXTLEN, val: v } => {
-
-                encoded_text_len = Some( usize::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_ENCODEDTEXT, val: v } => {
-
-                encoded_text = Some( v.to_string() );
-            },
-            _ => {
-                // unknown field? why? should it be added raw to some list?
-            }
-        }
-    }
-
-    // construction
-    ListStatusRequestFields {
-        list_id: list_id.unwrap() /* better error hdl? */ ,
-        text: text,
-        encoded_text_len: encoded_text_len,
-        encoded_text: encoded_text,
-    }
-}
-
-
-fn parse_message_list_status_fields( consumer : &mut FixConsumer  ) -> ListStatusFields {
-    // fields:
-    let mut list_id : Option<String> = None;
-    let mut list_status_type : Option<i32> = None;
-    let mut no_rpts : Option<i32> = None;
-    let mut list_order_status : Option<i32> = None;
-    let mut rpt_seq : Option<i32> = None;
-    let mut list_status_text : Option<String> = None;
-    let mut encoded_list_status_text_len : Option<usize> = None;
-    let mut encoded_list_status_text : Option<String> = None;
-    let mut transact_time : Option<UtcDateTime> = None;
-    let mut tot_no_orders : Option<i32> = None;
-    let mut no_orders : Option<Vec<NoOrders15Fields>> = None;
-
-    // loop
-    while let Some(fld) = consumer.next() {
-        match fld {
-            &FieldVal { id: FIELD_LISTID, val: v } => {
-
-                list_id = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_LISTSTATUSTYPE, val: v } => {
-
-                list_status_type = Some( i32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_NORPTS, val: v } => {
-
-                no_rpts = Some( i32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_LISTORDERSTATUS, val: v } => {
-
-                list_order_status = Some( i32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_RPTSEQ, val: v } => {
-
-                rpt_seq = Some( i32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_LISTSTATUSTEXT, val: v } => {
-
-                list_status_text = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_ENCODEDLISTSTATUSTEXTLEN, val: v } => {
-
-                encoded_list_status_text_len = Some( usize::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_ENCODEDLISTSTATUSTEXT, val: v } => {
-
-                encoded_list_status_text = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_TRANSACTTIME, val: v } => {
-
-                transact_time = Some( UtcDateTime::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_TOTNOORDERS, val: v } => {
-
-                tot_no_orders = Some( i32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_NOORDERS, val: v } => {
-
-                // group
-                let size = usize::from_str(v).unwrap();
-                let subgroup = build_group_no_orders15_fields(consumer, size);
-                no_orders = Some(subgroup);
-            },
-            _ => {
-                // unknown field? why? should it be added raw to some list?
-            }
-        }
-    }
-
-    // construction
-    ListStatusFields {
-        list_id: list_id.unwrap() /* better error hdl? */ ,
-        list_status_type: list_status_type.unwrap() /* better error hdl? */ ,
-        no_rpts: no_rpts.unwrap() /* better error hdl? */ ,
-        list_order_status: list_order_status.unwrap() /* better error hdl? */ ,
-        rpt_seq: rpt_seq.unwrap() /* better error hdl? */ ,
-        list_status_text: list_status_text,
-        encoded_list_status_text_len: encoded_list_status_text_len,
-        encoded_list_status_text: encoded_list_status_text,
-        transact_time: transact_time,
-        tot_no_orders: tot_no_orders.unwrap() /* better error hdl? */ ,
-        no_orders: no_orders.unwrap() /* better error hdl? */ ,
-    }
-}
-
-
-fn parse_message_allocation_instruction_ack_fields( consumer : &mut FixConsumer  ) -> AllocationInstructionAckFields {
-    // fields:
-    let mut client_id : Option<String> = None;
-    let mut exec_broker : Option<String> = None;
-    let mut alloc_id : Option<String> = None;
-    let mut trade_date : Option<UtcDateTime> = None;
-    let mut transact_time : Option<UtcDateTime> = None;
-    let mut alloc_status : Option<FieldAllocStatusEnum> = None;
-    let mut alloc_rej_code : Option<FieldAllocRejCodeEnum> = None;
-    let mut text : Option<String> = None;
-    let mut encoded_text_len : Option<usize> = None;
-    let mut encoded_text : Option<String> = None;
-
-    // loop
-    while let Some(fld) = consumer.next() {
-        match fld {
-            &FieldVal { id: FIELD_CLIENTID, val: v } => {
-
-                client_id = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_EXECBROKER, val: v } => {
-
-                exec_broker = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_ALLOCID, val: v } => {
-
-                alloc_id = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_TRADEDATE, val: v } => {
-
-                trade_date = Some( UtcDateTime::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_TRANSACTTIME, val: v } => {
-
-                transact_time = Some( UtcDateTime::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_ALLOCSTATUS, val: v } => {
-
-                alloc_status = Some( FieldAllocStatusEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_ALLOCREJCODE, val: v } => {
-
-                alloc_rej_code = Some( FieldAllocRejCodeEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_TEXT, val: v } => {
-
-                text = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_ENCODEDTEXTLEN, val: v } => {
-
-                encoded_text_len = Some( usize::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_ENCODEDTEXT, val: v } => {
-
-                encoded_text = Some( v.to_string() );
-            },
-            _ => {
-                // unknown field? why? should it be added raw to some list?
-            }
-        }
-    }
-
-    // construction
-    AllocationInstructionAckFields {
-        client_id: client_id,
-        exec_broker: exec_broker,
-        alloc_id: alloc_id.unwrap() /* better error hdl? */ ,
-        trade_date: trade_date.unwrap() /* better error hdl? */ ,
-        transact_time: transact_time,
-        alloc_status: alloc_status.unwrap() /* better error hdl? */ ,
-        alloc_rej_code: alloc_rej_code,
-        text: text,
-        encoded_text_len: encoded_text_len,
-        encoded_text: encoded_text,
-    }
-}
-
-
-fn parse_message_dont_know_trade_fields( consumer : &mut FixConsumer  ) -> DontKnowTradeFields {
-    // fields:
-    let mut order_id : Option<String> = None;
-    let mut exec_id : Option<String> = None;
-    let mut dkreason : Option<FieldDKReasonEnum> = None;
-    let mut symbol : Option<String> = None;
-    let mut symbol_sfx : Option<String> = None;
-    let mut security_id : Option<String> = None;
-    let mut idsource : Option<FieldIDSourceEnum> = None;
-    let mut security_type : Option<FieldSecurityTypeEnum> = None;
-    let mut maturity_month_year : Option<UtcDate> = None;
-    let mut maturity_day : Option<i32> = None;
-    let mut put_or_call : Option<FieldPutOrCallEnum> = None;
-    let mut strike_price : Option<f32> = None;
-    let mut opt_attribute : Option<char> = None;
-    let mut contract_multiplier : Option<f32> = None;
-    let mut coupon_rate : Option<f32> = None;
-    let mut security_exchange : Option<String> = None;
-    let mut issuer : Option<String> = None;
-    let mut encoded_issuer_len : Option<usize> = None;
-    let mut encoded_issuer : Option<String> = None;
-    let mut security_desc : Option<String> = None;
-    let mut encoded_security_desc_len : Option<usize> = None;
-    let mut encoded_security_desc : Option<String> = None;
-    let mut side : Option<FieldSideEnum> = None;
-    let mut order_qty : Option<f32> = None;
-    let mut cash_order_qty : Option<f32> = None;
-    let mut last_shares : Option<f32> = None;
-    let mut last_px : Option<f32> = None;
-    let mut text : Option<String> = None;
-    let mut encoded_text_len : Option<usize> = None;
-    let mut encoded_text : Option<String> = None;
-
-    // loop
-    while let Some(fld) = consumer.next() {
-        match fld {
-            &FieldVal { id: FIELD_ORDERID, val: v } => {
-
-                order_id = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_EXECID, val: v } => {
-
-                exec_id = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_DKREASON, val: v } => {
-
-                dkreason = Some( FieldDKReasonEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_SYMBOL, val: v } => {
-
-                symbol = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_SYMBOLSFX, val: v } => {
-
-                symbol_sfx = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_SECURITYID, val: v } => {
-
-                security_id = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_IDSOURCE, val: v } => {
-
-                idsource = Some( FieldIDSourceEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_SECURITYTYPE, val: v } => {
-
-                security_type = Some( FieldSecurityTypeEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_MATURITYMONTHYEAR, val: v } => {
-
-                maturity_month_year = Some( UtcDate::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_MATURITYDAY, val: v } => {
-
-                maturity_day = Some( i32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_PUTORCALL, val: v } => {
-
-                put_or_call = Some( FieldPutOrCallEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_STRIKEPRICE, val: v } => {
-
-                strike_price = Some( f32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_OPTATTRIBUTE, val: v } => {
-
-                opt_attribute = Some( char::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_CONTRACTMULTIPLIER, val: v } => {
-
-                contract_multiplier = Some( f32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_COUPONRATE, val: v } => {
-
-                coupon_rate = Some( f32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_SECURITYEXCHANGE, val: v } => {
-
-                security_exchange = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_ISSUER, val: v } => {
-
-                issuer = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_ENCODEDISSUERLEN, val: v } => {
-
-                encoded_issuer_len = Some( usize::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_ENCODEDISSUER, val: v } => {
-
-                encoded_issuer = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_SECURITYDESC, val: v } => {
-
-                security_desc = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_ENCODEDSECURITYDESCLEN, val: v } => {
-
-                encoded_security_desc_len = Some( usize::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_ENCODEDSECURITYDESC, val: v } => {
-
-                encoded_security_desc = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_SIDE, val: v } => {
-
-                side = Some( FieldSideEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_ORDERQTY, val: v } => {
-
-                order_qty = Some( f32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_CASHORDERQTY, val: v } => {
-
-                cash_order_qty = Some( f32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_LASTSHARES, val: v } => {
-
-                last_shares = Some( f32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_LASTPX, val: v } => {
-
-                last_px = Some( f32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_TEXT, val: v } => {
-
-                text = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_ENCODEDTEXTLEN, val: v } => {
-
-                encoded_text_len = Some( usize::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_ENCODEDTEXT, val: v } => {
-
-                encoded_text = Some( v.to_string() );
-            },
-            _ => {
-                // unknown field? why? should it be added raw to some list?
-            }
-        }
-    }
-
-    // construction
-    DontKnowTradeFields {
-        order_id: order_id.unwrap() /* better error hdl? */ ,
-        exec_id: exec_id.unwrap() /* better error hdl? */ ,
-        dkreason: dkreason.unwrap() /* better error hdl? */ ,
-        symbol: symbol.unwrap() /* better error hdl? */ ,
-        symbol_sfx: symbol_sfx,
-        security_id: security_id,
-        idsource: idsource,
-        security_type: security_type,
-        maturity_month_year: maturity_month_year,
-        maturity_day: maturity_day,
-        put_or_call: put_or_call,
-        strike_price: strike_price,
-        opt_attribute: opt_attribute,
-        contract_multiplier: contract_multiplier,
-        coupon_rate: coupon_rate,
-        security_exchange: security_exchange,
-        issuer: issuer,
-        encoded_issuer_len: encoded_issuer_len,
-        encoded_issuer: encoded_issuer,
-        security_desc: security_desc,
-        encoded_security_desc_len: encoded_security_desc_len,
-        encoded_security_desc: encoded_security_desc,
-        side: side.unwrap() /* better error hdl? */ ,
-        order_qty: order_qty,
-        cash_order_qty: cash_order_qty,
-        last_shares: last_shares,
-        last_px: last_px,
-        text: text,
-        encoded_text_len: encoded_text_len,
-        encoded_text: encoded_text,
-    }
-}
-
-
-fn parse_message_quote_request_fields( consumer : &mut FixConsumer  ) -> QuoteRequestFields {
-    // fields:
-    let mut quote_req_id : Option<String> = None;
-    let mut no_related_sym : Option<Vec<NoRelatedSym24Fields>> = None;
-
-    // loop
-    while let Some(fld) = consumer.next() {
-        match fld {
-            &FieldVal { id: FIELD_QUOTEREQID, val: v } => {
-
-                quote_req_id = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_NORELATEDSYM, val: v } => {
-
-                // group
-                let size = usize::from_str(v).unwrap();
-                let subgroup = build_group_no_related_sym24_fields(consumer, size);
-                no_related_sym = Some(subgroup);
-            },
-            _ => {
-                // unknown field? why? should it be added raw to some list?
-            }
-        }
-    }
-
-    // construction
-    QuoteRequestFields {
-        quote_req_id: quote_req_id.unwrap() /* better error hdl? */ ,
-        no_related_sym: no_related_sym.unwrap() /* better error hdl? */ ,
-    }
-}
-
-
-fn parse_message_quote_fields( consumer : &mut FixConsumer  ) -> QuoteFields {
-    // fields:
-    let mut quote_req_id : Option<String> = None;
-    let mut quote_id : Option<String> = None;
-    let mut quote_response_level : Option<FieldQuoteResponseLevelEnum> = None;
-    let mut trading_session_id : Option<String> = None;
-    let mut symbol : Option<String> = None;
-    let mut symbol_sfx : Option<String> = None;
-    let mut security_id : Option<String> = None;
-    let mut idsource : Option<FieldIDSourceEnum> = None;
-    let mut security_type : Option<FieldSecurityTypeEnum> = None;
-    let mut maturity_month_year : Option<UtcDate> = None;
-    let mut maturity_day : Option<i32> = None;
-    let mut put_or_call : Option<FieldPutOrCallEnum> = None;
-    let mut strike_price : Option<f32> = None;
-    let mut opt_attribute : Option<char> = None;
-    let mut contract_multiplier : Option<f32> = None;
-    let mut coupon_rate : Option<f32> = None;
-    let mut security_exchange : Option<String> = None;
-    let mut issuer : Option<String> = None;
-    let mut encoded_issuer_len : Option<usize> = None;
-    let mut encoded_issuer : Option<String> = None;
-    let mut security_desc : Option<String> = None;
-    let mut encoded_security_desc_len : Option<usize> = None;
-    let mut encoded_security_desc : Option<String> = None;
-    let mut bid_px : Option<f32> = None;
-    let mut offer_px : Option<f32> = None;
-    let mut bid_size : Option<f32> = None;
-    let mut offer_size : Option<f32> = None;
-    let mut valid_until_time : Option<UtcDateTime> = None;
-    let mut bid_spot_rate : Option<f32> = None;
-    let mut offer_spot_rate : Option<f32> = None;
-    let mut bid_forward_points : Option<f32> = None;
-    let mut offer_forward_points : Option<f32> = None;
-    let mut transact_time : Option<UtcDateTime> = None;
-    let mut fut_sett_date : Option<UtcDateTime> = None;
-    let mut ord_type : Option<FieldOrdTypeEnum> = None;
-    let mut fut_sett_date2 : Option<UtcDateTime> = None;
-    let mut order_qty2 : Option<f32> = None;
-    let mut currency : Option<f32> = None;
-
-    // loop
-    while let Some(fld) = consumer.next() {
-        match fld {
-            &FieldVal { id: FIELD_QUOTEREQID, val: v } => {
-
-                quote_req_id = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_QUOTEID, val: v } => {
-
-                quote_id = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_QUOTERESPONSELEVEL, val: v } => {
-
-                quote_response_level = Some( FieldQuoteResponseLevelEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_TRADINGSESSIONID, val: v } => {
-
-                trading_session_id = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_SYMBOL, val: v } => {
-
-                symbol = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_SYMBOLSFX, val: v } => {
-
-                symbol_sfx = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_SECURITYID, val: v } => {
-
-                security_id = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_IDSOURCE, val: v } => {
-
-                idsource = Some( FieldIDSourceEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_SECURITYTYPE, val: v } => {
-
-                security_type = Some( FieldSecurityTypeEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_MATURITYMONTHYEAR, val: v } => {
-
-                maturity_month_year = Some( UtcDate::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_MATURITYDAY, val: v } => {
-
-                maturity_day = Some( i32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_PUTORCALL, val: v } => {
-
-                put_or_call = Some( FieldPutOrCallEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_STRIKEPRICE, val: v } => {
-
-                strike_price = Some( f32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_OPTATTRIBUTE, val: v } => {
-
-                opt_attribute = Some( char::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_CONTRACTMULTIPLIER, val: v } => {
-
-                contract_multiplier = Some( f32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_COUPONRATE, val: v } => {
-
-                coupon_rate = Some( f32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_SECURITYEXCHANGE, val: v } => {
-
-                security_exchange = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_ISSUER, val: v } => {
-
-                issuer = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_ENCODEDISSUERLEN, val: v } => {
-
-                encoded_issuer_len = Some( usize::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_ENCODEDISSUER, val: v } => {
-
-                encoded_issuer = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_SECURITYDESC, val: v } => {
-
-                security_desc = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_ENCODEDSECURITYDESCLEN, val: v } => {
-
-                encoded_security_desc_len = Some( usize::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_ENCODEDSECURITYDESC, val: v } => {
-
-                encoded_security_desc = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_BIDPX, val: v } => {
-
-                bid_px = Some( f32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_OFFERPX, val: v } => {
-
-                offer_px = Some( f32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_BIDSIZE, val: v } => {
-
-                bid_size = Some( f32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_OFFERSIZE, val: v } => {
-
-                offer_size = Some( f32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_VALIDUNTILTIME, val: v } => {
-
-                valid_until_time = Some( UtcDateTime::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_BIDSPOTRATE, val: v } => {
-
-                bid_spot_rate = Some( f32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_OFFERSPOTRATE, val: v } => {
-
-                offer_spot_rate = Some( f32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_BIDFORWARDPOINTS, val: v } => {
-
-                bid_forward_points = Some( f32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_OFFERFORWARDPOINTS, val: v } => {
-
-                offer_forward_points = Some( f32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_TRANSACTTIME, val: v } => {
-
-                transact_time = Some( UtcDateTime::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_FUTSETTDATE, val: v } => {
-
-                fut_sett_date = Some( UtcDateTime::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_ORDTYPE, val: v } => {
-
-                ord_type = Some( FieldOrdTypeEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_FUTSETTDATE2, val: v } => {
-
-                fut_sett_date2 = Some( UtcDateTime::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_ORDERQTY2, val: v } => {
-
-                order_qty2 = Some( f32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_CURRENCY, val: v } => {
-
-                currency = Some( f32::from_str(v).unwrap() );
-            },
-            _ => {
-                // unknown field? why? should it be added raw to some list?
-            }
-        }
-    }
-
-    // construction
-    QuoteFields {
-        quote_req_id: quote_req_id,
-        quote_id: quote_id.unwrap() /* better error hdl? */ ,
-        quote_response_level: quote_response_level,
-        trading_session_id: trading_session_id,
-        symbol: symbol.unwrap() /* better error hdl? */ ,
-        symbol_sfx: symbol_sfx,
-        security_id: security_id,
-        idsource: idsource,
-        security_type: security_type,
-        maturity_month_year: maturity_month_year,
-        maturity_day: maturity_day,
-        put_or_call: put_or_call,
-        strike_price: strike_price,
-        opt_attribute: opt_attribute,
-        contract_multiplier: contract_multiplier,
-        coupon_rate: coupon_rate,
-        security_exchange: security_exchange,
-        issuer: issuer,
-        encoded_issuer_len: encoded_issuer_len,
-        encoded_issuer: encoded_issuer,
-        security_desc: security_desc,
-        encoded_security_desc_len: encoded_security_desc_len,
-        encoded_security_desc: encoded_security_desc,
-        bid_px: bid_px,
-        offer_px: offer_px,
-        bid_size: bid_size,
-        offer_size: offer_size,
-        valid_until_time: valid_until_time,
-        bid_spot_rate: bid_spot_rate,
-        offer_spot_rate: offer_spot_rate,
-        bid_forward_points: bid_forward_points,
-        offer_forward_points: offer_forward_points,
-        transact_time: transact_time,
-        fut_sett_date: fut_sett_date,
-        ord_type: ord_type,
-        fut_sett_date2: fut_sett_date2,
-        order_qty2: order_qty2,
-        currency: currency,
-    }
-}
-
-
-fn parse_message_settlement_instructions_fields( consumer : &mut FixConsumer  ) -> SettlementInstructionsFields {
-    // fields:
-    let mut settl_inst_id : Option<String> = None;
-    let mut settl_inst_trans_type : Option<FieldSettlInstTransTypeEnum> = None;
-    let mut settl_inst_ref_id : Option<String> = None;
-    let mut settl_inst_mode : Option<FieldSettlInstModeEnum> = None;
-    let mut settl_inst_source : Option<FieldSettlInstSourceEnum> = None;
-    let mut alloc_account : Option<String> = None;
-    let mut settl_location : Option<FieldSettlLocationEnum> = None;
-    let mut trade_date : Option<UtcDateTime> = None;
-    let mut alloc_id : Option<String> = None;
-    let mut last_mkt : Option<String> = None;
-    let mut trading_session_id : Option<String> = None;
-    let mut side : Option<FieldSideEnum> = None;
-    let mut security_type : Option<FieldSecurityTypeEnum> = None;
-    let mut effective_time : Option<UtcDateTime> = None;
-    let mut transact_time : Option<UtcDateTime> = None;
-    let mut client_id : Option<String> = None;
-    let mut exec_broker : Option<String> = None;
-    let mut stand_inst_db_type : Option<FieldStandInstDbTypeEnum> = None;
-    let mut stand_inst_db_name : Option<String> = None;
-    let mut stand_inst_db_id : Option<String> = None;
-    let mut settl_delivery_type : Option<i32> = None;
-    let mut settl_depository_code : Option<String> = None;
-    let mut settl_brkr_code : Option<String> = None;
-    let mut settl_inst_code : Option<String> = None;
-    let mut security_settl_agent_name : Option<String> = None;
-    let mut security_settl_agent_code : Option<String> = None;
-    let mut security_settl_agent_acct_num : Option<String> = None;
-    let mut security_settl_agent_acct_name : Option<String> = None;
-    let mut security_settl_agent_contact_name : Option<String> = None;
-    let mut security_settl_agent_contact_phone : Option<String> = None;
-    let mut cash_settl_agent_name : Option<String> = None;
-    let mut cash_settl_agent_code : Option<String> = None;
-    let mut cash_settl_agent_acct_num : Option<String> = None;
-    let mut cash_settl_agent_acct_name : Option<String> = None;
-    let mut cash_settl_agent_contact_name : Option<String> = None;
-    let mut cash_settl_agent_contact_phone : Option<String> = None;
-
-    // loop
-    while let Some(fld) = consumer.next() {
-        match fld {
-            &FieldVal { id: FIELD_SETTLINSTID, val: v } => {
-
-                settl_inst_id = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_SETTLINSTTRANSTYPE, val: v } => {
-
-                settl_inst_trans_type = Some( FieldSettlInstTransTypeEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_SETTLINSTREFID, val: v } => {
-
-                settl_inst_ref_id = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_SETTLINSTMODE, val: v } => {
-
-                settl_inst_mode = Some( FieldSettlInstModeEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_SETTLINSTSOURCE, val: v } => {
-
-                settl_inst_source = Some( FieldSettlInstSourceEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_ALLOCACCOUNT, val: v } => {
-
-                alloc_account = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_SETTLLOCATION, val: v } => {
-
-                settl_location = Some( FieldSettlLocationEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_TRADEDATE, val: v } => {
-
-                trade_date = Some( UtcDateTime::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_ALLOCID, val: v } => {
-
-                alloc_id = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_LASTMKT, val: v } => {
-
-                last_mkt = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_TRADINGSESSIONID, val: v } => {
-
-                trading_session_id = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_SIDE, val: v } => {
-
-                side = Some( FieldSideEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_SECURITYTYPE, val: v } => {
-
-                security_type = Some( FieldSecurityTypeEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_EFFECTIVETIME, val: v } => {
-
-                effective_time = Some( UtcDateTime::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_TRANSACTTIME, val: v } => {
-
-                transact_time = Some( UtcDateTime::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_CLIENTID, val: v } => {
-
-                client_id = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_EXECBROKER, val: v } => {
-
-                exec_broker = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_STANDINSTDBTYPE, val: v } => {
-
-                stand_inst_db_type = Some( FieldStandInstDbTypeEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_STANDINSTDBNAME, val: v } => {
-
-                stand_inst_db_name = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_STANDINSTDBID, val: v } => {
-
-                stand_inst_db_id = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_SETTLDELIVERYTYPE, val: v } => {
-
-                settl_delivery_type = Some( i32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_SETTLDEPOSITORYCODE, val: v } => {
-
-                settl_depository_code = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_SETTLBRKRCODE, val: v } => {
-
-                settl_brkr_code = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_SETTLINSTCODE, val: v } => {
-
-                settl_inst_code = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_SECURITYSETTLAGENTNAME, val: v } => {
-
-                security_settl_agent_name = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_SECURITYSETTLAGENTCODE, val: v } => {
-
-                security_settl_agent_code = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_SECURITYSETTLAGENTACCTNUM, val: v } => {
-
-                security_settl_agent_acct_num = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_SECURITYSETTLAGENTACCTNAME, val: v } => {
-
-                security_settl_agent_acct_name = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_SECURITYSETTLAGENTCONTACTNAME, val: v } => {
-
-                security_settl_agent_contact_name = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_SECURITYSETTLAGENTCONTACTPHONE, val: v } => {
-
-                security_settl_agent_contact_phone = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_CASHSETTLAGENTNAME, val: v } => {
-
-                cash_settl_agent_name = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_CASHSETTLAGENTCODE, val: v } => {
-
-                cash_settl_agent_code = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_CASHSETTLAGENTACCTNUM, val: v } => {
-
-                cash_settl_agent_acct_num = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_CASHSETTLAGENTACCTNAME, val: v } => {
-
-                cash_settl_agent_acct_name = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_CASHSETTLAGENTCONTACTNAME, val: v } => {
-
-                cash_settl_agent_contact_name = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_CASHSETTLAGENTCONTACTPHONE, val: v } => {
-
-                cash_settl_agent_contact_phone = Some( v.to_string() );
-            },
-            _ => {
-                // unknown field? why? should it be added raw to some list?
-            }
-        }
-    }
-
-    // construction
-    SettlementInstructionsFields {
-        settl_inst_id: settl_inst_id.unwrap() /* better error hdl? */ ,
-        settl_inst_trans_type: settl_inst_trans_type.unwrap() /* better error hdl? */ ,
-        settl_inst_ref_id: settl_inst_ref_id.unwrap() /* better error hdl? */ ,
-        settl_inst_mode: settl_inst_mode.unwrap() /* better error hdl? */ ,
-        settl_inst_source: settl_inst_source.unwrap() /* better error hdl? */ ,
-        alloc_account: alloc_account.unwrap() /* better error hdl? */ ,
-        settl_location: settl_location,
-        trade_date: trade_date,
-        alloc_id: alloc_id,
-        last_mkt: last_mkt,
-        trading_session_id: trading_session_id,
-        side: side,
-        security_type: security_type,
-        effective_time: effective_time,
-        transact_time: transact_time.unwrap() /* better error hdl? */ ,
-        client_id: client_id,
-        exec_broker: exec_broker,
-        stand_inst_db_type: stand_inst_db_type,
-        stand_inst_db_name: stand_inst_db_name,
-        stand_inst_db_id: stand_inst_db_id,
-        settl_delivery_type: settl_delivery_type,
-        settl_depository_code: settl_depository_code,
-        settl_brkr_code: settl_brkr_code,
-        settl_inst_code: settl_inst_code,
-        security_settl_agent_name: security_settl_agent_name,
-        security_settl_agent_code: security_settl_agent_code,
-        security_settl_agent_acct_num: security_settl_agent_acct_num,
-        security_settl_agent_acct_name: security_settl_agent_acct_name,
-        security_settl_agent_contact_name: security_settl_agent_contact_name,
-        security_settl_agent_contact_phone: security_settl_agent_contact_phone,
-        cash_settl_agent_name: cash_settl_agent_name,
-        cash_settl_agent_code: cash_settl_agent_code,
-        cash_settl_agent_acct_num: cash_settl_agent_acct_num,
-        cash_settl_agent_acct_name: cash_settl_agent_acct_name,
-        cash_settl_agent_contact_name: cash_settl_agent_contact_name,
-        cash_settl_agent_contact_phone: cash_settl_agent_contact_phone,
-    }
-}
-
-
-fn parse_message_market_data_request_fields( consumer : &mut FixConsumer  ) -> MarketDataRequestFields {
-    // fields:
-    let mut mdreq_id : Option<String> = None;
-    let mut subscription_request_type : Option<FieldSubscriptionRequestTypeEnum> = None;
-    let mut market_depth : Option<i32> = None;
-    let mut mdupdate_type : Option<FieldMDUpdateTypeEnum> = None;
-    let mut aggregated_book : Option<bool> = None;
-    let mut no_mdentry_types : Option<Vec<NoMDEntryTypes12Fields>> = None;
-    let mut no_related_sym : Option<Vec<NoRelatedSym23Fields>> = None;
-
-    // loop
-    while let Some(fld) = consumer.next() {
-        match fld {
-            &FieldVal { id: FIELD_MDREQID, val: v } => {
-
-                mdreq_id = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_SUBSCRIPTIONREQUESTTYPE, val: v } => {
-
-                subscription_request_type = Some( FieldSubscriptionRequestTypeEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_MARKETDEPTH, val: v } => {
-
-                market_depth = Some( i32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_MDUPDATETYPE, val: v } => {
-
-                mdupdate_type = Some( FieldMDUpdateTypeEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_AGGREGATEDBOOK, val: v } => {
-
-                aggregated_book = Some( boolconv(v) );
-            },
-            &FieldVal { id: FIELD_NOMDENTRYTYPES, val: v } => {
-
-                // group
-                let size = usize::from_str(v).unwrap();
-                let subgroup = build_group_no_mdentry_types12_fields(consumer, size);
-                no_mdentry_types = Some(subgroup);
-            },
-            &FieldVal { id: FIELD_NORELATEDSYM, val: v } => {
-
-                // group
-                let size = usize::from_str(v).unwrap();
-                let subgroup = build_group_no_related_sym23_fields(consumer, size);
-                no_related_sym = Some(subgroup);
-            },
-            _ => {
-                // unknown field? why? should it be added raw to some list?
-            }
-        }
-    }
-
-    // construction
-    MarketDataRequestFields {
-        mdreq_id: mdreq_id.unwrap() /* better error hdl? */ ,
-        subscription_request_type: subscription_request_type.unwrap() /* better error hdl? */ ,
-        market_depth: market_depth.unwrap() /* better error hdl? */ ,
-        mdupdate_type: mdupdate_type,
-        aggregated_book: aggregated_book,
-        no_mdentry_types: no_mdentry_types.unwrap() /* better error hdl? */ ,
-        no_related_sym: no_related_sym.unwrap() /* better error hdl? */ ,
-    }
-}
-
-
-fn parse_message_market_data_snapshot_full_refresh_fields( consumer : &mut FixConsumer  ) -> MarketDataSnapshotFullRefreshFields {
-    // fields:
-    let mut mdreq_id : Option<String> = None;
-    let mut symbol : Option<String> = None;
-    let mut symbol_sfx : Option<String> = None;
-    let mut security_id : Option<String> = None;
-    let mut idsource : Option<FieldIDSourceEnum> = None;
-    let mut security_type : Option<FieldSecurityTypeEnum> = None;
-    let mut maturity_month_year : Option<UtcDate> = None;
-    let mut maturity_day : Option<i32> = None;
-    let mut put_or_call : Option<FieldPutOrCallEnum> = None;
-    let mut strike_price : Option<f32> = None;
-    let mut opt_attribute : Option<char> = None;
-    let mut contract_multiplier : Option<f32> = None;
-    let mut coupon_rate : Option<f32> = None;
-    let mut security_exchange : Option<String> = None;
-    let mut issuer : Option<String> = None;
-    let mut encoded_issuer_len : Option<usize> = None;
-    let mut encoded_issuer : Option<String> = None;
-    let mut security_desc : Option<String> = None;
-    let mut encoded_security_desc_len : Option<usize> = None;
-    let mut encoded_security_desc : Option<String> = None;
-    let mut financial_status : Option<FieldFinancialStatusEnum> = None;
-    let mut corporate_action : Option<FieldCorporateActionEnum> = None;
-    let mut total_volume_traded : Option<f32> = None;
-    let mut no_mdentries : Option<Vec<NoMDEntries10Fields>> = None;
-
-    // loop
-    while let Some(fld) = consumer.next() {
-        match fld {
-            &FieldVal { id: FIELD_MDREQID, val: v } => {
-
-                mdreq_id = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_SYMBOL, val: v } => {
-
-                symbol = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_SYMBOLSFX, val: v } => {
-
-                symbol_sfx = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_SECURITYID, val: v } => {
-
-                security_id = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_IDSOURCE, val: v } => {
-
-                idsource = Some( FieldIDSourceEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_SECURITYTYPE, val: v } => {
-
-                security_type = Some( FieldSecurityTypeEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_MATURITYMONTHYEAR, val: v } => {
-
-                maturity_month_year = Some( UtcDate::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_MATURITYDAY, val: v } => {
-
-                maturity_day = Some( i32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_PUTORCALL, val: v } => {
-
-                put_or_call = Some( FieldPutOrCallEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_STRIKEPRICE, val: v } => {
-
-                strike_price = Some( f32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_OPTATTRIBUTE, val: v } => {
-
-                opt_attribute = Some( char::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_CONTRACTMULTIPLIER, val: v } => {
-
-                contract_multiplier = Some( f32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_COUPONRATE, val: v } => {
-
-                coupon_rate = Some( f32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_SECURITYEXCHANGE, val: v } => {
-
-                security_exchange = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_ISSUER, val: v } => {
-
-                issuer = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_ENCODEDISSUERLEN, val: v } => {
-
-                encoded_issuer_len = Some( usize::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_ENCODEDISSUER, val: v } => {
-
-                encoded_issuer = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_SECURITYDESC, val: v } => {
-
-                security_desc = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_ENCODEDSECURITYDESCLEN, val: v } => {
-
-                encoded_security_desc_len = Some( usize::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_ENCODEDSECURITYDESC, val: v } => {
-
-                encoded_security_desc = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_FINANCIALSTATUS, val: v } => {
-
-                financial_status = Some( FieldFinancialStatusEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_CORPORATEACTION, val: v } => {
-
-                corporate_action = Some( FieldCorporateActionEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_TOTALVOLUMETRADED, val: v } => {
-
-                total_volume_traded = Some( f32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_NOMDENTRIES, val: v } => {
-
-                // group
-                let size = usize::from_str(v).unwrap();
-                let subgroup = build_group_no_mdentries10_fields(consumer, size);
-                no_mdentries = Some(subgroup);
-            },
-            _ => {
-                // unknown field? why? should it be added raw to some list?
-            }
-        }
-    }
-
-    // construction
-    MarketDataSnapshotFullRefreshFields {
-        mdreq_id: mdreq_id,
-        symbol: symbol.unwrap() /* better error hdl? */ ,
-        symbol_sfx: symbol_sfx,
-        security_id: security_id,
-        idsource: idsource,
-        security_type: security_type,
-        maturity_month_year: maturity_month_year,
-        maturity_day: maturity_day,
-        put_or_call: put_or_call,
-        strike_price: strike_price,
-        opt_attribute: opt_attribute,
-        contract_multiplier: contract_multiplier,
-        coupon_rate: coupon_rate,
-        security_exchange: security_exchange,
-        issuer: issuer,
-        encoded_issuer_len: encoded_issuer_len,
-        encoded_issuer: encoded_issuer,
-        security_desc: security_desc,
-        encoded_security_desc_len: encoded_security_desc_len,
-        encoded_security_desc: encoded_security_desc,
-        financial_status: financial_status,
-        corporate_action: corporate_action,
-        total_volume_traded: total_volume_traded,
-        no_mdentries: no_mdentries.unwrap() /* better error hdl? */ ,
-    }
-}
-
-
-fn parse_message_market_data_incremental_refresh_fields( consumer : &mut FixConsumer  ) -> MarketDataIncrementalRefreshFields {
-    // fields:
-    let mut mdreq_id : Option<String> = None;
-    let mut no_mdentries : Option<Vec<NoMDEntries11Fields>> = None;
-
-    // loop
-    while let Some(fld) = consumer.next() {
-        match fld {
-            &FieldVal { id: FIELD_MDREQID, val: v } => {
-
-                mdreq_id = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_NOMDENTRIES, val: v } => {
-
-                // group
-                let size = usize::from_str(v).unwrap();
-                let subgroup = build_group_no_mdentries11_fields(consumer, size);
-                no_mdentries = Some(subgroup);
-            },
-            _ => {
-                // unknown field? why? should it be added raw to some list?
-            }
-        }
-    }
-
-    // construction
-    MarketDataIncrementalRefreshFields {
-        mdreq_id: mdreq_id,
-        no_mdentries: no_mdentries.unwrap() /* better error hdl? */ ,
-    }
-}
-
-
-fn parse_message_market_data_request_reject_fields( consumer : &mut FixConsumer  ) -> MarketDataRequestRejectFields {
-    // fields:
-    let mut mdreq_id : Option<String> = None;
-    let mut mdreq_rej_reason : Option<FieldMDReqRejReasonEnum> = None;
-    let mut text : Option<String> = None;
-    let mut encoded_text_len : Option<usize> = None;
-    let mut encoded_text : Option<String> = None;
-
-    // loop
-    while let Some(fld) = consumer.next() {
-        match fld {
-            &FieldVal { id: FIELD_MDREQID, val: v } => {
-
-                mdreq_id = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_MDREQREJREASON, val: v } => {
-
-                mdreq_rej_reason = Some( FieldMDReqRejReasonEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_TEXT, val: v } => {
-
-                text = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_ENCODEDTEXTLEN, val: v } => {
-
-                encoded_text_len = Some( usize::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_ENCODEDTEXT, val: v } => {
-
-                encoded_text = Some( v.to_string() );
-            },
-            _ => {
-                // unknown field? why? should it be added raw to some list?
-            }
-        }
-    }
-
-    // construction
-    MarketDataRequestRejectFields {
-        mdreq_id: mdreq_id.unwrap() /* better error hdl? */ ,
-        mdreq_rej_reason: mdreq_rej_reason,
-        text: text,
-        encoded_text_len: encoded_text_len,
-        encoded_text: encoded_text,
-    }
-}
-
-
-fn parse_message_quote_cancel_fields( consumer : &mut FixConsumer  ) -> QuoteCancelFields {
-    // fields:
-    let mut quote_req_id : Option<String> = None;
-    let mut quote_id : Option<String> = None;
-    let mut quote_cancel_type : Option<FieldQuoteCancelTypeEnum> = None;
-    let mut quote_response_level : Option<FieldQuoteResponseLevelEnum> = None;
-    let mut trading_session_id : Option<String> = None;
-    let mut no_quote_entries : Option<Vec<NoQuoteEntries20Fields>> = None;
-
-    // loop
-    while let Some(fld) = consumer.next() {
-        match fld {
-            &FieldVal { id: FIELD_QUOTEREQID, val: v } => {
-
-                quote_req_id = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_QUOTEID, val: v } => {
-
-                quote_id = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_QUOTECANCELTYPE, val: v } => {
-
-                quote_cancel_type = Some( FieldQuoteCancelTypeEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_QUOTERESPONSELEVEL, val: v } => {
-
-                quote_response_level = Some( FieldQuoteResponseLevelEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_TRADINGSESSIONID, val: v } => {
-
-                trading_session_id = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_NOQUOTEENTRIES, val: v } => {
-
-                // group
-                let size = usize::from_str(v).unwrap();
-                let subgroup = build_group_no_quote_entries20_fields(consumer, size);
-                no_quote_entries = Some(subgroup);
-            },
-            _ => {
-                // unknown field? why? should it be added raw to some list?
-            }
-        }
-    }
-
-    // construction
-    QuoteCancelFields {
-        quote_req_id: quote_req_id,
-        quote_id: quote_id.unwrap() /* better error hdl? */ ,
-        quote_cancel_type: quote_cancel_type.unwrap() /* better error hdl? */ ,
-        quote_response_level: quote_response_level,
-        trading_session_id: trading_session_id,
-        no_quote_entries: no_quote_entries.unwrap() /* better error hdl? */ ,
-    }
-}
-
-
-fn parse_message_quote_status_request_fields( consumer : &mut FixConsumer  ) -> QuoteStatusRequestFields {
-    // fields:
-    let mut quote_id : Option<String> = None;
-    let mut symbol : Option<String> = None;
-    let mut symbol_sfx : Option<String> = None;
-    let mut security_id : Option<String> = None;
-    let mut idsource : Option<FieldIDSourceEnum> = None;
-    let mut security_type : Option<FieldSecurityTypeEnum> = None;
-    let mut maturity_month_year : Option<UtcDate> = None;
-    let mut maturity_day : Option<i32> = None;
-    let mut put_or_call : Option<FieldPutOrCallEnum> = None;
-    let mut strike_price : Option<f32> = None;
-    let mut opt_attribute : Option<char> = None;
-    let mut contract_multiplier : Option<f32> = None;
-    let mut coupon_rate : Option<f32> = None;
-    let mut security_exchange : Option<String> = None;
-    let mut issuer : Option<String> = None;
-    let mut encoded_issuer_len : Option<usize> = None;
-    let mut encoded_issuer : Option<String> = None;
-    let mut security_desc : Option<String> = None;
-    let mut encoded_security_desc_len : Option<usize> = None;
-    let mut encoded_security_desc : Option<String> = None;
-    let mut side : Option<FieldSideEnum> = None;
-    let mut trading_session_id : Option<String> = None;
-
-    // loop
-    while let Some(fld) = consumer.next() {
-        match fld {
-            &FieldVal { id: FIELD_QUOTEID, val: v } => {
-
-                quote_id = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_SYMBOL, val: v } => {
-
-                symbol = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_SYMBOLSFX, val: v } => {
-
-                symbol_sfx = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_SECURITYID, val: v } => {
-
-                security_id = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_IDSOURCE, val: v } => {
-
-                idsource = Some( FieldIDSourceEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_SECURITYTYPE, val: v } => {
-
-                security_type = Some( FieldSecurityTypeEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_MATURITYMONTHYEAR, val: v } => {
-
-                maturity_month_year = Some( UtcDate::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_MATURITYDAY, val: v } => {
-
-                maturity_day = Some( i32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_PUTORCALL, val: v } => {
-
-                put_or_call = Some( FieldPutOrCallEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_STRIKEPRICE, val: v } => {
-
-                strike_price = Some( f32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_OPTATTRIBUTE, val: v } => {
-
-                opt_attribute = Some( char::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_CONTRACTMULTIPLIER, val: v } => {
-
-                contract_multiplier = Some( f32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_COUPONRATE, val: v } => {
-
-                coupon_rate = Some( f32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_SECURITYEXCHANGE, val: v } => {
-
-                security_exchange = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_ISSUER, val: v } => {
-
-                issuer = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_ENCODEDISSUERLEN, val: v } => {
-
-                encoded_issuer_len = Some( usize::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_ENCODEDISSUER, val: v } => {
-
-                encoded_issuer = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_SECURITYDESC, val: v } => {
-
-                security_desc = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_ENCODEDSECURITYDESCLEN, val: v } => {
-
-                encoded_security_desc_len = Some( usize::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_ENCODEDSECURITYDESC, val: v } => {
-
-                encoded_security_desc = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_SIDE, val: v } => {
-
-                side = Some( FieldSideEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_TRADINGSESSIONID, val: v } => {
-
-                trading_session_id = Some( v.to_string() );
-            },
-            _ => {
-                // unknown field? why? should it be added raw to some list?
-            }
-        }
-    }
-
-    // construction
-    QuoteStatusRequestFields {
-        quote_id: quote_id,
-        symbol: symbol.unwrap() /* better error hdl? */ ,
-        symbol_sfx: symbol_sfx,
-        security_id: security_id,
-        idsource: idsource,
-        security_type: security_type,
-        maturity_month_year: maturity_month_year,
-        maturity_day: maturity_day,
-        put_or_call: put_or_call,
-        strike_price: strike_price,
-        opt_attribute: opt_attribute,
-        contract_multiplier: contract_multiplier,
-        coupon_rate: coupon_rate,
-        security_exchange: security_exchange,
-        issuer: issuer,
-        encoded_issuer_len: encoded_issuer_len,
-        encoded_issuer: encoded_issuer,
-        security_desc: security_desc,
-        encoded_security_desc_len: encoded_security_desc_len,
-        encoded_security_desc: encoded_security_desc,
-        side: side,
-        trading_session_id: trading_session_id,
-    }
-}
-
-
-fn parse_message_quote_acknowledgement_fields( consumer : &mut FixConsumer  ) -> QuoteAcknowledgementFields {
-    // fields:
-    let mut quote_req_id : Option<String> = None;
-    let mut quote_id : Option<String> = None;
-    let mut quote_ack_status : Option<FieldQuoteAckStatusEnum> = None;
-    let mut quote_reject_reason : Option<FieldQuoteRejectReasonEnum> = None;
-    let mut quote_response_level : Option<FieldQuoteResponseLevelEnum> = None;
-    let mut trading_session_id : Option<String> = None;
-    let mut text : Option<String> = None;
-    let mut no_quote_sets : Option<Vec<NoQuoteSets22Fields>> = None;
-
-    // loop
-    while let Some(fld) = consumer.next() {
-        match fld {
-            &FieldVal { id: FIELD_QUOTEREQID, val: v } => {
-
-                quote_req_id = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_QUOTEID, val: v } => {
-
-                quote_id = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_QUOTEACKSTATUS, val: v } => {
-
-                quote_ack_status = Some( FieldQuoteAckStatusEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_QUOTEREJECTREASON, val: v } => {
-
-                quote_reject_reason = Some( FieldQuoteRejectReasonEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_QUOTERESPONSELEVEL, val: v } => {
-
-                quote_response_level = Some( FieldQuoteResponseLevelEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_TRADINGSESSIONID, val: v } => {
-
-                trading_session_id = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_TEXT, val: v } => {
-
-                text = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_NOQUOTESETS, val: v } => {
-
-                // group
-                let size = usize::from_str(v).unwrap();
-                let subgroup = build_group_no_quote_sets22_fields(consumer, size);
-                no_quote_sets = Some(subgroup);
-            },
-            _ => {
-                // unknown field? why? should it be added raw to some list?
-            }
-        }
-    }
-
-    // construction
-    QuoteAcknowledgementFields {
-        quote_req_id: quote_req_id,
-        quote_id: quote_id,
-        quote_ack_status: quote_ack_status.unwrap() /* better error hdl? */ ,
-        quote_reject_reason: quote_reject_reason,
-        quote_response_level: quote_response_level,
-        trading_session_id: trading_session_id,
-        text: text,
-        no_quote_sets: no_quote_sets,
-    }
-}
-
-
-fn parse_message_security_definition_request_fields( consumer : &mut FixConsumer  ) -> SecurityDefinitionRequestFields {
-    // fields:
-    let mut security_req_id : Option<String> = None;
-    let mut security_request_type : Option<FieldSecurityRequestTypeEnum> = None;
-    let mut symbol : Option<String> = None;
-    let mut symbol_sfx : Option<String> = None;
-    let mut security_id : Option<String> = None;
-    let mut idsource : Option<FieldIDSourceEnum> = None;
-    let mut security_type : Option<FieldSecurityTypeEnum> = None;
-    let mut maturity_month_year : Option<UtcDate> = None;
-    let mut maturity_day : Option<i32> = None;
-    let mut put_or_call : Option<FieldPutOrCallEnum> = None;
-    let mut strike_price : Option<f32> = None;
-    let mut opt_attribute : Option<char> = None;
-    let mut contract_multiplier : Option<f32> = None;
-    let mut coupon_rate : Option<f32> = None;
-    let mut security_exchange : Option<String> = None;
-    let mut issuer : Option<String> = None;
-    let mut encoded_issuer_len : Option<usize> = None;
-    let mut encoded_issuer : Option<String> = None;
-    let mut security_desc : Option<String> = None;
-    let mut encoded_security_desc_len : Option<usize> = None;
-    let mut encoded_security_desc : Option<String> = None;
-    let mut currency : Option<f32> = None;
-    let mut text : Option<String> = None;
-    let mut encoded_text_len : Option<usize> = None;
-    let mut encoded_text : Option<String> = None;
-    let mut trading_session_id : Option<String> = None;
-    let mut no_related_sym : Option<Vec<NoRelatedSym26Fields>> = None;
-
-    // loop
-    while let Some(fld) = consumer.next() {
-        match fld {
-            &FieldVal { id: FIELD_SECURITYREQID, val: v } => {
-
-                security_req_id = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_SECURITYREQUESTTYPE, val: v } => {
-
-                security_request_type = Some( FieldSecurityRequestTypeEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_SYMBOL, val: v } => {
-
-                symbol = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_SYMBOLSFX, val: v } => {
-
-                symbol_sfx = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_SECURITYID, val: v } => {
-
-                security_id = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_IDSOURCE, val: v } => {
-
-                idsource = Some( FieldIDSourceEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_SECURITYTYPE, val: v } => {
-
-                security_type = Some( FieldSecurityTypeEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_MATURITYMONTHYEAR, val: v } => {
-
-                maturity_month_year = Some( UtcDate::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_MATURITYDAY, val: v } => {
-
-                maturity_day = Some( i32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_PUTORCALL, val: v } => {
-
-                put_or_call = Some( FieldPutOrCallEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_STRIKEPRICE, val: v } => {
-
-                strike_price = Some( f32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_OPTATTRIBUTE, val: v } => {
-
-                opt_attribute = Some( char::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_CONTRACTMULTIPLIER, val: v } => {
-
-                contract_multiplier = Some( f32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_COUPONRATE, val: v } => {
-
-                coupon_rate = Some( f32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_SECURITYEXCHANGE, val: v } => {
-
-                security_exchange = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_ISSUER, val: v } => {
-
-                issuer = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_ENCODEDISSUERLEN, val: v } => {
-
-                encoded_issuer_len = Some( usize::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_ENCODEDISSUER, val: v } => {
-
-                encoded_issuer = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_SECURITYDESC, val: v } => {
-
-                security_desc = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_ENCODEDSECURITYDESCLEN, val: v } => {
-
-                encoded_security_desc_len = Some( usize::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_ENCODEDSECURITYDESC, val: v } => {
-
-                encoded_security_desc = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_CURRENCY, val: v } => {
-
-                currency = Some( f32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_TEXT, val: v } => {
-
-                text = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_ENCODEDTEXTLEN, val: v } => {
-
-                encoded_text_len = Some( usize::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_ENCODEDTEXT, val: v } => {
-
-                encoded_text = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_TRADINGSESSIONID, val: v } => {
-
-                trading_session_id = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_NORELATEDSYM, val: v } => {
-
-                // group
-                let size = usize::from_str(v).unwrap();
-                let subgroup = build_group_no_related_sym26_fields(consumer, size);
-                no_related_sym = Some(subgroup);
-            },
-            _ => {
-                // unknown field? why? should it be added raw to some list?
-            }
-        }
-    }
-
-    // construction
-    SecurityDefinitionRequestFields {
-        security_req_id: security_req_id.unwrap() /* better error hdl? */ ,
-        security_request_type: security_request_type.unwrap() /* better error hdl? */ ,
-        symbol: symbol,
-        symbol_sfx: symbol_sfx,
-        security_id: security_id,
-        idsource: idsource,
-        security_type: security_type,
-        maturity_month_year: maturity_month_year,
-        maturity_day: maturity_day,
-        put_or_call: put_or_call,
-        strike_price: strike_price,
-        opt_attribute: opt_attribute,
-        contract_multiplier: contract_multiplier,
-        coupon_rate: coupon_rate,
-        security_exchange: security_exchange,
-        issuer: issuer,
-        encoded_issuer_len: encoded_issuer_len,
-        encoded_issuer: encoded_issuer,
-        security_desc: security_desc,
-        encoded_security_desc_len: encoded_security_desc_len,
-        encoded_security_desc: encoded_security_desc,
-        currency: currency,
-        text: text,
-        encoded_text_len: encoded_text_len,
-        encoded_text: encoded_text,
-        trading_session_id: trading_session_id,
-        no_related_sym: no_related_sym,
-    }
-}
-
-
-fn parse_message_security_definition_fields( consumer : &mut FixConsumer  ) -> SecurityDefinitionFields {
-    // fields:
-    let mut security_req_id : Option<String> = None;
-    let mut security_response_id : Option<String> = None;
-    let mut security_response_type : Option<FieldSecurityResponseTypeEnum> = None;
-    let mut total_num_securities : Option<i32> = None;
-    let mut symbol : Option<String> = None;
-    let mut symbol_sfx : Option<String> = None;
-    let mut security_id : Option<String> = None;
-    let mut idsource : Option<FieldIDSourceEnum> = None;
-    let mut security_type : Option<FieldSecurityTypeEnum> = None;
-    let mut maturity_month_year : Option<UtcDate> = None;
-    let mut maturity_day : Option<i32> = None;
-    let mut put_or_call : Option<FieldPutOrCallEnum> = None;
-    let mut strike_price : Option<f32> = None;
-    let mut opt_attribute : Option<char> = None;
-    let mut contract_multiplier : Option<f32> = None;
-    let mut coupon_rate : Option<f32> = None;
-    let mut security_exchange : Option<String> = None;
-    let mut issuer : Option<String> = None;
-    let mut encoded_issuer_len : Option<usize> = None;
-    let mut encoded_issuer : Option<String> = None;
-    let mut security_desc : Option<String> = None;
-    let mut encoded_security_desc_len : Option<usize> = None;
-    let mut encoded_security_desc : Option<String> = None;
-    let mut currency : Option<f32> = None;
-    let mut trading_session_id : Option<String> = None;
-    let mut text : Option<String> = None;
-    let mut encoded_text_len : Option<usize> = None;
-    let mut encoded_text : Option<String> = None;
-    let mut no_related_sym : Option<Vec<NoRelatedSym26Fields>> = None;
-
-    // loop
-    while let Some(fld) = consumer.next() {
-        match fld {
-            &FieldVal { id: FIELD_SECURITYREQID, val: v } => {
-
-                security_req_id = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_SECURITYRESPONSEID, val: v } => {
-
-                security_response_id = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_SECURITYRESPONSETYPE, val: v } => {
-
-                security_response_type = Some( FieldSecurityResponseTypeEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_TOTALNUMSECURITIES, val: v } => {
-
-                total_num_securities = Some( i32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_SYMBOL, val: v } => {
-
-                symbol = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_SYMBOLSFX, val: v } => {
-
-                symbol_sfx = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_SECURITYID, val: v } => {
-
-                security_id = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_IDSOURCE, val: v } => {
-
-                idsource = Some( FieldIDSourceEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_SECURITYTYPE, val: v } => {
-
-                security_type = Some( FieldSecurityTypeEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_MATURITYMONTHYEAR, val: v } => {
-
-                maturity_month_year = Some( UtcDate::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_MATURITYDAY, val: v } => {
-
-                maturity_day = Some( i32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_PUTORCALL, val: v } => {
-
-                put_or_call = Some( FieldPutOrCallEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_STRIKEPRICE, val: v } => {
-
-                strike_price = Some( f32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_OPTATTRIBUTE, val: v } => {
-
-                opt_attribute = Some( char::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_CONTRACTMULTIPLIER, val: v } => {
-
-                contract_multiplier = Some( f32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_COUPONRATE, val: v } => {
-
-                coupon_rate = Some( f32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_SECURITYEXCHANGE, val: v } => {
-
-                security_exchange = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_ISSUER, val: v } => {
-
-                issuer = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_ENCODEDISSUERLEN, val: v } => {
-
-                encoded_issuer_len = Some( usize::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_ENCODEDISSUER, val: v } => {
-
-                encoded_issuer = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_SECURITYDESC, val: v } => {
-
-                security_desc = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_ENCODEDSECURITYDESCLEN, val: v } => {
-
-                encoded_security_desc_len = Some( usize::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_ENCODEDSECURITYDESC, val: v } => {
-
-                encoded_security_desc = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_CURRENCY, val: v } => {
-
-                currency = Some( f32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_TRADINGSESSIONID, val: v } => {
-
-                trading_session_id = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_TEXT, val: v } => {
-
-                text = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_ENCODEDTEXTLEN, val: v } => {
-
-                encoded_text_len = Some( usize::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_ENCODEDTEXT, val: v } => {
-
-                encoded_text = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_NORELATEDSYM, val: v } => {
-
-                // group
-                let size = usize::from_str(v).unwrap();
-                let subgroup = build_group_no_related_sym26_fields(consumer, size);
-                no_related_sym = Some(subgroup);
-            },
-            _ => {
-                // unknown field? why? should it be added raw to some list?
-            }
-        }
-    }
-
-    // construction
-    SecurityDefinitionFields {
-        security_req_id: security_req_id.unwrap() /* better error hdl? */ ,
-        security_response_id: security_response_id.unwrap() /* better error hdl? */ ,
-        security_response_type: security_response_type,
-        total_num_securities: total_num_securities.unwrap() /* better error hdl? */ ,
-        symbol: symbol,
-        symbol_sfx: symbol_sfx,
-        security_id: security_id,
-        idsource: idsource,
-        security_type: security_type,
-        maturity_month_year: maturity_month_year,
-        maturity_day: maturity_day,
-        put_or_call: put_or_call,
-        strike_price: strike_price,
-        opt_attribute: opt_attribute,
-        contract_multiplier: contract_multiplier,
-        coupon_rate: coupon_rate,
-        security_exchange: security_exchange,
-        issuer: issuer,
-        encoded_issuer_len: encoded_issuer_len,
-        encoded_issuer: encoded_issuer,
-        security_desc: security_desc,
-        encoded_security_desc_len: encoded_security_desc_len,
-        encoded_security_desc: encoded_security_desc,
-        currency: currency,
-        trading_session_id: trading_session_id,
-        text: text,
-        encoded_text_len: encoded_text_len,
-        encoded_text: encoded_text,
-        no_related_sym: no_related_sym,
-    }
-}
-
-
-fn parse_message_security_status_request_fields( consumer : &mut FixConsumer  ) -> SecurityStatusRequestFields {
-    // fields:
-    let mut security_status_req_id : Option<String> = None;
-    let mut symbol : Option<String> = None;
-    let mut symbol_sfx : Option<String> = None;
-    let mut security_id : Option<String> = None;
-    let mut idsource : Option<FieldIDSourceEnum> = None;
-    let mut security_type : Option<FieldSecurityTypeEnum> = None;
-    let mut maturity_month_year : Option<UtcDate> = None;
-    let mut maturity_day : Option<i32> = None;
-    let mut put_or_call : Option<FieldPutOrCallEnum> = None;
-    let mut strike_price : Option<f32> = None;
-    let mut opt_attribute : Option<char> = None;
-    let mut contract_multiplier : Option<f32> = None;
-    let mut coupon_rate : Option<f32> = None;
-    let mut security_exchange : Option<String> = None;
-    let mut issuer : Option<String> = None;
-    let mut encoded_issuer_len : Option<usize> = None;
-    let mut encoded_issuer : Option<String> = None;
-    let mut security_desc : Option<String> = None;
-    let mut encoded_security_desc_len : Option<usize> = None;
-    let mut encoded_security_desc : Option<String> = None;
-    let mut currency : Option<f32> = None;
-    let mut subscription_request_type : Option<FieldSubscriptionRequestTypeEnum> = None;
-    let mut trading_session_id : Option<String> = None;
-
-    // loop
-    while let Some(fld) = consumer.next() {
-        match fld {
-            &FieldVal { id: FIELD_SECURITYSTATUSREQID, val: v } => {
-
-                security_status_req_id = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_SYMBOL, val: v } => {
-
-                symbol = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_SYMBOLSFX, val: v } => {
-
-                symbol_sfx = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_SECURITYID, val: v } => {
-
-                security_id = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_IDSOURCE, val: v } => {
-
-                idsource = Some( FieldIDSourceEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_SECURITYTYPE, val: v } => {
-
-                security_type = Some( FieldSecurityTypeEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_MATURITYMONTHYEAR, val: v } => {
-
-                maturity_month_year = Some( UtcDate::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_MATURITYDAY, val: v } => {
-
-                maturity_day = Some( i32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_PUTORCALL, val: v } => {
-
-                put_or_call = Some( FieldPutOrCallEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_STRIKEPRICE, val: v } => {
-
-                strike_price = Some( f32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_OPTATTRIBUTE, val: v } => {
-
-                opt_attribute = Some( char::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_CONTRACTMULTIPLIER, val: v } => {
-
-                contract_multiplier = Some( f32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_COUPONRATE, val: v } => {
-
-                coupon_rate = Some( f32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_SECURITYEXCHANGE, val: v } => {
-
-                security_exchange = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_ISSUER, val: v } => {
-
-                issuer = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_ENCODEDISSUERLEN, val: v } => {
-
-                encoded_issuer_len = Some( usize::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_ENCODEDISSUER, val: v } => {
-
-                encoded_issuer = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_SECURITYDESC, val: v } => {
-
-                security_desc = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_ENCODEDSECURITYDESCLEN, val: v } => {
-
-                encoded_security_desc_len = Some( usize::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_ENCODEDSECURITYDESC, val: v } => {
-
-                encoded_security_desc = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_CURRENCY, val: v } => {
-
-                currency = Some( f32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_SUBSCRIPTIONREQUESTTYPE, val: v } => {
-
-                subscription_request_type = Some( FieldSubscriptionRequestTypeEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_TRADINGSESSIONID, val: v } => {
-
-                trading_session_id = Some( v.to_string() );
-            },
-            _ => {
-                // unknown field? why? should it be added raw to some list?
-            }
-        }
-    }
-
-    // construction
-    SecurityStatusRequestFields {
-        security_status_req_id: security_status_req_id.unwrap() /* better error hdl? */ ,
-        symbol: symbol.unwrap() /* better error hdl? */ ,
-        symbol_sfx: symbol_sfx,
-        security_id: security_id,
-        idsource: idsource,
-        security_type: security_type,
-        maturity_month_year: maturity_month_year,
-        maturity_day: maturity_day,
-        put_or_call: put_or_call,
-        strike_price: strike_price,
-        opt_attribute: opt_attribute,
-        contract_multiplier: contract_multiplier,
-        coupon_rate: coupon_rate,
-        security_exchange: security_exchange,
-        issuer: issuer,
-        encoded_issuer_len: encoded_issuer_len,
-        encoded_issuer: encoded_issuer,
-        security_desc: security_desc,
-        encoded_security_desc_len: encoded_security_desc_len,
-        encoded_security_desc: encoded_security_desc,
-        currency: currency,
-        subscription_request_type: subscription_request_type.unwrap() /* better error hdl? */ ,
-        trading_session_id: trading_session_id,
-    }
-}
-
-
-fn parse_message_security_status_fields( consumer : &mut FixConsumer  ) -> SecurityStatusFields {
-    // fields:
-    let mut security_status_req_id : Option<String> = None;
-    let mut symbol : Option<String> = None;
-    let mut symbol_sfx : Option<String> = None;
-    let mut security_id : Option<String> = None;
-    let mut idsource : Option<FieldIDSourceEnum> = None;
-    let mut security_type : Option<FieldSecurityTypeEnum> = None;
-    let mut maturity_month_year : Option<UtcDate> = None;
-    let mut maturity_day : Option<i32> = None;
-    let mut put_or_call : Option<FieldPutOrCallEnum> = None;
-    let mut strike_price : Option<f32> = None;
-    let mut opt_attribute : Option<char> = None;
-    let mut contract_multiplier : Option<f32> = None;
-    let mut coupon_rate : Option<f32> = None;
-    let mut security_exchange : Option<String> = None;
-    let mut issuer : Option<String> = None;
-    let mut encoded_issuer_len : Option<usize> = None;
-    let mut encoded_issuer : Option<String> = None;
-    let mut security_desc : Option<String> = None;
-    let mut encoded_security_desc_len : Option<usize> = None;
-    let mut encoded_security_desc : Option<String> = None;
-    let mut currency : Option<f32> = None;
-    let mut trading_session_id : Option<String> = None;
-    let mut unsolicited_indicator : Option<bool> = None;
-    let mut security_trading_status : Option<FieldSecurityTradingStatusEnum> = None;
-    let mut financial_status : Option<FieldFinancialStatusEnum> = None;
-    let mut corporate_action : Option<FieldCorporateActionEnum> = None;
-    let mut halt_reason_char : Option<FieldHaltReasonCharEnum> = None;
-    let mut in_view_of_common : Option<bool> = None;
-    let mut due_to_related : Option<bool> = None;
-    let mut buy_volume : Option<f32> = None;
-    let mut sell_volume : Option<f32> = None;
-    let mut high_px : Option<f32> = None;
-    let mut low_px : Option<f32> = None;
-    let mut last_px : Option<f32> = None;
-    let mut transact_time : Option<UtcDateTime> = None;
-    let mut adjustment : Option<FieldAdjustmentEnum> = None;
-
-    // loop
-    while let Some(fld) = consumer.next() {
-        match fld {
-            &FieldVal { id: FIELD_SECURITYSTATUSREQID, val: v } => {
-
-                security_status_req_id = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_SYMBOL, val: v } => {
-
-                symbol = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_SYMBOLSFX, val: v } => {
-
-                symbol_sfx = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_SECURITYID, val: v } => {
-
-                security_id = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_IDSOURCE, val: v } => {
-
-                idsource = Some( FieldIDSourceEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_SECURITYTYPE, val: v } => {
-
-                security_type = Some( FieldSecurityTypeEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_MATURITYMONTHYEAR, val: v } => {
-
-                maturity_month_year = Some( UtcDate::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_MATURITYDAY, val: v } => {
-
-                maturity_day = Some( i32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_PUTORCALL, val: v } => {
-
-                put_or_call = Some( FieldPutOrCallEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_STRIKEPRICE, val: v } => {
-
-                strike_price = Some( f32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_OPTATTRIBUTE, val: v } => {
-
-                opt_attribute = Some( char::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_CONTRACTMULTIPLIER, val: v } => {
-
-                contract_multiplier = Some( f32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_COUPONRATE, val: v } => {
-
-                coupon_rate = Some( f32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_SECURITYEXCHANGE, val: v } => {
-
-                security_exchange = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_ISSUER, val: v } => {
-
-                issuer = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_ENCODEDISSUERLEN, val: v } => {
-
-                encoded_issuer_len = Some( usize::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_ENCODEDISSUER, val: v } => {
-
-                encoded_issuer = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_SECURITYDESC, val: v } => {
-
-                security_desc = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_ENCODEDSECURITYDESCLEN, val: v } => {
-
-                encoded_security_desc_len = Some( usize::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_ENCODEDSECURITYDESC, val: v } => {
-
-                encoded_security_desc = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_CURRENCY, val: v } => {
-
-                currency = Some( f32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_TRADINGSESSIONID, val: v } => {
-
-                trading_session_id = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_UNSOLICITEDINDICATOR, val: v } => {
-
-                unsolicited_indicator = Some( boolconv(v) );
-            },
-            &FieldVal { id: FIELD_SECURITYTRADINGSTATUS, val: v } => {
-
-                security_trading_status = Some( FieldSecurityTradingStatusEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_FINANCIALSTATUS, val: v } => {
-
-                financial_status = Some( FieldFinancialStatusEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_CORPORATEACTION, val: v } => {
-
-                corporate_action = Some( FieldCorporateActionEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_HALTREASONCHAR, val: v } => {
-
-                halt_reason_char = Some( FieldHaltReasonCharEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_INVIEWOFCOMMON, val: v } => {
-
-                in_view_of_common = Some( boolconv(v) );
-            },
-            &FieldVal { id: FIELD_DUETORELATED, val: v } => {
-
-                due_to_related = Some( boolconv(v) );
-            },
-            &FieldVal { id: FIELD_BUYVOLUME, val: v } => {
-
-                buy_volume = Some( f32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_SELLVOLUME, val: v } => {
-
-                sell_volume = Some( f32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_HIGHPX, val: v } => {
-
-                high_px = Some( f32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_LOWPX, val: v } => {
-
-                low_px = Some( f32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_LASTPX, val: v } => {
-
-                last_px = Some( f32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_TRANSACTTIME, val: v } => {
-
-                transact_time = Some( UtcDateTime::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_ADJUSTMENT, val: v } => {
-
-                adjustment = Some( FieldAdjustmentEnum::from_str(v).unwrap() );
-            },
-            _ => {
-                // unknown field? why? should it be added raw to some list?
-            }
-        }
-    }
-
-    // construction
-    SecurityStatusFields {
-        security_status_req_id: security_status_req_id,
-        symbol: symbol.unwrap() /* better error hdl? */ ,
-        symbol_sfx: symbol_sfx,
-        security_id: security_id,
-        idsource: idsource,
-        security_type: security_type,
-        maturity_month_year: maturity_month_year,
-        maturity_day: maturity_day,
-        put_or_call: put_or_call,
-        strike_price: strike_price,
-        opt_attribute: opt_attribute,
-        contract_multiplier: contract_multiplier,
-        coupon_rate: coupon_rate,
-        security_exchange: security_exchange,
-        issuer: issuer,
-        encoded_issuer_len: encoded_issuer_len,
-        encoded_issuer: encoded_issuer,
-        security_desc: security_desc,
-        encoded_security_desc_len: encoded_security_desc_len,
-        encoded_security_desc: encoded_security_desc,
-        currency: currency,
-        trading_session_id: trading_session_id,
-        unsolicited_indicator: unsolicited_indicator,
-        security_trading_status: security_trading_status,
-        financial_status: financial_status,
-        corporate_action: corporate_action,
-        halt_reason_char: halt_reason_char,
-        in_view_of_common: in_view_of_common,
-        due_to_related: due_to_related,
-        buy_volume: buy_volume,
-        sell_volume: sell_volume,
-        high_px: high_px,
-        low_px: low_px,
-        last_px: last_px,
-        transact_time: transact_time,
-        adjustment: adjustment,
-    }
-}
-
-
-fn parse_message_trading_session_status_request_fields( consumer : &mut FixConsumer  ) -> TradingSessionStatusRequestFields {
-    // fields:
-    let mut trad_ses_req_id : Option<String> = None;
-    let mut trading_session_id : Option<String> = None;
-    let mut trad_ses_method : Option<FieldTradSesMethodEnum> = None;
-    let mut trad_ses_mode : Option<FieldTradSesModeEnum> = None;
-    let mut subscription_request_type : Option<FieldSubscriptionRequestTypeEnum> = None;
-
-    // loop
-    while let Some(fld) = consumer.next() {
-        match fld {
-            &FieldVal { id: FIELD_TRADSESREQID, val: v } => {
-
-                trad_ses_req_id = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_TRADINGSESSIONID, val: v } => {
-
-                trading_session_id = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_TRADSESMETHOD, val: v } => {
-
-                trad_ses_method = Some( FieldTradSesMethodEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_TRADSESMODE, val: v } => {
-
-                trad_ses_mode = Some( FieldTradSesModeEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_SUBSCRIPTIONREQUESTTYPE, val: v } => {
-
-                subscription_request_type = Some( FieldSubscriptionRequestTypeEnum::from_str(v).unwrap() );
-            },
-            _ => {
-                // unknown field? why? should it be added raw to some list?
-            }
-        }
-    }
-
-    // construction
-    TradingSessionStatusRequestFields {
-        trad_ses_req_id: trad_ses_req_id.unwrap() /* better error hdl? */ ,
-        trading_session_id: trading_session_id,
-        trad_ses_method: trad_ses_method,
-        trad_ses_mode: trad_ses_mode,
-        subscription_request_type: subscription_request_type.unwrap() /* better error hdl? */ ,
-    }
-}
-
-
-fn parse_message_trading_session_status_fields( consumer : &mut FixConsumer  ) -> TradingSessionStatusFields {
-    // fields:
-    let mut trad_ses_req_id : Option<String> = None;
-    let mut trading_session_id : Option<String> = None;
-    let mut trad_ses_method : Option<FieldTradSesMethodEnum> = None;
-    let mut trad_ses_mode : Option<FieldTradSesModeEnum> = None;
-    let mut unsolicited_indicator : Option<bool> = None;
-    let mut trad_ses_status : Option<FieldTradSesStatusEnum> = None;
-    let mut trad_ses_start_time : Option<UtcDateTime> = None;
-    let mut trad_ses_open_time : Option<UtcDateTime> = None;
-    let mut trad_ses_pre_close_time : Option<UtcDateTime> = None;
-    let mut trad_ses_close_time : Option<UtcDateTime> = None;
-    let mut trad_ses_end_time : Option<UtcDateTime> = None;
-    let mut total_volume_traded : Option<f32> = None;
-    let mut text : Option<String> = None;
-    let mut encoded_text_len : Option<usize> = None;
-    let mut encoded_text : Option<String> = None;
-
-    // loop
-    while let Some(fld) = consumer.next() {
-        match fld {
-            &FieldVal { id: FIELD_TRADSESREQID, val: v } => {
-
-                trad_ses_req_id = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_TRADINGSESSIONID, val: v } => {
-
-                trading_session_id = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_TRADSESMETHOD, val: v } => {
-
-                trad_ses_method = Some( FieldTradSesMethodEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_TRADSESMODE, val: v } => {
-
-                trad_ses_mode = Some( FieldTradSesModeEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_UNSOLICITEDINDICATOR, val: v } => {
-
-                unsolicited_indicator = Some( boolconv(v) );
-            },
-            &FieldVal { id: FIELD_TRADSESSTATUS, val: v } => {
-
-                trad_ses_status = Some( FieldTradSesStatusEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_TRADSESSTARTTIME, val: v } => {
-
-                trad_ses_start_time = Some( UtcDateTime::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_TRADSESOPENTIME, val: v } => {
-
-                trad_ses_open_time = Some( UtcDateTime::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_TRADSESPRECLOSETIME, val: v } => {
-
-                trad_ses_pre_close_time = Some( UtcDateTime::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_TRADSESCLOSETIME, val: v } => {
-
-                trad_ses_close_time = Some( UtcDateTime::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_TRADSESENDTIME, val: v } => {
-
-                trad_ses_end_time = Some( UtcDateTime::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_TOTALVOLUMETRADED, val: v } => {
-
-                total_volume_traded = Some( f32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_TEXT, val: v } => {
-
-                text = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_ENCODEDTEXTLEN, val: v } => {
-
-                encoded_text_len = Some( usize::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_ENCODEDTEXT, val: v } => {
-
-                encoded_text = Some( v.to_string() );
-            },
-            _ => {
-                // unknown field? why? should it be added raw to some list?
-            }
-        }
-    }
-
-    // construction
-    TradingSessionStatusFields {
-        trad_ses_req_id: trad_ses_req_id,
-        trading_session_id: trading_session_id.unwrap() /* better error hdl? */ ,
-        trad_ses_method: trad_ses_method,
-        trad_ses_mode: trad_ses_mode,
-        unsolicited_indicator: unsolicited_indicator,
-        trad_ses_status: trad_ses_status.unwrap() /* better error hdl? */ ,
-        trad_ses_start_time: trad_ses_start_time,
-        trad_ses_open_time: trad_ses_open_time,
-        trad_ses_pre_close_time: trad_ses_pre_close_time,
-        trad_ses_close_time: trad_ses_close_time,
-        trad_ses_end_time: trad_ses_end_time,
-        total_volume_traded: total_volume_traded,
-        text: text,
-        encoded_text_len: encoded_text_len,
-        encoded_text: encoded_text,
-    }
-}
-
-
-fn parse_message_mass_quote_fields( consumer : &mut FixConsumer  ) -> MassQuoteFields {
-    // fields:
-    let mut quote_req_id : Option<String> = None;
-    let mut quote_id : Option<String> = None;
-    let mut quote_response_level : Option<FieldQuoteResponseLevelEnum> = None;
-    let mut def_bid_size : Option<f32> = None;
-    let mut def_offer_size : Option<f32> = None;
-    let mut no_quote_sets : Option<Vec<NoQuoteSets21Fields>> = None;
-
-    // loop
-    while let Some(fld) = consumer.next() {
-        match fld {
-            &FieldVal { id: FIELD_QUOTEREQID, val: v } => {
-
-                quote_req_id = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_QUOTEID, val: v } => {
-
-                quote_id = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_QUOTERESPONSELEVEL, val: v } => {
-
-                quote_response_level = Some( FieldQuoteResponseLevelEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_DEFBIDSIZE, val: v } => {
-
-                def_bid_size = Some( f32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_DEFOFFERSIZE, val: v } => {
-
-                def_offer_size = Some( f32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_NOQUOTESETS, val: v } => {
-
-                // group
-                let size = usize::from_str(v).unwrap();
-                let subgroup = build_group_no_quote_sets21_fields(consumer, size);
-                no_quote_sets = Some(subgroup);
-            },
-            _ => {
-                // unknown field? why? should it be added raw to some list?
-            }
-        }
-    }
-
-    // construction
-    MassQuoteFields {
-        quote_req_id: quote_req_id,
-        quote_id: quote_id.unwrap() /* better error hdl? */ ,
-        quote_response_level: quote_response_level,
-        def_bid_size: def_bid_size,
-        def_offer_size: def_offer_size,
-        no_quote_sets: no_quote_sets.unwrap() /* better error hdl? */ ,
-    }
-}
-
-
-fn parse_message_business_message_reject_fields( consumer : &mut FixConsumer  ) -> BusinessMessageRejectFields {
-    // fields:
-    let mut ref_seq_num : Option<i32> = None;
-    let mut ref_msg_type : Option<String> = None;
-    let mut business_reject_ref_id : Option<String> = None;
-    let mut business_reject_reason : Option<FieldBusinessRejectReasonEnum> = None;
-    let mut text : Option<String> = None;
-    let mut encoded_text_len : Option<usize> = None;
-    let mut encoded_text : Option<String> = None;
-
-    // loop
-    while let Some(fld) = consumer.next() {
-        match fld {
-            &FieldVal { id: FIELD_REFSEQNUM, val: v } => {
-
-                ref_seq_num = Some( i32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_REFMSGTYPE, val: v } => {
-
-                ref_msg_type = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_BUSINESSREJECTREFID, val: v } => {
-
-                business_reject_ref_id = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_BUSINESSREJECTREASON, val: v } => {
-
-                business_reject_reason = Some( FieldBusinessRejectReasonEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_TEXT, val: v } => {
-
-                text = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_ENCODEDTEXTLEN, val: v } => {
-
-                encoded_text_len = Some( usize::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_ENCODEDTEXT, val: v } => {
-
-                encoded_text = Some( v.to_string() );
-            },
-            _ => {
-                // unknown field? why? should it be added raw to some list?
-            }
-        }
-    }
-
-    // construction
-    BusinessMessageRejectFields {
-        ref_seq_num: ref_seq_num,
-        ref_msg_type: ref_msg_type.unwrap() /* better error hdl? */ ,
-        business_reject_ref_id: business_reject_ref_id,
-        business_reject_reason: business_reject_reason.unwrap() /* better error hdl? */ ,
-        text: text,
-        encoded_text_len: encoded_text_len,
-        encoded_text: encoded_text,
-    }
-}
-
-
-fn parse_message_bid_request_fields( consumer : &mut FixConsumer  ) -> BidRequestFields {
-    // fields:
-    let mut bid_id : Option<String> = None;
-    let mut client_bid_id : Option<String> = None;
-    let mut bid_request_trans_type : Option<FieldBidRequestTransTypeEnum> = None;
-    let mut list_name : Option<String> = None;
-    let mut total_num_securities : Option<i32> = None;
-    let mut bid_type : Option<i32> = None;
-    let mut num_tickets : Option<i32> = None;
-    let mut currency : Option<f32> = None;
-    let mut side_value1 : Option<f32> = None;
-    let mut side_value2 : Option<f32> = None;
-    let mut no_bid_descriptors : Option<Vec<NoBidDescriptors6Fields>> = None;
-    let mut no_bid_components : Option<Vec<NoBidComponents5Fields>> = None;
-    let mut liquidity_ind_type : Option<FieldLiquidityIndTypeEnum> = None;
-    let mut wt_average_liquidity : Option<f32> = None;
-    let mut exchange_for_physical : Option<bool> = None;
-    let mut out_main_cntry_uindex : Option<f32> = None;
-    let mut cross_percent : Option<f32> = None;
-    let mut prog_rpt_reqs : Option<FieldProgRptReqsEnum> = None;
-    let mut prog_period_interval : Option<i32> = None;
-    let mut inc_tax_ind : Option<FieldIncTaxIndEnum> = None;
-    let mut forex_req : Option<bool> = None;
-    let mut num_bidders : Option<i32> = None;
-    let mut trade_date : Option<UtcDateTime> = None;
-    let mut trade_type : Option<FieldTradeTypeEnum> = None;
-    let mut basis_px_type : Option<FieldBasisPxTypeEnum> = None;
-    let mut strike_time : Option<UtcDateTime> = None;
-    let mut text : Option<String> = None;
-    let mut encoded_text_len : Option<usize> = None;
-    let mut encoded_text : Option<String> = None;
-
-    // loop
-    while let Some(fld) = consumer.next() {
-        match fld {
-            &FieldVal { id: FIELD_BIDID, val: v } => {
-
-                bid_id = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_CLIENTBIDID, val: v } => {
-
-                client_bid_id = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_BIDREQUESTTRANSTYPE, val: v } => {
-
-                bid_request_trans_type = Some( FieldBidRequestTransTypeEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_LISTNAME, val: v } => {
-
-                list_name = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_TOTALNUMSECURITIES, val: v } => {
-
-                total_num_securities = Some( i32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_BIDTYPE, val: v } => {
-
-                bid_type = Some( i32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_NUMTICKETS, val: v } => {
-
-                num_tickets = Some( i32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_CURRENCY, val: v } => {
-
-                currency = Some( f32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_SIDEVALUE1, val: v } => {
-
-                side_value1 = Some( f32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_SIDEVALUE2, val: v } => {
-
-                side_value2 = Some( f32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_NOBIDDESCRIPTORS, val: v } => {
-
-                // group
-                let size = usize::from_str(v).unwrap();
-                let subgroup = build_group_no_bid_descriptors6_fields(consumer, size);
-                no_bid_descriptors = Some(subgroup);
-            },
-            &FieldVal { id: FIELD_NOBIDCOMPONENTS, val: v } => {
-
-                // group
-                let size = usize::from_str(v).unwrap();
-                let subgroup = build_group_no_bid_components5_fields(consumer, size);
-                no_bid_components = Some(subgroup);
-            },
-            &FieldVal { id: FIELD_LIQUIDITYINDTYPE, val: v } => {
-
-                liquidity_ind_type = Some( FieldLiquidityIndTypeEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_WTAVERAGELIQUIDITY, val: v } => {
-
-                wt_average_liquidity = Some( f32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_EXCHANGEFORPHYSICAL, val: v } => {
-
-                exchange_for_physical = Some( boolconv(v) );
-            },
-            &FieldVal { id: FIELD_OUTMAINCNTRYUINDEX, val: v } => {
-
-                out_main_cntry_uindex = Some( f32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_CROSSPERCENT, val: v } => {
-
-                cross_percent = Some( f32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_PROGRPTREQS, val: v } => {
-
-                prog_rpt_reqs = Some( FieldProgRptReqsEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_PROGPERIODINTERVAL, val: v } => {
-
-                prog_period_interval = Some( i32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_INCTAXIND, val: v } => {
-
-                inc_tax_ind = Some( FieldIncTaxIndEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_FOREXREQ, val: v } => {
-
-                forex_req = Some( boolconv(v) );
-            },
-            &FieldVal { id: FIELD_NUMBIDDERS, val: v } => {
-
-                num_bidders = Some( i32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_TRADEDATE, val: v } => {
-
-                trade_date = Some( UtcDateTime::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_TRADETYPE, val: v } => {
-
-                trade_type = Some( FieldTradeTypeEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_BASISPXTYPE, val: v } => {
-
-                basis_px_type = Some( FieldBasisPxTypeEnum::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_STRIKETIME, val: v } => {
-
-                strike_time = Some( UtcDateTime::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_TEXT, val: v } => {
-
-                text = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_ENCODEDTEXTLEN, val: v } => {
-
-                encoded_text_len = Some( usize::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_ENCODEDTEXT, val: v } => {
-
-                encoded_text = Some( v.to_string() );
-            },
-            _ => {
-                // unknown field? why? should it be added raw to some list?
-            }
-        }
-    }
-
-    // construction
-    BidRequestFields {
-        bid_id: bid_id,
-        client_bid_id: client_bid_id.unwrap() /* better error hdl? */ ,
-        bid_request_trans_type: bid_request_trans_type.unwrap() /* better error hdl? */ ,
-        list_name: list_name,
-        total_num_securities: total_num_securities.unwrap() /* better error hdl? */ ,
-        bid_type: bid_type.unwrap() /* better error hdl? */ ,
-        num_tickets: num_tickets,
-        currency: currency,
-        side_value1: side_value1,
-        side_value2: side_value2,
-        no_bid_descriptors: no_bid_descriptors,
-        no_bid_components: no_bid_components,
-        liquidity_ind_type: liquidity_ind_type,
-        wt_average_liquidity: wt_average_liquidity,
-        exchange_for_physical: exchange_for_physical,
-        out_main_cntry_uindex: out_main_cntry_uindex,
-        cross_percent: cross_percent,
-        prog_rpt_reqs: prog_rpt_reqs,
-        prog_period_interval: prog_period_interval,
-        inc_tax_ind: inc_tax_ind,
-        forex_req: forex_req,
-        num_bidders: num_bidders,
-        trade_date: trade_date,
-        trade_type: trade_type.unwrap() /* better error hdl? */ ,
-        basis_px_type: basis_px_type.unwrap() /* better error hdl? */ ,
-        strike_time: strike_time,
-        text: text,
-        encoded_text_len: encoded_text_len,
-        encoded_text: encoded_text,
-    }
-}
-
-
-fn parse_message_bid_response_fields( consumer : &mut FixConsumer  ) -> BidResponseFields {
-    // fields:
-    let mut bid_id : Option<String> = None;
-    let mut client_bid_id : Option<String> = None;
-    let mut no_bid_components : Option<Vec<NoBidComponents4Fields>> = None;
-
-    // loop
-    while let Some(fld) = consumer.next() {
-        match fld {
-            &FieldVal { id: FIELD_BIDID, val: v } => {
-
-                bid_id = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_CLIENTBIDID, val: v } => {
-
-                client_bid_id = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_NOBIDCOMPONENTS, val: v } => {
-
-                // group
-                let size = usize::from_str(v).unwrap();
-                let subgroup = build_group_no_bid_components4_fields(consumer, size);
-                no_bid_components = Some(subgroup);
-            },
-            _ => {
-                // unknown field? why? should it be added raw to some list?
-            }
-        }
-    }
-
-    // construction
-    BidResponseFields {
-        bid_id: bid_id,
-        client_bid_id: client_bid_id,
-        no_bid_components: no_bid_components.unwrap() /* better error hdl? */ ,
-    }
-}
-
-
-fn parse_message_list_strike_price_fields( consumer : &mut FixConsumer  ) -> ListStrikePriceFields {
-    // fields:
-    let mut list_id : Option<String> = None;
-    let mut tot_no_strikes : Option<i32> = None;
-    let mut no_strikes : Option<Vec<NoStrikes28Fields>> = None;
-
-    // loop
-    while let Some(fld) = consumer.next() {
-        match fld {
-            &FieldVal { id: FIELD_LISTID, val: v } => {
-
-                list_id = Some( v.to_string() );
-            },
-            &FieldVal { id: FIELD_TOTNOSTRIKES, val: v } => {
-
-                tot_no_strikes = Some( i32::from_str(v).unwrap() );
-            },
-            &FieldVal { id: FIELD_NOSTRIKES, val: v } => {
-
-                // group
-                let size = usize::from_str(v).unwrap();
-                let subgroup = build_group_no_strikes28_fields(consumer, size);
-                no_strikes = Some(subgroup);
-            },
-            _ => {
-                // unknown field? why? should it be added raw to some list?
-            }
-        }
-    }
-
-    // construction
-    ListStrikePriceFields {
-        list_id: list_id.unwrap() /* better error hdl? */ ,
-        tot_no_strikes: tot_no_strikes.unwrap() /* better error hdl? */ ,
-        no_strikes: no_strikes.unwrap() /* better error hdl? */ ,
-    }
-}
-
-
-
-
-
-fn build_group_no_bid_descriptors6_fields(consumer: &mut FixConsumer, size: usize) -> Vec<NoBidDescriptors6Fields> {
-    let mut items : Vec<NoBidDescriptors6Fields> = Vec::with_capacity(size);
+fn build_group_no_contra_brokers2_fields(consumer: &mut FixConsumer, size: usize) -> Vec<NoContraBrokers2Fields> {
+    let mut items : Vec<NoContraBrokers2Fields> = Vec::with_capacity(size);
 
     for _ in 0..size {
-        let party = build_group_no_bid_descriptors6_fields_line( consumer );
+        let party = build_group_no_contra_brokers2_fields_line( consumer );
         items.push(party);
     }
 
     items
 }
 
-fn build_group_no_bid_descriptors6_fields_line(consumer: &mut FixConsumer) -> NoBidDescriptors6Fields {
+fn build_group_no_contra_brokers2_fields_line(consumer: &mut FixConsumer) -> NoContraBrokers2Fields {
     // fields
-    let mut bid_descriptor_type : Option<i32> = None;
-    let mut bid_descriptor : Option<String> = None;
-    let mut side_value_ind : Option<i32> = None;
-    let mut liquidity_value : Option<f32> = None;
-    let mut liquidity_num_securities : Option<i32> = None;
-    let mut liquidity_pct_low : Option<f32> = None;
-    let mut liquidity_pct_high : Option<f32> = None;
-    let mut efptracking_error : Option<f32> = None;
-    let mut fair_value : Option<f32> = None;
-    let mut outside_index_pct : Option<f32> = None;
-    let mut value_of_futures : Option<f32> = None;
+    let mut contra_broker : Option<String> = None;
+    let mut contra_trader : Option<String> = None;
+    let mut contra_trade_qty : Option<f32> = None;
+    let mut contra_trade_time : Option<UtcDateTime> = None;
 
     // loop
     while let Some(fld) = consumer.peek() {
         match fld {
-            &FieldVal { id: FIELD_BIDDESCRIPTORTYPE, val: v } => {
+            &FieldVal { id: FIELD_CONTRABROKER, val: v } => {
 
-                if bid_descriptor_type.is_some() { break; }
+                if contra_broker.is_some() { break; }
 
-                bid_descriptor_type = Some( i32::from_str(v).unwrap() );
+                contra_broker = Some( v.to_string() );
             },
 
-            &FieldVal { id: FIELD_BIDDESCRIPTOR, val: v } => {
+            &FieldVal { id: FIELD_CONTRATRADER, val: v } => {
 
-                if bid_descriptor.is_some() { break; }
+                if contra_trader.is_some() { break; }
 
-                bid_descriptor = Some( v.to_string() );
+                contra_trader = Some( v.to_string() );
             },
 
-            &FieldVal { id: FIELD_SIDEVALUEIND, val: v } => {
+            &FieldVal { id: FIELD_CONTRATRADEQTY, val: v } => {
 
-                if side_value_ind.is_some() { break; }
+                if contra_trade_qty.is_some() { break; }
 
-                side_value_ind = Some( i32::from_str(v).unwrap() );
+                contra_trade_qty = Some( f32::from_str(v).unwrap() );
             },
 
-            &FieldVal { id: FIELD_LIQUIDITYVALUE, val: v } => {
+            &FieldVal { id: FIELD_CONTRATRADETIME, val: v } => {
 
-                if liquidity_value.is_some() { break; }
+                if contra_trade_time.is_some() { break; }
 
-                liquidity_value = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_LIQUIDITYNUMSECURITIES, val: v } => {
-
-                if liquidity_num_securities.is_some() { break; }
-
-                liquidity_num_securities = Some( i32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_LIQUIDITYPCTLOW, val: v } => {
-
-                if liquidity_pct_low.is_some() { break; }
-
-                liquidity_pct_low = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_LIQUIDITYPCTHIGH, val: v } => {
-
-                if liquidity_pct_high.is_some() { break; }
-
-                liquidity_pct_high = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_EFPTRACKINGERROR, val: v } => {
-
-                if efptracking_error.is_some() { break; }
-
-                efptracking_error = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_FAIRVALUE, val: v } => {
-
-                if fair_value.is_some() { break; }
-
-                fair_value = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_OUTSIDEINDEXPCT, val: v } => {
-
-                if outside_index_pct.is_some() { break; }
-
-                outside_index_pct = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_VALUEOFFUTURES, val: v } => {
-
-                if value_of_futures.is_some() { break; }
-
-                value_of_futures = Some( f32::from_str(v).unwrap() );
+                contra_trade_time = Some( UtcDateTime::from_str(v).unwrap() );
             },
 
 
@@ -15798,1705 +10985,27 @@ fn build_group_no_bid_descriptors6_fields_line(consumer: &mut FixConsumer) -> No
     }
 
     // construction
-    NoBidDescriptors6Fields {
-        bid_descriptor_type: bid_descriptor_type,
-        bid_descriptor: bid_descriptor,
-        side_value_ind: side_value_ind,
-        liquidity_value: liquidity_value,
-        liquidity_num_securities: liquidity_num_securities,
-        liquidity_pct_low: liquidity_pct_low,
-        liquidity_pct_high: liquidity_pct_high,
-        efptracking_error: efptracking_error,
-        fair_value: fair_value,
-        outside_index_pct: outside_index_pct,
-        value_of_futures: value_of_futures,
+    NoContraBrokers2Fields {
+        contra_broker: contra_broker,
+        contra_trader: contra_trader,
+        contra_trade_qty: contra_trade_qty,
+        contra_trade_time: contra_trade_time,
     }
 }
 
 
-fn build_group_no_related_sym24_fields(consumer: &mut FixConsumer, size: usize) -> Vec<NoRelatedSym24Fields> {
-    let mut items : Vec<NoRelatedSym24Fields> = Vec::with_capacity(size);
+fn build_group_no_allocs1_fields(consumer: &mut FixConsumer, size: usize) -> Vec<NoAllocs1Fields> {
+    let mut items : Vec<NoAllocs1Fields> = Vec::with_capacity(size);
 
     for _ in 0..size {
-        let party = build_group_no_related_sym24_fields_line( consumer );
+        let party = build_group_no_allocs1_fields_line( consumer );
         items.push(party);
     }
 
     items
 }
 
-fn build_group_no_related_sym24_fields_line(consumer: &mut FixConsumer) -> NoRelatedSym24Fields {
-    // fields
-    let mut symbol : Option<String> = None;
-    let mut symbol_sfx : Option<String> = None;
-    let mut security_id : Option<String> = None;
-    let mut idsource : Option<FieldIDSourceEnum> = None;
-    let mut security_type : Option<FieldSecurityTypeEnum> = None;
-    let mut maturity_month_year : Option<UtcDate> = None;
-    let mut maturity_day : Option<i32> = None;
-    let mut put_or_call : Option<FieldPutOrCallEnum> = None;
-    let mut strike_price : Option<f32> = None;
-    let mut opt_attribute : Option<char> = None;
-    let mut contract_multiplier : Option<f32> = None;
-    let mut coupon_rate : Option<f32> = None;
-    let mut security_exchange : Option<String> = None;
-    let mut issuer : Option<String> = None;
-    let mut encoded_issuer_len : Option<usize> = None;
-    let mut encoded_issuer : Option<String> = None;
-    let mut security_desc : Option<String> = None;
-    let mut encoded_security_desc_len : Option<usize> = None;
-    let mut encoded_security_desc : Option<String> = None;
-    let mut prev_close_px : Option<f32> = None;
-    let mut quote_request_type : Option<FieldQuoteRequestTypeEnum> = None;
-    let mut trading_session_id : Option<String> = None;
-    let mut side : Option<FieldSideEnum> = None;
-    let mut order_qty : Option<f32> = None;
-    let mut fut_sett_date : Option<UtcDateTime> = None;
-    let mut ord_type : Option<FieldOrdTypeEnum> = None;
-    let mut fut_sett_date2 : Option<UtcDateTime> = None;
-    let mut order_qty2 : Option<f32> = None;
-    let mut expire_time : Option<UtcDateTime> = None;
-    let mut transact_time : Option<UtcDateTime> = None;
-    let mut currency : Option<f32> = None;
-
-    // loop
-    while let Some(fld) = consumer.peek() {
-        match fld {
-            &FieldVal { id: FIELD_SYMBOL, val: v } => {
-
-                if symbol.is_some() { break; }
-
-                symbol = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_SYMBOLSFX, val: v } => {
-
-                if symbol_sfx.is_some() { break; }
-
-                symbol_sfx = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_SECURITYID, val: v } => {
-
-                if security_id.is_some() { break; }
-
-                security_id = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_IDSOURCE, val: v } => {
-
-                if idsource.is_some() { break; }
-
-                idsource = Some( FieldIDSourceEnum::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_SECURITYTYPE, val: v } => {
-
-                if security_type.is_some() { break; }
-
-                security_type = Some( FieldSecurityTypeEnum::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_MATURITYMONTHYEAR, val: v } => {
-
-                if maturity_month_year.is_some() { break; }
-
-                maturity_month_year = Some( UtcDate::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_MATURITYDAY, val: v } => {
-
-                if maturity_day.is_some() { break; }
-
-                maturity_day = Some( i32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_PUTORCALL, val: v } => {
-
-                if put_or_call.is_some() { break; }
-
-                put_or_call = Some( FieldPutOrCallEnum::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_STRIKEPRICE, val: v } => {
-
-                if strike_price.is_some() { break; }
-
-                strike_price = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_OPTATTRIBUTE, val: v } => {
-
-                if opt_attribute.is_some() { break; }
-
-                opt_attribute = Some( char::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_CONTRACTMULTIPLIER, val: v } => {
-
-                if contract_multiplier.is_some() { break; }
-
-                contract_multiplier = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_COUPONRATE, val: v } => {
-
-                if coupon_rate.is_some() { break; }
-
-                coupon_rate = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_SECURITYEXCHANGE, val: v } => {
-
-                if security_exchange.is_some() { break; }
-
-                security_exchange = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_ISSUER, val: v } => {
-
-                if issuer.is_some() { break; }
-
-                issuer = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_ENCODEDISSUERLEN, val: v } => {
-
-                if encoded_issuer_len.is_some() { break; }
-
-                encoded_issuer_len = Some( usize::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_ENCODEDISSUER, val: v } => {
-
-                if encoded_issuer.is_some() { break; }
-
-                encoded_issuer = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_SECURITYDESC, val: v } => {
-
-                if security_desc.is_some() { break; }
-
-                security_desc = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_ENCODEDSECURITYDESCLEN, val: v } => {
-
-                if encoded_security_desc_len.is_some() { break; }
-
-                encoded_security_desc_len = Some( usize::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_ENCODEDSECURITYDESC, val: v } => {
-
-                if encoded_security_desc.is_some() { break; }
-
-                encoded_security_desc = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_PREVCLOSEPX, val: v } => {
-
-                if prev_close_px.is_some() { break; }
-
-                prev_close_px = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_QUOTEREQUESTTYPE, val: v } => {
-
-                if quote_request_type.is_some() { break; }
-
-                quote_request_type = Some( FieldQuoteRequestTypeEnum::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_TRADINGSESSIONID, val: v } => {
-
-                if trading_session_id.is_some() { break; }
-
-                trading_session_id = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_SIDE, val: v } => {
-
-                if side.is_some() { break; }
-
-                side = Some( FieldSideEnum::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_ORDERQTY, val: v } => {
-
-                if order_qty.is_some() { break; }
-
-                order_qty = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_FUTSETTDATE, val: v } => {
-
-                if fut_sett_date.is_some() { break; }
-
-                fut_sett_date = Some( UtcDateTime::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_ORDTYPE, val: v } => {
-
-                if ord_type.is_some() { break; }
-
-                ord_type = Some( FieldOrdTypeEnum::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_FUTSETTDATE2, val: v } => {
-
-                if fut_sett_date2.is_some() { break; }
-
-                fut_sett_date2 = Some( UtcDateTime::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_ORDERQTY2, val: v } => {
-
-                if order_qty2.is_some() { break; }
-
-                order_qty2 = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_EXPIRETIME, val: v } => {
-
-                if expire_time.is_some() { break; }
-
-                expire_time = Some( UtcDateTime::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_TRANSACTTIME, val: v } => {
-
-                if transact_time.is_some() { break; }
-
-                transact_time = Some( UtcDateTime::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_CURRENCY, val: v } => {
-
-                if currency.is_some() { break; }
-
-                currency = Some( f32::from_str(v).unwrap() );
-            },
-
-
-            _ => { break; }
-        };
-        // consume only if recognized
-        consumer.next();
-    }
-
-    // construction
-    NoRelatedSym24Fields {
-        symbol: symbol.unwrap() ,
-        symbol_sfx: symbol_sfx,
-        security_id: security_id,
-        idsource: idsource,
-        security_type: security_type,
-        maturity_month_year: maturity_month_year,
-        maturity_day: maturity_day,
-        put_or_call: put_or_call,
-        strike_price: strike_price,
-        opt_attribute: opt_attribute,
-        contract_multiplier: contract_multiplier,
-        coupon_rate: coupon_rate,
-        security_exchange: security_exchange,
-        issuer: issuer,
-        encoded_issuer_len: encoded_issuer_len,
-        encoded_issuer: encoded_issuer,
-        security_desc: security_desc,
-        encoded_security_desc_len: encoded_security_desc_len,
-        encoded_security_desc: encoded_security_desc,
-        prev_close_px: prev_close_px,
-        quote_request_type: quote_request_type,
-        trading_session_id: trading_session_id,
-        side: side,
-        order_qty: order_qty,
-        fut_sett_date: fut_sett_date,
-        ord_type: ord_type,
-        fut_sett_date2: fut_sett_date2,
-        order_qty2: order_qty2,
-        expire_time: expire_time,
-        transact_time: transact_time,
-        currency: currency,
-    }
-}
-
-
-fn build_group_no_ioiqualifiers9_fields(consumer: &mut FixConsumer, size: usize) -> Vec<NoIOIQualifiers9Fields> {
-    let mut items : Vec<NoIOIQualifiers9Fields> = Vec::with_capacity(size);
-
-    for _ in 0..size {
-        let party = build_group_no_ioiqualifiers9_fields_line( consumer );
-        items.push(party);
-    }
-
-    items
-}
-
-fn build_group_no_ioiqualifiers9_fields_line(consumer: &mut FixConsumer) -> NoIOIQualifiers9Fields {
-    // fields
-    let mut ioiqualifier : Option<FieldIOIQualifierEnum> = None;
-
-    // loop
-    while let Some(fld) = consumer.peek() {
-        match fld {
-            &FieldVal { id: FIELD_IOIQUALIFIER, val: v } => {
-
-                if ioiqualifier.is_some() { break; }
-
-                ioiqualifier = Some( FieldIOIQualifierEnum::from_str(v).unwrap() );
-            },
-
-
-            _ => { break; }
-        };
-        // consume only if recognized
-        consumer.next();
-    }
-
-    // construction
-    NoIOIQualifiers9Fields {
-        ioiqualifier: ioiqualifier,
-    }
-}
-
-
-fn build_group_no_bid_components4_fields(consumer: &mut FixConsumer, size: usize) -> Vec<NoBidComponents4Fields> {
-    let mut items : Vec<NoBidComponents4Fields> = Vec::with_capacity(size);
-
-    for _ in 0..size {
-        let party = build_group_no_bid_components4_fields_line( consumer );
-        items.push(party);
-    }
-
-    items
-}
-
-fn build_group_no_bid_components4_fields_line(consumer: &mut FixConsumer) -> NoBidComponents4Fields {
-    // fields
-    let mut commission : Option<f32> = None;
-    let mut comm_type : Option<FieldCommTypeEnum> = None;
-    let mut list_id : Option<String> = None;
-    let mut country : Option<String> = None;
-    let mut side : Option<FieldSideEnum> = None;
-    let mut price : Option<f32> = None;
-    let mut price_type : Option<FieldPriceTypeEnum> = None;
-    let mut fair_value : Option<f32> = None;
-    let mut net_gross_ind : Option<FieldNetGrossIndEnum> = None;
-    let mut settlmnt_typ : Option<FieldSettlmntTypEnum> = None;
-    let mut fut_sett_date : Option<UtcDateTime> = None;
-    let mut trading_session_id : Option<String> = None;
-    let mut text : Option<String> = None;
-    let mut encoded_text_len : Option<usize> = None;
-    let mut encoded_text : Option<String> = None;
-
-    // loop
-    while let Some(fld) = consumer.peek() {
-        match fld {
-            &FieldVal { id: FIELD_COMMISSION, val: v } => {
-
-                if commission.is_some() { break; }
-
-                commission = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_COMMTYPE, val: v } => {
-
-                if comm_type.is_some() { break; }
-
-                comm_type = Some( FieldCommTypeEnum::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_LISTID, val: v } => {
-
-                if list_id.is_some() { break; }
-
-                list_id = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_COUNTRY, val: v } => {
-
-                if country.is_some() { break; }
-
-                country = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_SIDE, val: v } => {
-
-                if side.is_some() { break; }
-
-                side = Some( FieldSideEnum::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_PRICE, val: v } => {
-
-                if price.is_some() { break; }
-
-                price = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_PRICETYPE, val: v } => {
-
-                if price_type.is_some() { break; }
-
-                price_type = Some( FieldPriceTypeEnum::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_FAIRVALUE, val: v } => {
-
-                if fair_value.is_some() { break; }
-
-                fair_value = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_NETGROSSIND, val: v } => {
-
-                if net_gross_ind.is_some() { break; }
-
-                net_gross_ind = Some( FieldNetGrossIndEnum::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_SETTLMNTTYP, val: v } => {
-
-                if settlmnt_typ.is_some() { break; }
-
-                settlmnt_typ = Some( FieldSettlmntTypEnum::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_FUTSETTDATE, val: v } => {
-
-                if fut_sett_date.is_some() { break; }
-
-                fut_sett_date = Some( UtcDateTime::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_TRADINGSESSIONID, val: v } => {
-
-                if trading_session_id.is_some() { break; }
-
-                trading_session_id = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_TEXT, val: v } => {
-
-                if text.is_some() { break; }
-
-                text = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_ENCODEDTEXTLEN, val: v } => {
-
-                if encoded_text_len.is_some() { break; }
-
-                encoded_text_len = Some( usize::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_ENCODEDTEXT, val: v } => {
-
-                if encoded_text.is_some() { break; }
-
-                encoded_text = Some( v.to_string() );
-            },
-
-
-            _ => { break; }
-        };
-        // consume only if recognized
-        consumer.next();
-    }
-
-    // construction
-    NoBidComponents4Fields {
-        commission: commission.unwrap() ,
-        comm_type: comm_type.unwrap() ,
-        list_id: list_id,
-        country: country,
-        side: side,
-        price: price,
-        price_type: price_type,
-        fair_value: fair_value,
-        net_gross_ind: net_gross_ind,
-        settlmnt_typ: settlmnt_typ,
-        fut_sett_date: fut_sett_date,
-        trading_session_id: trading_session_id,
-        text: text,
-        encoded_text_len: encoded_text_len,
-        encoded_text: encoded_text,
-    }
-}
-
-
-fn build_group_no_mdentries11_fields(consumer: &mut FixConsumer, size: usize) -> Vec<NoMDEntries11Fields> {
-    let mut items : Vec<NoMDEntries11Fields> = Vec::with_capacity(size);
-
-    for _ in 0..size {
-        let party = build_group_no_mdentries11_fields_line( consumer );
-        items.push(party);
-    }
-
-    items
-}
-
-fn build_group_no_mdentries11_fields_line(consumer: &mut FixConsumer) -> NoMDEntries11Fields {
-    // fields
-    let mut mdupdate_action : Option<FieldMDUpdateActionEnum> = None;
-    let mut delete_reason : Option<FieldDeleteReasonEnum> = None;
-    let mut mdentry_type : Option<FieldMDEntryTypeEnum> = None;
-    let mut mdentry_id : Option<String> = None;
-    let mut mdentry_ref_id : Option<String> = None;
-    let mut symbol : Option<String> = None;
-    let mut symbol_sfx : Option<String> = None;
-    let mut security_id : Option<String> = None;
-    let mut idsource : Option<FieldIDSourceEnum> = None;
-    let mut security_type : Option<FieldSecurityTypeEnum> = None;
-    let mut maturity_month_year : Option<UtcDate> = None;
-    let mut maturity_day : Option<i32> = None;
-    let mut put_or_call : Option<FieldPutOrCallEnum> = None;
-    let mut strike_price : Option<f32> = None;
-    let mut opt_attribute : Option<char> = None;
-    let mut contract_multiplier : Option<f32> = None;
-    let mut coupon_rate : Option<f32> = None;
-    let mut security_exchange : Option<String> = None;
-    let mut issuer : Option<String> = None;
-    let mut encoded_issuer_len : Option<usize> = None;
-    let mut encoded_issuer : Option<String> = None;
-    let mut security_desc : Option<String> = None;
-    let mut encoded_security_desc_len : Option<usize> = None;
-    let mut encoded_security_desc : Option<String> = None;
-    let mut financial_status : Option<FieldFinancialStatusEnum> = None;
-    let mut corporate_action : Option<FieldCorporateActionEnum> = None;
-    let mut mdentry_px : Option<f32> = None;
-    let mut currency : Option<f32> = None;
-    let mut mdentry_size : Option<f32> = None;
-    let mut mdentry_date : Option<UtcDate> = None;
-    let mut mdentry_time : Option<UtcTime> = None;
-    let mut tick_direction : Option<FieldTickDirectionEnum> = None;
-    let mut mdmkt : Option<String> = None;
-    let mut trading_session_id : Option<String> = None;
-    let mut quote_condition : Option<FieldQuoteConditionEnum> = None;
-    let mut trade_condition : Option<FieldTradeConditionEnum> = None;
-    let mut mdentry_originator : Option<String> = None;
-    let mut location_id : Option<String> = None;
-    let mut desk_id : Option<String> = None;
-    let mut open_close_settle_flag : Option<FieldOpenCloseSettleFlagEnum> = None;
-    let mut time_in_force : Option<FieldTimeInForceEnum> = None;
-    let mut expire_date : Option<UtcDateTime> = None;
-    let mut expire_time : Option<UtcDateTime> = None;
-    let mut min_qty : Option<f32> = None;
-    let mut exec_inst : Option<FieldExecInstEnum> = None;
-    let mut seller_days : Option<i32> = None;
-    let mut order_id : Option<String> = None;
-    let mut quote_entry_id : Option<String> = None;
-    let mut mdentry_buyer : Option<String> = None;
-    let mut mdentry_seller : Option<String> = None;
-    let mut number_of_orders : Option<i32> = None;
-    let mut mdentry_position_no : Option<i32> = None;
-    let mut total_volume_traded : Option<f32> = None;
-    let mut text : Option<String> = None;
-    let mut encoded_text_len : Option<usize> = None;
-    let mut encoded_text : Option<String> = None;
-
-    // loop
-    while let Some(fld) = consumer.peek() {
-        match fld {
-            &FieldVal { id: FIELD_MDUPDATEACTION, val: v } => {
-
-                if mdupdate_action.is_some() { break; }
-
-                mdupdate_action = Some( FieldMDUpdateActionEnum::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_DELETEREASON, val: v } => {
-
-                if delete_reason.is_some() { break; }
-
-                delete_reason = Some( FieldDeleteReasonEnum::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_MDENTRYTYPE, val: v } => {
-
-                if mdentry_type.is_some() { break; }
-
-                mdentry_type = Some( FieldMDEntryTypeEnum::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_MDENTRYID, val: v } => {
-
-                if mdentry_id.is_some() { break; }
-
-                mdentry_id = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_MDENTRYREFID, val: v } => {
-
-                if mdentry_ref_id.is_some() { break; }
-
-                mdentry_ref_id = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_SYMBOL, val: v } => {
-
-                if symbol.is_some() { break; }
-
-                symbol = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_SYMBOLSFX, val: v } => {
-
-                if symbol_sfx.is_some() { break; }
-
-                symbol_sfx = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_SECURITYID, val: v } => {
-
-                if security_id.is_some() { break; }
-
-                security_id = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_IDSOURCE, val: v } => {
-
-                if idsource.is_some() { break; }
-
-                idsource = Some( FieldIDSourceEnum::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_SECURITYTYPE, val: v } => {
-
-                if security_type.is_some() { break; }
-
-                security_type = Some( FieldSecurityTypeEnum::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_MATURITYMONTHYEAR, val: v } => {
-
-                if maturity_month_year.is_some() { break; }
-
-                maturity_month_year = Some( UtcDate::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_MATURITYDAY, val: v } => {
-
-                if maturity_day.is_some() { break; }
-
-                maturity_day = Some( i32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_PUTORCALL, val: v } => {
-
-                if put_or_call.is_some() { break; }
-
-                put_or_call = Some( FieldPutOrCallEnum::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_STRIKEPRICE, val: v } => {
-
-                if strike_price.is_some() { break; }
-
-                strike_price = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_OPTATTRIBUTE, val: v } => {
-
-                if opt_attribute.is_some() { break; }
-
-                opt_attribute = Some( char::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_CONTRACTMULTIPLIER, val: v } => {
-
-                if contract_multiplier.is_some() { break; }
-
-                contract_multiplier = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_COUPONRATE, val: v } => {
-
-                if coupon_rate.is_some() { break; }
-
-                coupon_rate = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_SECURITYEXCHANGE, val: v } => {
-
-                if security_exchange.is_some() { break; }
-
-                security_exchange = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_ISSUER, val: v } => {
-
-                if issuer.is_some() { break; }
-
-                issuer = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_ENCODEDISSUERLEN, val: v } => {
-
-                if encoded_issuer_len.is_some() { break; }
-
-                encoded_issuer_len = Some( usize::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_ENCODEDISSUER, val: v } => {
-
-                if encoded_issuer.is_some() { break; }
-
-                encoded_issuer = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_SECURITYDESC, val: v } => {
-
-                if security_desc.is_some() { break; }
-
-                security_desc = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_ENCODEDSECURITYDESCLEN, val: v } => {
-
-                if encoded_security_desc_len.is_some() { break; }
-
-                encoded_security_desc_len = Some( usize::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_ENCODEDSECURITYDESC, val: v } => {
-
-                if encoded_security_desc.is_some() { break; }
-
-                encoded_security_desc = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_FINANCIALSTATUS, val: v } => {
-
-                if financial_status.is_some() { break; }
-
-                financial_status = Some( FieldFinancialStatusEnum::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_CORPORATEACTION, val: v } => {
-
-                if corporate_action.is_some() { break; }
-
-                corporate_action = Some( FieldCorporateActionEnum::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_MDENTRYPX, val: v } => {
-
-                if mdentry_px.is_some() { break; }
-
-                mdentry_px = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_CURRENCY, val: v } => {
-
-                if currency.is_some() { break; }
-
-                currency = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_MDENTRYSIZE, val: v } => {
-
-                if mdentry_size.is_some() { break; }
-
-                mdentry_size = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_MDENTRYDATE, val: v } => {
-
-                if mdentry_date.is_some() { break; }
-
-                mdentry_date = Some( UtcDate::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_MDENTRYTIME, val: v } => {
-
-                if mdentry_time.is_some() { break; }
-
-                mdentry_time = Some( UtcTime::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_TICKDIRECTION, val: v } => {
-
-                if tick_direction.is_some() { break; }
-
-                tick_direction = Some( FieldTickDirectionEnum::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_MDMKT, val: v } => {
-
-                if mdmkt.is_some() { break; }
-
-                mdmkt = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_TRADINGSESSIONID, val: v } => {
-
-                if trading_session_id.is_some() { break; }
-
-                trading_session_id = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_QUOTECONDITION, val: v } => {
-
-                if quote_condition.is_some() { break; }
-
-                quote_condition = Some( FieldQuoteConditionEnum::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_TRADECONDITION, val: v } => {
-
-                if trade_condition.is_some() { break; }
-
-                trade_condition = Some( FieldTradeConditionEnum::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_MDENTRYORIGINATOR, val: v } => {
-
-                if mdentry_originator.is_some() { break; }
-
-                mdentry_originator = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_LOCATIONID, val: v } => {
-
-                if location_id.is_some() { break; }
-
-                location_id = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_DESKID, val: v } => {
-
-                if desk_id.is_some() { break; }
-
-                desk_id = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_OPENCLOSESETTLEFLAG, val: v } => {
-
-                if open_close_settle_flag.is_some() { break; }
-
-                open_close_settle_flag = Some( FieldOpenCloseSettleFlagEnum::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_TIMEINFORCE, val: v } => {
-
-                if time_in_force.is_some() { break; }
-
-                time_in_force = Some( FieldTimeInForceEnum::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_EXPIREDATE, val: v } => {
-
-                if expire_date.is_some() { break; }
-
-                expire_date = Some( UtcDateTime::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_EXPIRETIME, val: v } => {
-
-                if expire_time.is_some() { break; }
-
-                expire_time = Some( UtcDateTime::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_MINQTY, val: v } => {
-
-                if min_qty.is_some() { break; }
-
-                min_qty = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_EXECINST, val: v } => {
-
-                if exec_inst.is_some() { break; }
-
-                exec_inst = Some( FieldExecInstEnum::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_SELLERDAYS, val: v } => {
-
-                if seller_days.is_some() { break; }
-
-                seller_days = Some( i32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_ORDERID, val: v } => {
-
-                if order_id.is_some() { break; }
-
-                order_id = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_QUOTEENTRYID, val: v } => {
-
-                if quote_entry_id.is_some() { break; }
-
-                quote_entry_id = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_MDENTRYBUYER, val: v } => {
-
-                if mdentry_buyer.is_some() { break; }
-
-                mdentry_buyer = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_MDENTRYSELLER, val: v } => {
-
-                if mdentry_seller.is_some() { break; }
-
-                mdentry_seller = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_NUMBEROFORDERS, val: v } => {
-
-                if number_of_orders.is_some() { break; }
-
-                number_of_orders = Some( i32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_MDENTRYPOSITIONNO, val: v } => {
-
-                if mdentry_position_no.is_some() { break; }
-
-                mdentry_position_no = Some( i32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_TOTALVOLUMETRADED, val: v } => {
-
-                if total_volume_traded.is_some() { break; }
-
-                total_volume_traded = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_TEXT, val: v } => {
-
-                if text.is_some() { break; }
-
-                text = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_ENCODEDTEXTLEN, val: v } => {
-
-                if encoded_text_len.is_some() { break; }
-
-                encoded_text_len = Some( usize::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_ENCODEDTEXT, val: v } => {
-
-                if encoded_text.is_some() { break; }
-
-                encoded_text = Some( v.to_string() );
-            },
-
-
-            _ => { break; }
-        };
-        // consume only if recognized
-        consumer.next();
-    }
-
-    // construction
-    NoMDEntries11Fields {
-        mdupdate_action: mdupdate_action.unwrap() ,
-        delete_reason: delete_reason,
-        mdentry_type: mdentry_type,
-        mdentry_id: mdentry_id,
-        mdentry_ref_id: mdentry_ref_id,
-        symbol: symbol,
-        symbol_sfx: symbol_sfx,
-        security_id: security_id,
-        idsource: idsource,
-        security_type: security_type,
-        maturity_month_year: maturity_month_year,
-        maturity_day: maturity_day,
-        put_or_call: put_or_call,
-        strike_price: strike_price,
-        opt_attribute: opt_attribute,
-        contract_multiplier: contract_multiplier,
-        coupon_rate: coupon_rate,
-        security_exchange: security_exchange,
-        issuer: issuer,
-        encoded_issuer_len: encoded_issuer_len,
-        encoded_issuer: encoded_issuer,
-        security_desc: security_desc,
-        encoded_security_desc_len: encoded_security_desc_len,
-        encoded_security_desc: encoded_security_desc,
-        financial_status: financial_status,
-        corporate_action: corporate_action,
-        mdentry_px: mdentry_px,
-        currency: currency,
-        mdentry_size: mdentry_size,
-        mdentry_date: mdentry_date,
-        mdentry_time: mdentry_time,
-        tick_direction: tick_direction,
-        mdmkt: mdmkt,
-        trading_session_id: trading_session_id,
-        quote_condition: quote_condition,
-        trade_condition: trade_condition,
-        mdentry_originator: mdentry_originator,
-        location_id: location_id,
-        desk_id: desk_id,
-        open_close_settle_flag: open_close_settle_flag,
-        time_in_force: time_in_force,
-        expire_date: expire_date,
-        expire_time: expire_time,
-        min_qty: min_qty,
-        exec_inst: exec_inst,
-        seller_days: seller_days,
-        order_id: order_id,
-        quote_entry_id: quote_entry_id,
-        mdentry_buyer: mdentry_buyer,
-        mdentry_seller: mdentry_seller,
-        number_of_orders: number_of_orders,
-        mdentry_position_no: mdentry_position_no,
-        total_volume_traded: total_volume_traded,
-        text: text,
-        encoded_text_len: encoded_text_len,
-        encoded_text: encoded_text,
-    }
-}
-
-
-fn build_group_no_bid_components5_fields(consumer: &mut FixConsumer, size: usize) -> Vec<NoBidComponents5Fields> {
-    let mut items : Vec<NoBidComponents5Fields> = Vec::with_capacity(size);
-
-    for _ in 0..size {
-        let party = build_group_no_bid_components5_fields_line( consumer );
-        items.push(party);
-    }
-
-    items
-}
-
-fn build_group_no_bid_components5_fields_line(consumer: &mut FixConsumer) -> NoBidComponents5Fields {
-    // fields
-    let mut list_id : Option<String> = None;
-    let mut side : Option<FieldSideEnum> = None;
-    let mut trading_session_id : Option<String> = None;
-    let mut net_gross_ind : Option<FieldNetGrossIndEnum> = None;
-    let mut settlmnt_typ : Option<FieldSettlmntTypEnum> = None;
-    let mut fut_sett_date : Option<UtcDateTime> = None;
-    let mut account : Option<String> = None;
-
-    // loop
-    while let Some(fld) = consumer.peek() {
-        match fld {
-            &FieldVal { id: FIELD_LISTID, val: v } => {
-
-                if list_id.is_some() { break; }
-
-                list_id = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_SIDE, val: v } => {
-
-                if side.is_some() { break; }
-
-                side = Some( FieldSideEnum::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_TRADINGSESSIONID, val: v } => {
-
-                if trading_session_id.is_some() { break; }
-
-                trading_session_id = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_NETGROSSIND, val: v } => {
-
-                if net_gross_ind.is_some() { break; }
-
-                net_gross_ind = Some( FieldNetGrossIndEnum::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_SETTLMNTTYP, val: v } => {
-
-                if settlmnt_typ.is_some() { break; }
-
-                settlmnt_typ = Some( FieldSettlmntTypEnum::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_FUTSETTDATE, val: v } => {
-
-                if fut_sett_date.is_some() { break; }
-
-                fut_sett_date = Some( UtcDateTime::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_ACCOUNT, val: v } => {
-
-                if account.is_some() { break; }
-
-                account = Some( v.to_string() );
-            },
-
-
-            _ => { break; }
-        };
-        // consume only if recognized
-        consumer.next();
-    }
-
-    // construction
-    NoBidComponents5Fields {
-        list_id: list_id,
-        side: side,
-        trading_session_id: trading_session_id,
-        net_gross_ind: net_gross_ind,
-        settlmnt_typ: settlmnt_typ,
-        fut_sett_date: fut_sett_date,
-        account: account,
-    }
-}
-
-
-fn build_group_no_routing_ids27_fields(consumer: &mut FixConsumer, size: usize) -> Vec<NoRoutingIDs27Fields> {
-    let mut items : Vec<NoRoutingIDs27Fields> = Vec::with_capacity(size);
-
-    for _ in 0..size {
-        let party = build_group_no_routing_ids27_fields_line( consumer );
-        items.push(party);
-    }
-
-    items
-}
-
-fn build_group_no_routing_ids27_fields_line(consumer: &mut FixConsumer) -> NoRoutingIDs27Fields {
-    // fields
-    let mut routing_type : Option<FieldRoutingTypeEnum> = None;
-    let mut routing_id : Option<String> = None;
-
-    // loop
-    while let Some(fld) = consumer.peek() {
-        match fld {
-            &FieldVal { id: FIELD_ROUTINGTYPE, val: v } => {
-
-                if routing_type.is_some() { break; }
-
-                routing_type = Some( FieldRoutingTypeEnum::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_ROUTINGID, val: v } => {
-
-                if routing_id.is_some() { break; }
-
-                routing_id = Some( v.to_string() );
-            },
-
-
-            _ => { break; }
-        };
-        // consume only if recognized
-        consumer.next();
-    }
-
-    // construction
-    NoRoutingIDs27Fields {
-        routing_type: routing_type,
-        routing_id: routing_id,
-    }
-}
-
-
-fn build_group_lines_of_text1_fields(consumer: &mut FixConsumer, size: usize) -> Vec<LinesOfText1Fields> {
-    let mut items : Vec<LinesOfText1Fields> = Vec::with_capacity(size);
-
-    for _ in 0..size {
-        let party = build_group_lines_of_text1_fields_line( consumer );
-        items.push(party);
-    }
-
-    items
-}
-
-fn build_group_lines_of_text1_fields_line(consumer: &mut FixConsumer) -> LinesOfText1Fields {
-    // fields
-    let mut text : Option<String> = None;
-    let mut encoded_text_len : Option<usize> = None;
-    let mut encoded_text : Option<String> = None;
-
-    // loop
-    while let Some(fld) = consumer.peek() {
-        match fld {
-            &FieldVal { id: FIELD_TEXT, val: v } => {
-
-                if text.is_some() { break; }
-
-                text = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_ENCODEDTEXTLEN, val: v } => {
-
-                if encoded_text_len.is_some() { break; }
-
-                encoded_text_len = Some( usize::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_ENCODEDTEXT, val: v } => {
-
-                if encoded_text.is_some() { break; }
-
-                encoded_text = Some( v.to_string() );
-            },
-
-
-            _ => { break; }
-        };
-        // consume only if recognized
-        consumer.next();
-    }
-
-    // construction
-    LinesOfText1Fields {
-        text: text.unwrap() ,
-        encoded_text_len: encoded_text_len,
-        encoded_text: encoded_text,
-    }
-}
-
-
-fn build_group_no_orders15_fields(consumer: &mut FixConsumer, size: usize) -> Vec<NoOrders15Fields> {
-    let mut items : Vec<NoOrders15Fields> = Vec::with_capacity(size);
-
-    for _ in 0..size {
-        let party = build_group_no_orders15_fields_line( consumer );
-        items.push(party);
-    }
-
-    items
-}
-
-fn build_group_no_orders15_fields_line(consumer: &mut FixConsumer) -> NoOrders15Fields {
-    // fields
-    let mut cl_ord_id : Option<String> = None;
-    let mut cum_qty : Option<f32> = None;
-    let mut ord_status : Option<FieldOrdStatusEnum> = None;
-    let mut leaves_qty : Option<f32> = None;
-    let mut cxl_qty : Option<f32> = None;
-    let mut avg_px : Option<f32> = None;
-    let mut ord_rej_reason : Option<FieldOrdRejReasonEnum> = None;
-    let mut text : Option<String> = None;
-    let mut encoded_text_len : Option<usize> = None;
-    let mut encoded_text : Option<String> = None;
-
-    // loop
-    while let Some(fld) = consumer.peek() {
-        match fld {
-            &FieldVal { id: FIELD_CLORDID, val: v } => {
-
-                if cl_ord_id.is_some() { break; }
-
-                cl_ord_id = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_CUMQTY, val: v } => {
-
-                if cum_qty.is_some() { break; }
-
-                cum_qty = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_ORDSTATUS, val: v } => {
-
-                if ord_status.is_some() { break; }
-
-                ord_status = Some( FieldOrdStatusEnum::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_LEAVESQTY, val: v } => {
-
-                if leaves_qty.is_some() { break; }
-
-                leaves_qty = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_CXLQTY, val: v } => {
-
-                if cxl_qty.is_some() { break; }
-
-                cxl_qty = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_AVGPX, val: v } => {
-
-                if avg_px.is_some() { break; }
-
-                avg_px = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_ORDREJREASON, val: v } => {
-
-                if ord_rej_reason.is_some() { break; }
-
-                ord_rej_reason = Some( FieldOrdRejReasonEnum::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_TEXT, val: v } => {
-
-                if text.is_some() { break; }
-
-                text = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_ENCODEDTEXTLEN, val: v } => {
-
-                if encoded_text_len.is_some() { break; }
-
-                encoded_text_len = Some( usize::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_ENCODEDTEXT, val: v } => {
-
-                if encoded_text.is_some() { break; }
-
-                encoded_text = Some( v.to_string() );
-            },
-
-
-            _ => { break; }
-        };
-        // consume only if recognized
-        consumer.next();
-    }
-
-    // construction
-    NoOrders15Fields {
-        cl_ord_id: cl_ord_id.unwrap() ,
-        cum_qty: cum_qty.unwrap() ,
-        ord_status: ord_status.unwrap() ,
-        leaves_qty: leaves_qty.unwrap() ,
-        cxl_qty: cxl_qty.unwrap() ,
-        avg_px: avg_px.unwrap() ,
-        ord_rej_reason: ord_rej_reason,
-        text: text,
-        encoded_text_len: encoded_text_len,
-        encoded_text: encoded_text,
-    }
-}
-
-
-fn build_group_no_misc_fees13_fields(consumer: &mut FixConsumer, size: usize) -> Vec<NoMiscFees13Fields> {
-    let mut items : Vec<NoMiscFees13Fields> = Vec::with_capacity(size);
-
-    for _ in 0..size {
-        let party = build_group_no_misc_fees13_fields_line( consumer );
-        items.push(party);
-    }
-
-    items
-}
-
-fn build_group_no_misc_fees13_fields_line(consumer: &mut FixConsumer) -> NoMiscFees13Fields {
-    // fields
-    let mut misc_fee_amt : Option<f32> = None;
-    let mut misc_fee_curr : Option<f32> = None;
-    let mut misc_fee_type : Option<FieldMiscFeeTypeEnum> = None;
-
-    // loop
-    while let Some(fld) = consumer.peek() {
-        match fld {
-            &FieldVal { id: FIELD_MISCFEEAMT, val: v } => {
-
-                if misc_fee_amt.is_some() { break; }
-
-                misc_fee_amt = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_MISCFEECURR, val: v } => {
-
-                if misc_fee_curr.is_some() { break; }
-
-                misc_fee_curr = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_MISCFEETYPE, val: v } => {
-
-                if misc_fee_type.is_some() { break; }
-
-                misc_fee_type = Some( FieldMiscFeeTypeEnum::from_str(v).unwrap() );
-            },
-
-
-            _ => { break; }
-        };
-        // consume only if recognized
-        consumer.next();
-    }
-
-    // construction
-    NoMiscFees13Fields {
-        misc_fee_amt: misc_fee_amt,
-        misc_fee_curr: misc_fee_curr,
-        misc_fee_type: misc_fee_type,
-    }
-}
-
-
-fn build_group_no_mdentry_types12_fields(consumer: &mut FixConsumer, size: usize) -> Vec<NoMDEntryTypes12Fields> {
-    let mut items : Vec<NoMDEntryTypes12Fields> = Vec::with_capacity(size);
-
-    for _ in 0..size {
-        let party = build_group_no_mdentry_types12_fields_line( consumer );
-        items.push(party);
-    }
-
-    items
-}
-
-fn build_group_no_mdentry_types12_fields_line(consumer: &mut FixConsumer) -> NoMDEntryTypes12Fields {
-    // fields
-    let mut mdentry_type : Option<FieldMDEntryTypeEnum> = None;
-
-    // loop
-    while let Some(fld) = consumer.peek() {
-        match fld {
-            &FieldVal { id: FIELD_MDENTRYTYPE, val: v } => {
-
-                if mdentry_type.is_some() { break; }
-
-                mdentry_type = Some( FieldMDEntryTypeEnum::from_str(v).unwrap() );
-            },
-
-
-            _ => { break; }
-        };
-        // consume only if recognized
-        consumer.next();
-    }
-
-    // construction
-    NoMDEntryTypes12Fields {
-        mdentry_type: mdentry_type.unwrap() ,
-    }
-}
-
-
-fn build_group_no_related_sym23_fields(consumer: &mut FixConsumer, size: usize) -> Vec<NoRelatedSym23Fields> {
-    let mut items : Vec<NoRelatedSym23Fields> = Vec::with_capacity(size);
-
-    for _ in 0..size {
-        let party = build_group_no_related_sym23_fields_line( consumer );
-        items.push(party);
-    }
-
-    items
-}
-
-fn build_group_no_related_sym23_fields_line(consumer: &mut FixConsumer) -> NoRelatedSym23Fields {
-    // fields
-    let mut symbol : Option<String> = None;
-    let mut symbol_sfx : Option<String> = None;
-    let mut security_id : Option<String> = None;
-    let mut idsource : Option<FieldIDSourceEnum> = None;
-    let mut security_type : Option<FieldSecurityTypeEnum> = None;
-    let mut maturity_month_year : Option<UtcDate> = None;
-    let mut maturity_day : Option<i32> = None;
-    let mut put_or_call : Option<FieldPutOrCallEnum> = None;
-    let mut strike_price : Option<f32> = None;
-    let mut opt_attribute : Option<char> = None;
-    let mut contract_multiplier : Option<f32> = None;
-    let mut coupon_rate : Option<f32> = None;
-    let mut security_exchange : Option<String> = None;
-    let mut issuer : Option<String> = None;
-    let mut encoded_issuer_len : Option<usize> = None;
-    let mut encoded_issuer : Option<String> = None;
-    let mut security_desc : Option<String> = None;
-    let mut encoded_security_desc_len : Option<usize> = None;
-    let mut encoded_security_desc : Option<String> = None;
-    let mut trading_session_id : Option<String> = None;
-
-    // loop
-    while let Some(fld) = consumer.peek() {
-        match fld {
-            &FieldVal { id: FIELD_SYMBOL, val: v } => {
-
-                if symbol.is_some() { break; }
-
-                symbol = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_SYMBOLSFX, val: v } => {
-
-                if symbol_sfx.is_some() { break; }
-
-                symbol_sfx = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_SECURITYID, val: v } => {
-
-                if security_id.is_some() { break; }
-
-                security_id = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_IDSOURCE, val: v } => {
-
-                if idsource.is_some() { break; }
-
-                idsource = Some( FieldIDSourceEnum::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_SECURITYTYPE, val: v } => {
-
-                if security_type.is_some() { break; }
-
-                security_type = Some( FieldSecurityTypeEnum::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_MATURITYMONTHYEAR, val: v } => {
-
-                if maturity_month_year.is_some() { break; }
-
-                maturity_month_year = Some( UtcDate::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_MATURITYDAY, val: v } => {
-
-                if maturity_day.is_some() { break; }
-
-                maturity_day = Some( i32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_PUTORCALL, val: v } => {
-
-                if put_or_call.is_some() { break; }
-
-                put_or_call = Some( FieldPutOrCallEnum::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_STRIKEPRICE, val: v } => {
-
-                if strike_price.is_some() { break; }
-
-                strike_price = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_OPTATTRIBUTE, val: v } => {
-
-                if opt_attribute.is_some() { break; }
-
-                opt_attribute = Some( char::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_CONTRACTMULTIPLIER, val: v } => {
-
-                if contract_multiplier.is_some() { break; }
-
-                contract_multiplier = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_COUPONRATE, val: v } => {
-
-                if coupon_rate.is_some() { break; }
-
-                coupon_rate = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_SECURITYEXCHANGE, val: v } => {
-
-                if security_exchange.is_some() { break; }
-
-                security_exchange = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_ISSUER, val: v } => {
-
-                if issuer.is_some() { break; }
-
-                issuer = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_ENCODEDISSUERLEN, val: v } => {
-
-                if encoded_issuer_len.is_some() { break; }
-
-                encoded_issuer_len = Some( usize::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_ENCODEDISSUER, val: v } => {
-
-                if encoded_issuer.is_some() { break; }
-
-                encoded_issuer = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_SECURITYDESC, val: v } => {
-
-                if security_desc.is_some() { break; }
-
-                security_desc = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_ENCODEDSECURITYDESCLEN, val: v } => {
-
-                if encoded_security_desc_len.is_some() { break; }
-
-                encoded_security_desc_len = Some( usize::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_ENCODEDSECURITYDESC, val: v } => {
-
-                if encoded_security_desc.is_some() { break; }
-
-                encoded_security_desc = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_TRADINGSESSIONID, val: v } => {
-
-                if trading_session_id.is_some() { break; }
-
-                trading_session_id = Some( v.to_string() );
-            },
-
-
-            _ => { break; }
-        };
-        // consume only if recognized
-        consumer.next();
-    }
-
-    // construction
-    NoRelatedSym23Fields {
-        symbol: symbol.unwrap() ,
-        symbol_sfx: symbol_sfx,
-        security_id: security_id,
-        idsource: idsource,
-        security_type: security_type,
-        maturity_month_year: maturity_month_year,
-        maturity_day: maturity_day,
-        put_or_call: put_or_call,
-        strike_price: strike_price,
-        opt_attribute: opt_attribute,
-        contract_multiplier: contract_multiplier,
-        coupon_rate: coupon_rate,
-        security_exchange: security_exchange,
-        issuer: issuer,
-        encoded_issuer_len: encoded_issuer_len,
-        encoded_issuer: encoded_issuer,
-        security_desc: security_desc,
-        encoded_security_desc_len: encoded_security_desc_len,
-        encoded_security_desc: encoded_security_desc,
-        trading_session_id: trading_session_id,
-    }
-}
-
-
-fn build_group_no_allocs2_fields(consumer: &mut FixConsumer, size: usize) -> Vec<NoAllocs2Fields> {
-    let mut items : Vec<NoAllocs2Fields> = Vec::with_capacity(size);
-
-    for _ in 0..size {
-        let party = build_group_no_allocs2_fields_line( consumer );
-        items.push(party);
-    }
-
-    items
-}
-
-fn build_group_no_allocs2_fields_line(consumer: &mut FixConsumer) -> NoAllocs2Fields {
+fn build_group_no_allocs1_fields_line(consumer: &mut FixConsumer) -> NoAllocs1Fields {
     // fields
     let mut alloc_account : Option<String> = None;
     let mut alloc_shares : Option<f32> = None;
@@ -17526,25 +11035,112 @@ fn build_group_no_allocs2_fields_line(consumer: &mut FixConsumer) -> NoAllocs2Fi
     }
 
     // construction
-    NoAllocs2Fields {
+    NoAllocs1Fields {
         alloc_account: alloc_account,
         alloc_shares: alloc_shares,
     }
 }
 
 
-fn build_group_no_orders16_fields(consumer: &mut FixConsumer, size: usize) -> Vec<NoOrders16Fields> {
-    let mut items : Vec<NoOrders16Fields> = Vec::with_capacity(size);
+fn build_group_no_msg_types3_fields(consumer: &mut FixConsumer, size: usize) -> Vec<NoMsgTypes3Fields> {
+    let mut items : Vec<NoMsgTypes3Fields> = Vec::with_capacity(size);
 
     for _ in 0..size {
-        let party = build_group_no_orders16_fields_line( consumer );
+        let party = build_group_no_msg_types3_fields_line( consumer );
         items.push(party);
     }
 
     items
 }
 
-fn build_group_no_orders16_fields_line(consumer: &mut FixConsumer) -> NoOrders16Fields {
+fn build_group_no_msg_types3_fields_line(consumer: &mut FixConsumer) -> NoMsgTypes3Fields {
+    // fields
+    let mut ref_msg_type : Option<String> = None;
+    let mut msg_direction : Option<FieldMsgDirectionEnum> = None;
+
+    // loop
+    while let Some(fld) = consumer.peek() {
+        match fld {
+            &FieldVal { id: FIELD_REFMSGTYPE, val: v } => {
+
+                if ref_msg_type.is_some() { break; }
+
+                ref_msg_type = Some( v.to_string() );
+            },
+
+            &FieldVal { id: FIELD_MSGDIRECTION, val: v } => {
+
+                if msg_direction.is_some() { break; }
+
+                msg_direction = Some( FieldMsgDirectionEnum::from_str(v).unwrap() );
+            },
+
+
+            _ => { break; }
+        };
+        // consume only if recognized
+        consumer.next();
+    }
+
+    // construction
+    NoMsgTypes3Fields {
+        ref_msg_type: ref_msg_type,
+        msg_direction: msg_direction,
+    }
+}
+
+
+fn build_group_no_trading_sessions5_fields(consumer: &mut FixConsumer, size: usize) -> Vec<NoTradingSessions5Fields> {
+    let mut items : Vec<NoTradingSessions5Fields> = Vec::with_capacity(size);
+
+    for _ in 0..size {
+        let party = build_group_no_trading_sessions5_fields_line( consumer );
+        items.push(party);
+    }
+
+    items
+}
+
+fn build_group_no_trading_sessions5_fields_line(consumer: &mut FixConsumer) -> NoTradingSessions5Fields {
+    // fields
+    let mut trading_session_id : Option<String> = None;
+
+    // loop
+    while let Some(fld) = consumer.peek() {
+        match fld {
+            &FieldVal { id: FIELD_TRADINGSESSIONID, val: v } => {
+
+                if trading_session_id.is_some() { break; }
+
+                trading_session_id = Some( v.to_string() );
+            },
+
+
+            _ => { break; }
+        };
+        // consume only if recognized
+        consumer.next();
+    }
+
+    // construction
+    NoTradingSessions5Fields {
+        trading_session_id: trading_session_id,
+    }
+}
+
+
+fn build_group_no_orders4_fields(consumer: &mut FixConsumer, size: usize) -> Vec<NoOrders4Fields> {
+    let mut items : Vec<NoOrders4Fields> = Vec::with_capacity(size);
+
+    for _ in 0..size {
+        let party = build_group_no_orders4_fields_line( consumer );
+        items.push(party);
+    }
+
+    items
+}
+
+fn build_group_no_orders4_fields_line(consumer: &mut FixConsumer) -> NoOrders4Fields {
     // fields
     let mut cl_ord_id : Option<String> = None;
     let mut list_seq_no : Option<i32> = None;
@@ -17552,7 +11148,7 @@ fn build_group_no_orders16_fields_line(consumer: &mut FixConsumer) -> NoOrders16
     let mut client_id : Option<String> = None;
     let mut exec_broker : Option<String> = None;
     let mut account : Option<String> = None;
-    let mut no_allocs : Option<Vec<NoAllocs2Fields>> = None;
+    let mut no_allocs : Option<Vec<NoAllocs1Fields>> = None;
     let mut settlmnt_typ : Option<FieldSettlmntTypEnum> = None;
     let mut fut_sett_date : Option<UtcDateTime> = None;
     let mut handl_inst : Option<FieldHandlInstEnum> = None;
@@ -17560,7 +11156,7 @@ fn build_group_no_orders16_fields_line(consumer: &mut FixConsumer) -> NoOrders16
     let mut min_qty : Option<f32> = None;
     let mut max_floor : Option<f32> = None;
     let mut ex_destination : Option<String> = None;
-    let mut no_trading_sessions : Option<Vec<NoTradingSessions29Fields>> = None;
+    let mut no_trading_sessions : Option<Vec<NoTradingSessions5Fields>> = None;
     let mut process_code : Option<FieldProcessCodeEnum> = None;
     let mut symbol : Option<String> = None;
     let mut symbol_sfx : Option<String> = None;
@@ -17671,7 +11267,7 @@ fn build_group_no_orders16_fields_line(consumer: &mut FixConsumer) -> NoOrders16
                 if no_allocs.is_some() { break; }
 
                 let size = usize::from_str(v).unwrap();
-                let items = build_group_no_allocs2_fields(consumer, size);
+                let items = build_group_no_allocs1_fields(consumer, size);
                 no_allocs = Some(items);
                 continue;
             },
@@ -17730,7 +11326,7 @@ fn build_group_no_orders16_fields_line(consumer: &mut FixConsumer) -> NoOrders16
                 if no_trading_sessions.is_some() { break; }
 
                 let size = usize::from_str(v).unwrap();
-                let items = build_group_no_trading_sessions29_fields(consumer, size);
+                let items = build_group_no_trading_sessions5_fields(consumer, size);
                 no_trading_sessions = Some(items);
                 continue;
             },
@@ -18156,7 +11752,7 @@ fn build_group_no_orders16_fields_line(consumer: &mut FixConsumer) -> NoOrders16
     }
 
     // construction
-    NoOrders16Fields {
+    NoOrders4Fields {
         cl_ord_id: cl_ord_id.unwrap() ,
         list_seq_no: list_seq_no.unwrap() ,
         settl_inst_mode: settl_inst_mode,
@@ -18233,2797 +11829,6 @@ fn build_group_no_orders16_fields_line(consumer: &mut FixConsumer) -> NoOrders16
         clearing_account: clearing_account,
     }
 }
-
-
-fn build_group_no_orders17_fields(consumer: &mut FixConsumer, size: usize) -> Vec<NoOrders17Fields> {
-    let mut items : Vec<NoOrders17Fields> = Vec::with_capacity(size);
-
-    for _ in 0..size {
-        let party = build_group_no_orders17_fields_line( consumer );
-        items.push(party);
-    }
-
-    items
-}
-
-fn build_group_no_orders17_fields_line(consumer: &mut FixConsumer) -> NoOrders17Fields {
-    // fields
-    let mut cl_ord_id : Option<String> = None;
-    let mut order_id : Option<String> = None;
-    let mut secondary_order_id : Option<String> = None;
-    let mut list_id : Option<String> = None;
-    let mut wave_no : Option<String> = None;
-
-    // loop
-    while let Some(fld) = consumer.peek() {
-        match fld {
-            &FieldVal { id: FIELD_CLORDID, val: v } => {
-
-                if cl_ord_id.is_some() { break; }
-
-                cl_ord_id = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_ORDERID, val: v } => {
-
-                if order_id.is_some() { break; }
-
-                order_id = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_SECONDARYORDERID, val: v } => {
-
-                if secondary_order_id.is_some() { break; }
-
-                secondary_order_id = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_LISTID, val: v } => {
-
-                if list_id.is_some() { break; }
-
-                list_id = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_WAVENO, val: v } => {
-
-                if wave_no.is_some() { break; }
-
-                wave_no = Some( v.to_string() );
-            },
-
-
-            _ => { break; }
-        };
-        // consume only if recognized
-        consumer.next();
-    }
-
-    // construction
-    NoOrders17Fields {
-        cl_ord_id: cl_ord_id,
-        order_id: order_id,
-        secondary_order_id: secondary_order_id,
-        list_id: list_id,
-        wave_no: wave_no,
-    }
-}
-
-
-fn build_group_no_execs8_fields(consumer: &mut FixConsumer, size: usize) -> Vec<NoExecs8Fields> {
-    let mut items : Vec<NoExecs8Fields> = Vec::with_capacity(size);
-
-    for _ in 0..size {
-        let party = build_group_no_execs8_fields_line( consumer );
-        items.push(party);
-    }
-
-    items
-}
-
-fn build_group_no_execs8_fields_line(consumer: &mut FixConsumer) -> NoExecs8Fields {
-    // fields
-    let mut last_shares : Option<f32> = None;
-    let mut exec_id : Option<String> = None;
-    let mut last_px : Option<f32> = None;
-    let mut last_capacity : Option<FieldLastCapacityEnum> = None;
-
-    // loop
-    while let Some(fld) = consumer.peek() {
-        match fld {
-            &FieldVal { id: FIELD_LASTSHARES, val: v } => {
-
-                if last_shares.is_some() { break; }
-
-                last_shares = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_EXECID, val: v } => {
-
-                if exec_id.is_some() { break; }
-
-                exec_id = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_LASTPX, val: v } => {
-
-                if last_px.is_some() { break; }
-
-                last_px = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_LASTCAPACITY, val: v } => {
-
-                if last_capacity.is_some() { break; }
-
-                last_capacity = Some( FieldLastCapacityEnum::from_str(v).unwrap() );
-            },
-
-
-            _ => { break; }
-        };
-        // consume only if recognized
-        consumer.next();
-    }
-
-    // construction
-    NoExecs8Fields {
-        last_shares: last_shares,
-        exec_id: exec_id,
-        last_px: last_px,
-        last_capacity: last_capacity,
-    }
-}
-
-
-fn build_group_no_trading_sessions29_fields(consumer: &mut FixConsumer, size: usize) -> Vec<NoTradingSessions29Fields> {
-    let mut items : Vec<NoTradingSessions29Fields> = Vec::with_capacity(size);
-
-    for _ in 0..size {
-        let party = build_group_no_trading_sessions29_fields_line( consumer );
-        items.push(party);
-    }
-
-    items
-}
-
-fn build_group_no_trading_sessions29_fields_line(consumer: &mut FixConsumer) -> NoTradingSessions29Fields {
-    // fields
-    let mut trading_session_id : Option<String> = None;
-
-    // loop
-    while let Some(fld) = consumer.peek() {
-        match fld {
-            &FieldVal { id: FIELD_TRADINGSESSIONID, val: v } => {
-
-                if trading_session_id.is_some() { break; }
-
-                trading_session_id = Some( v.to_string() );
-            },
-
-
-            _ => { break; }
-        };
-        // consume only if recognized
-        consumer.next();
-    }
-
-    // construction
-    NoTradingSessions29Fields {
-        trading_session_id: trading_session_id,
-    }
-}
-
-
-fn build_group_no_contra_brokers7_fields(consumer: &mut FixConsumer, size: usize) -> Vec<NoContraBrokers7Fields> {
-    let mut items : Vec<NoContraBrokers7Fields> = Vec::with_capacity(size);
-
-    for _ in 0..size {
-        let party = build_group_no_contra_brokers7_fields_line( consumer );
-        items.push(party);
-    }
-
-    items
-}
-
-fn build_group_no_contra_brokers7_fields_line(consumer: &mut FixConsumer) -> NoContraBrokers7Fields {
-    // fields
-    let mut contra_broker : Option<String> = None;
-    let mut contra_trader : Option<String> = None;
-    let mut contra_trade_qty : Option<f32> = None;
-    let mut contra_trade_time : Option<UtcDateTime> = None;
-
-    // loop
-    while let Some(fld) = consumer.peek() {
-        match fld {
-            &FieldVal { id: FIELD_CONTRABROKER, val: v } => {
-
-                if contra_broker.is_some() { break; }
-
-                contra_broker = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_CONTRATRADER, val: v } => {
-
-                if contra_trader.is_some() { break; }
-
-                contra_trader = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_CONTRATRADEQTY, val: v } => {
-
-                if contra_trade_qty.is_some() { break; }
-
-                contra_trade_qty = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_CONTRATRADETIME, val: v } => {
-
-                if contra_trade_time.is_some() { break; }
-
-                contra_trade_time = Some( UtcDateTime::from_str(v).unwrap() );
-            },
-
-
-            _ => { break; }
-        };
-        // consume only if recognized
-        consumer.next();
-    }
-
-    // construction
-    NoContraBrokers7Fields {
-        contra_broker: contra_broker,
-        contra_trader: contra_trader,
-        contra_trade_qty: contra_trade_qty,
-        contra_trade_time: contra_trade_time,
-    }
-}
-
-
-fn build_group_no_quote_entries19_fields(consumer: &mut FixConsumer, size: usize) -> Vec<NoQuoteEntries19Fields> {
-    let mut items : Vec<NoQuoteEntries19Fields> = Vec::with_capacity(size);
-
-    for _ in 0..size {
-        let party = build_group_no_quote_entries19_fields_line( consumer );
-        items.push(party);
-    }
-
-    items
-}
-
-fn build_group_no_quote_entries19_fields_line(consumer: &mut FixConsumer) -> NoQuoteEntries19Fields {
-    // fields
-    let mut quote_entry_id : Option<String> = None;
-    let mut symbol : Option<String> = None;
-    let mut symbol_sfx : Option<String> = None;
-    let mut security_id : Option<String> = None;
-    let mut idsource : Option<FieldIDSourceEnum> = None;
-    let mut security_type : Option<FieldSecurityTypeEnum> = None;
-    let mut maturity_month_year : Option<UtcDate> = None;
-    let mut maturity_day : Option<i32> = None;
-    let mut put_or_call : Option<FieldPutOrCallEnum> = None;
-    let mut strike_price : Option<f32> = None;
-    let mut opt_attribute : Option<char> = None;
-    let mut contract_multiplier : Option<f32> = None;
-    let mut coupon_rate : Option<f32> = None;
-    let mut security_exchange : Option<String> = None;
-    let mut issuer : Option<String> = None;
-    let mut encoded_issuer_len : Option<usize> = None;
-    let mut encoded_issuer : Option<String> = None;
-    let mut security_desc : Option<String> = None;
-    let mut encoded_security_desc_len : Option<usize> = None;
-    let mut encoded_security_desc : Option<String> = None;
-    let mut bid_px : Option<f32> = None;
-    let mut offer_px : Option<f32> = None;
-    let mut bid_size : Option<f32> = None;
-    let mut offer_size : Option<f32> = None;
-    let mut valid_until_time : Option<UtcDateTime> = None;
-    let mut bid_spot_rate : Option<f32> = None;
-    let mut offer_spot_rate : Option<f32> = None;
-    let mut bid_forward_points : Option<f32> = None;
-    let mut offer_forward_points : Option<f32> = None;
-    let mut transact_time : Option<UtcDateTime> = None;
-    let mut trading_session_id : Option<String> = None;
-    let mut fut_sett_date : Option<UtcDateTime> = None;
-    let mut ord_type : Option<FieldOrdTypeEnum> = None;
-    let mut fut_sett_date2 : Option<UtcDateTime> = None;
-    let mut order_qty2 : Option<f32> = None;
-    let mut currency : Option<f32> = None;
-
-    // loop
-    while let Some(fld) = consumer.peek() {
-        match fld {
-            &FieldVal { id: FIELD_QUOTEENTRYID, val: v } => {
-
-                if quote_entry_id.is_some() { break; }
-
-                quote_entry_id = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_SYMBOL, val: v } => {
-
-                if symbol.is_some() { break; }
-
-                symbol = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_SYMBOLSFX, val: v } => {
-
-                if symbol_sfx.is_some() { break; }
-
-                symbol_sfx = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_SECURITYID, val: v } => {
-
-                if security_id.is_some() { break; }
-
-                security_id = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_IDSOURCE, val: v } => {
-
-                if idsource.is_some() { break; }
-
-                idsource = Some( FieldIDSourceEnum::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_SECURITYTYPE, val: v } => {
-
-                if security_type.is_some() { break; }
-
-                security_type = Some( FieldSecurityTypeEnum::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_MATURITYMONTHYEAR, val: v } => {
-
-                if maturity_month_year.is_some() { break; }
-
-                maturity_month_year = Some( UtcDate::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_MATURITYDAY, val: v } => {
-
-                if maturity_day.is_some() { break; }
-
-                maturity_day = Some( i32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_PUTORCALL, val: v } => {
-
-                if put_or_call.is_some() { break; }
-
-                put_or_call = Some( FieldPutOrCallEnum::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_STRIKEPRICE, val: v } => {
-
-                if strike_price.is_some() { break; }
-
-                strike_price = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_OPTATTRIBUTE, val: v } => {
-
-                if opt_attribute.is_some() { break; }
-
-                opt_attribute = Some( char::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_CONTRACTMULTIPLIER, val: v } => {
-
-                if contract_multiplier.is_some() { break; }
-
-                contract_multiplier = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_COUPONRATE, val: v } => {
-
-                if coupon_rate.is_some() { break; }
-
-                coupon_rate = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_SECURITYEXCHANGE, val: v } => {
-
-                if security_exchange.is_some() { break; }
-
-                security_exchange = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_ISSUER, val: v } => {
-
-                if issuer.is_some() { break; }
-
-                issuer = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_ENCODEDISSUERLEN, val: v } => {
-
-                if encoded_issuer_len.is_some() { break; }
-
-                encoded_issuer_len = Some( usize::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_ENCODEDISSUER, val: v } => {
-
-                if encoded_issuer.is_some() { break; }
-
-                encoded_issuer = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_SECURITYDESC, val: v } => {
-
-                if security_desc.is_some() { break; }
-
-                security_desc = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_ENCODEDSECURITYDESCLEN, val: v } => {
-
-                if encoded_security_desc_len.is_some() { break; }
-
-                encoded_security_desc_len = Some( usize::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_ENCODEDSECURITYDESC, val: v } => {
-
-                if encoded_security_desc.is_some() { break; }
-
-                encoded_security_desc = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_BIDPX, val: v } => {
-
-                if bid_px.is_some() { break; }
-
-                bid_px = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_OFFERPX, val: v } => {
-
-                if offer_px.is_some() { break; }
-
-                offer_px = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_BIDSIZE, val: v } => {
-
-                if bid_size.is_some() { break; }
-
-                bid_size = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_OFFERSIZE, val: v } => {
-
-                if offer_size.is_some() { break; }
-
-                offer_size = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_VALIDUNTILTIME, val: v } => {
-
-                if valid_until_time.is_some() { break; }
-
-                valid_until_time = Some( UtcDateTime::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_BIDSPOTRATE, val: v } => {
-
-                if bid_spot_rate.is_some() { break; }
-
-                bid_spot_rate = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_OFFERSPOTRATE, val: v } => {
-
-                if offer_spot_rate.is_some() { break; }
-
-                offer_spot_rate = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_BIDFORWARDPOINTS, val: v } => {
-
-                if bid_forward_points.is_some() { break; }
-
-                bid_forward_points = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_OFFERFORWARDPOINTS, val: v } => {
-
-                if offer_forward_points.is_some() { break; }
-
-                offer_forward_points = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_TRANSACTTIME, val: v } => {
-
-                if transact_time.is_some() { break; }
-
-                transact_time = Some( UtcDateTime::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_TRADINGSESSIONID, val: v } => {
-
-                if trading_session_id.is_some() { break; }
-
-                trading_session_id = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_FUTSETTDATE, val: v } => {
-
-                if fut_sett_date.is_some() { break; }
-
-                fut_sett_date = Some( UtcDateTime::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_ORDTYPE, val: v } => {
-
-                if ord_type.is_some() { break; }
-
-                ord_type = Some( FieldOrdTypeEnum::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_FUTSETTDATE2, val: v } => {
-
-                if fut_sett_date2.is_some() { break; }
-
-                fut_sett_date2 = Some( UtcDateTime::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_ORDERQTY2, val: v } => {
-
-                if order_qty2.is_some() { break; }
-
-                order_qty2 = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_CURRENCY, val: v } => {
-
-                if currency.is_some() { break; }
-
-                currency = Some( f32::from_str(v).unwrap() );
-            },
-
-
-            _ => { break; }
-        };
-        // consume only if recognized
-        consumer.next();
-    }
-
-    // construction
-    NoQuoteEntries19Fields {
-        quote_entry_id: quote_entry_id.unwrap() ,
-        symbol: symbol,
-        symbol_sfx: symbol_sfx,
-        security_id: security_id,
-        idsource: idsource,
-        security_type: security_type,
-        maturity_month_year: maturity_month_year,
-        maturity_day: maturity_day,
-        put_or_call: put_or_call,
-        strike_price: strike_price,
-        opt_attribute: opt_attribute,
-        contract_multiplier: contract_multiplier,
-        coupon_rate: coupon_rate,
-        security_exchange: security_exchange,
-        issuer: issuer,
-        encoded_issuer_len: encoded_issuer_len,
-        encoded_issuer: encoded_issuer,
-        security_desc: security_desc,
-        encoded_security_desc_len: encoded_security_desc_len,
-        encoded_security_desc: encoded_security_desc,
-        bid_px: bid_px,
-        offer_px: offer_px,
-        bid_size: bid_size,
-        offer_size: offer_size,
-        valid_until_time: valid_until_time,
-        bid_spot_rate: bid_spot_rate,
-        offer_spot_rate: offer_spot_rate,
-        bid_forward_points: bid_forward_points,
-        offer_forward_points: offer_forward_points,
-        transact_time: transact_time,
-        trading_session_id: trading_session_id,
-        fut_sett_date: fut_sett_date,
-        ord_type: ord_type,
-        fut_sett_date2: fut_sett_date2,
-        order_qty2: order_qty2,
-        currency: currency,
-    }
-}
-
-
-fn build_group_no_quote_entries20_fields(consumer: &mut FixConsumer, size: usize) -> Vec<NoQuoteEntries20Fields> {
-    let mut items : Vec<NoQuoteEntries20Fields> = Vec::with_capacity(size);
-
-    for _ in 0..size {
-        let party = build_group_no_quote_entries20_fields_line( consumer );
-        items.push(party);
-    }
-
-    items
-}
-
-fn build_group_no_quote_entries20_fields_line(consumer: &mut FixConsumer) -> NoQuoteEntries20Fields {
-    // fields
-    let mut symbol : Option<String> = None;
-    let mut symbol_sfx : Option<String> = None;
-    let mut security_id : Option<String> = None;
-    let mut idsource : Option<FieldIDSourceEnum> = None;
-    let mut security_type : Option<FieldSecurityTypeEnum> = None;
-    let mut maturity_month_year : Option<UtcDate> = None;
-    let mut maturity_day : Option<i32> = None;
-    let mut put_or_call : Option<FieldPutOrCallEnum> = None;
-    let mut strike_price : Option<f32> = None;
-    let mut opt_attribute : Option<char> = None;
-    let mut contract_multiplier : Option<f32> = None;
-    let mut coupon_rate : Option<f32> = None;
-    let mut security_exchange : Option<String> = None;
-    let mut issuer : Option<String> = None;
-    let mut encoded_issuer_len : Option<usize> = None;
-    let mut encoded_issuer : Option<String> = None;
-    let mut security_desc : Option<String> = None;
-    let mut encoded_security_desc_len : Option<usize> = None;
-    let mut encoded_security_desc : Option<String> = None;
-    let mut underlying_symbol : Option<String> = None;
-
-    // loop
-    while let Some(fld) = consumer.peek() {
-        match fld {
-            &FieldVal { id: FIELD_SYMBOL, val: v } => {
-
-                if symbol.is_some() { break; }
-
-                symbol = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_SYMBOLSFX, val: v } => {
-
-                if symbol_sfx.is_some() { break; }
-
-                symbol_sfx = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_SECURITYID, val: v } => {
-
-                if security_id.is_some() { break; }
-
-                security_id = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_IDSOURCE, val: v } => {
-
-                if idsource.is_some() { break; }
-
-                idsource = Some( FieldIDSourceEnum::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_SECURITYTYPE, val: v } => {
-
-                if security_type.is_some() { break; }
-
-                security_type = Some( FieldSecurityTypeEnum::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_MATURITYMONTHYEAR, val: v } => {
-
-                if maturity_month_year.is_some() { break; }
-
-                maturity_month_year = Some( UtcDate::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_MATURITYDAY, val: v } => {
-
-                if maturity_day.is_some() { break; }
-
-                maturity_day = Some( i32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_PUTORCALL, val: v } => {
-
-                if put_or_call.is_some() { break; }
-
-                put_or_call = Some( FieldPutOrCallEnum::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_STRIKEPRICE, val: v } => {
-
-                if strike_price.is_some() { break; }
-
-                strike_price = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_OPTATTRIBUTE, val: v } => {
-
-                if opt_attribute.is_some() { break; }
-
-                opt_attribute = Some( char::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_CONTRACTMULTIPLIER, val: v } => {
-
-                if contract_multiplier.is_some() { break; }
-
-                contract_multiplier = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_COUPONRATE, val: v } => {
-
-                if coupon_rate.is_some() { break; }
-
-                coupon_rate = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_SECURITYEXCHANGE, val: v } => {
-
-                if security_exchange.is_some() { break; }
-
-                security_exchange = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_ISSUER, val: v } => {
-
-                if issuer.is_some() { break; }
-
-                issuer = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_ENCODEDISSUERLEN, val: v } => {
-
-                if encoded_issuer_len.is_some() { break; }
-
-                encoded_issuer_len = Some( usize::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_ENCODEDISSUER, val: v } => {
-
-                if encoded_issuer.is_some() { break; }
-
-                encoded_issuer = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_SECURITYDESC, val: v } => {
-
-                if security_desc.is_some() { break; }
-
-                security_desc = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_ENCODEDSECURITYDESCLEN, val: v } => {
-
-                if encoded_security_desc_len.is_some() { break; }
-
-                encoded_security_desc_len = Some( usize::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_ENCODEDSECURITYDESC, val: v } => {
-
-                if encoded_security_desc.is_some() { break; }
-
-                encoded_security_desc = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_UNDERLYINGSYMBOL, val: v } => {
-
-                if underlying_symbol.is_some() { break; }
-
-                underlying_symbol = Some( v.to_string() );
-            },
-
-
-            _ => { break; }
-        };
-        // consume only if recognized
-        consumer.next();
-    }
-
-    // construction
-    NoQuoteEntries20Fields {
-        symbol: symbol.unwrap() ,
-        symbol_sfx: symbol_sfx,
-        security_id: security_id,
-        idsource: idsource,
-        security_type: security_type,
-        maturity_month_year: maturity_month_year,
-        maturity_day: maturity_day,
-        put_or_call: put_or_call,
-        strike_price: strike_price,
-        opt_attribute: opt_attribute,
-        contract_multiplier: contract_multiplier,
-        coupon_rate: coupon_rate,
-        security_exchange: security_exchange,
-        issuer: issuer,
-        encoded_issuer_len: encoded_issuer_len,
-        encoded_issuer: encoded_issuer,
-        security_desc: security_desc,
-        encoded_security_desc_len: encoded_security_desc_len,
-        encoded_security_desc: encoded_security_desc,
-        underlying_symbol: underlying_symbol,
-    }
-}
-
-
-fn build_group_no_related_sym25_fields(consumer: &mut FixConsumer, size: usize) -> Vec<NoRelatedSym25Fields> {
-    let mut items : Vec<NoRelatedSym25Fields> = Vec::with_capacity(size);
-
-    for _ in 0..size {
-        let party = build_group_no_related_sym25_fields_line( consumer );
-        items.push(party);
-    }
-
-    items
-}
-
-fn build_group_no_related_sym25_fields_line(consumer: &mut FixConsumer) -> NoRelatedSym25Fields {
-    // fields
-    let mut relatd_sym : Option<String> = None;
-    let mut symbol_sfx : Option<String> = None;
-    let mut security_id : Option<String> = None;
-    let mut idsource : Option<FieldIDSourceEnum> = None;
-    let mut security_type : Option<FieldSecurityTypeEnum> = None;
-    let mut maturity_month_year : Option<UtcDate> = None;
-    let mut maturity_day : Option<i32> = None;
-    let mut put_or_call : Option<FieldPutOrCallEnum> = None;
-    let mut strike_price : Option<f32> = None;
-    let mut opt_attribute : Option<char> = None;
-    let mut contract_multiplier : Option<f32> = None;
-    let mut coupon_rate : Option<f32> = None;
-    let mut security_exchange : Option<String> = None;
-    let mut issuer : Option<String> = None;
-    let mut encoded_issuer_len : Option<usize> = None;
-    let mut encoded_issuer : Option<String> = None;
-    let mut security_desc : Option<String> = None;
-    let mut encoded_security_desc_len : Option<usize> = None;
-    let mut encoded_security_desc : Option<String> = None;
-
-    // loop
-    while let Some(fld) = consumer.peek() {
-        match fld {
-            &FieldVal { id: FIELD_RELATDSYM, val: v } => {
-
-                if relatd_sym.is_some() { break; }
-
-                relatd_sym = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_SYMBOLSFX, val: v } => {
-
-                if symbol_sfx.is_some() { break; }
-
-                symbol_sfx = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_SECURITYID, val: v } => {
-
-                if security_id.is_some() { break; }
-
-                security_id = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_IDSOURCE, val: v } => {
-
-                if idsource.is_some() { break; }
-
-                idsource = Some( FieldIDSourceEnum::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_SECURITYTYPE, val: v } => {
-
-                if security_type.is_some() { break; }
-
-                security_type = Some( FieldSecurityTypeEnum::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_MATURITYMONTHYEAR, val: v } => {
-
-                if maturity_month_year.is_some() { break; }
-
-                maturity_month_year = Some( UtcDate::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_MATURITYDAY, val: v } => {
-
-                if maturity_day.is_some() { break; }
-
-                maturity_day = Some( i32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_PUTORCALL, val: v } => {
-
-                if put_or_call.is_some() { break; }
-
-                put_or_call = Some( FieldPutOrCallEnum::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_STRIKEPRICE, val: v } => {
-
-                if strike_price.is_some() { break; }
-
-                strike_price = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_OPTATTRIBUTE, val: v } => {
-
-                if opt_attribute.is_some() { break; }
-
-                opt_attribute = Some( char::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_CONTRACTMULTIPLIER, val: v } => {
-
-                if contract_multiplier.is_some() { break; }
-
-                contract_multiplier = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_COUPONRATE, val: v } => {
-
-                if coupon_rate.is_some() { break; }
-
-                coupon_rate = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_SECURITYEXCHANGE, val: v } => {
-
-                if security_exchange.is_some() { break; }
-
-                security_exchange = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_ISSUER, val: v } => {
-
-                if issuer.is_some() { break; }
-
-                issuer = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_ENCODEDISSUERLEN, val: v } => {
-
-                if encoded_issuer_len.is_some() { break; }
-
-                encoded_issuer_len = Some( usize::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_ENCODEDISSUER, val: v } => {
-
-                if encoded_issuer.is_some() { break; }
-
-                encoded_issuer = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_SECURITYDESC, val: v } => {
-
-                if security_desc.is_some() { break; }
-
-                security_desc = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_ENCODEDSECURITYDESCLEN, val: v } => {
-
-                if encoded_security_desc_len.is_some() { break; }
-
-                encoded_security_desc_len = Some( usize::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_ENCODEDSECURITYDESC, val: v } => {
-
-                if encoded_security_desc.is_some() { break; }
-
-                encoded_security_desc = Some( v.to_string() );
-            },
-
-
-            _ => { break; }
-        };
-        // consume only if recognized
-        consumer.next();
-    }
-
-    // construction
-    NoRelatedSym25Fields {
-        relatd_sym: relatd_sym,
-        symbol_sfx: symbol_sfx,
-        security_id: security_id,
-        idsource: idsource,
-        security_type: security_type,
-        maturity_month_year: maturity_month_year,
-        maturity_day: maturity_day,
-        put_or_call: put_or_call,
-        strike_price: strike_price,
-        opt_attribute: opt_attribute,
-        contract_multiplier: contract_multiplier,
-        coupon_rate: coupon_rate,
-        security_exchange: security_exchange,
-        issuer: issuer,
-        encoded_issuer_len: encoded_issuer_len,
-        encoded_issuer: encoded_issuer,
-        security_desc: security_desc,
-        encoded_security_desc_len: encoded_security_desc_len,
-        encoded_security_desc: encoded_security_desc,
-    }
-}
-
-
-fn build_group_no_quote_sets22_fields(consumer: &mut FixConsumer, size: usize) -> Vec<NoQuoteSets22Fields> {
-    let mut items : Vec<NoQuoteSets22Fields> = Vec::with_capacity(size);
-
-    for _ in 0..size {
-        let party = build_group_no_quote_sets22_fields_line( consumer );
-        items.push(party);
-    }
-
-    items
-}
-
-fn build_group_no_quote_sets22_fields_line(consumer: &mut FixConsumer) -> NoQuoteSets22Fields {
-    // fields
-    let mut quote_set_id : Option<String> = None;
-    let mut underlying_symbol : Option<String> = None;
-    let mut underlying_symbol_sfx : Option<String> = None;
-    let mut underlying_security_id : Option<String> = None;
-    let mut underlying_idsource : Option<String> = None;
-    let mut underlying_security_type : Option<String> = None;
-    let mut underlying_maturity_month_year : Option<UtcDate> = None;
-    let mut underlying_maturity_day : Option<i32> = None;
-    let mut underlying_put_or_call : Option<i32> = None;
-    let mut underlying_strike_price : Option<f32> = None;
-    let mut underlying_opt_attribute : Option<char> = None;
-    let mut underlying_contract_multiplier : Option<f32> = None;
-    let mut underlying_coupon_rate : Option<f32> = None;
-    let mut underlying_security_exchange : Option<String> = None;
-    let mut underlying_issuer : Option<String> = None;
-    let mut encoded_underlying_issuer_len : Option<usize> = None;
-    let mut encoded_underlying_issuer : Option<String> = None;
-    let mut underlying_security_desc : Option<String> = None;
-    let mut encoded_underlying_security_desc_len : Option<usize> = None;
-    let mut encoded_underlying_security_desc : Option<String> = None;
-    let mut tot_quote_entries : Option<i32> = None;
-    let mut no_quote_entries : Option<Vec<NoQuoteEntries18Fields>> = None;
-
-    // loop
-    while let Some(fld) = consumer.peek() {
-        match fld {
-            &FieldVal { id: FIELD_QUOTESETID, val: v } => {
-
-                if quote_set_id.is_some() { break; }
-
-                quote_set_id = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_UNDERLYINGSYMBOL, val: v } => {
-
-                if underlying_symbol.is_some() { break; }
-
-                underlying_symbol = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_UNDERLYINGSYMBOLSFX, val: v } => {
-
-                if underlying_symbol_sfx.is_some() { break; }
-
-                underlying_symbol_sfx = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_UNDERLYINGSECURITYID, val: v } => {
-
-                if underlying_security_id.is_some() { break; }
-
-                underlying_security_id = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_UNDERLYINGIDSOURCE, val: v } => {
-
-                if underlying_idsource.is_some() { break; }
-
-                underlying_idsource = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_UNDERLYINGSECURITYTYPE, val: v } => {
-
-                if underlying_security_type.is_some() { break; }
-
-                underlying_security_type = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_UNDERLYINGMATURITYMONTHYEAR, val: v } => {
-
-                if underlying_maturity_month_year.is_some() { break; }
-
-                underlying_maturity_month_year = Some( UtcDate::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_UNDERLYINGMATURITYDAY, val: v } => {
-
-                if underlying_maturity_day.is_some() { break; }
-
-                underlying_maturity_day = Some( i32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_UNDERLYINGPUTORCALL, val: v } => {
-
-                if underlying_put_or_call.is_some() { break; }
-
-                underlying_put_or_call = Some( i32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_UNDERLYINGSTRIKEPRICE, val: v } => {
-
-                if underlying_strike_price.is_some() { break; }
-
-                underlying_strike_price = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_UNDERLYINGOPTATTRIBUTE, val: v } => {
-
-                if underlying_opt_attribute.is_some() { break; }
-
-                underlying_opt_attribute = Some( char::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_UNDERLYINGCONTRACTMULTIPLIER, val: v } => {
-
-                if underlying_contract_multiplier.is_some() { break; }
-
-                underlying_contract_multiplier = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_UNDERLYINGCOUPONRATE, val: v } => {
-
-                if underlying_coupon_rate.is_some() { break; }
-
-                underlying_coupon_rate = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_UNDERLYINGSECURITYEXCHANGE, val: v } => {
-
-                if underlying_security_exchange.is_some() { break; }
-
-                underlying_security_exchange = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_UNDERLYINGISSUER, val: v } => {
-
-                if underlying_issuer.is_some() { break; }
-
-                underlying_issuer = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_ENCODEDUNDERLYINGISSUERLEN, val: v } => {
-
-                if encoded_underlying_issuer_len.is_some() { break; }
-
-                encoded_underlying_issuer_len = Some( usize::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_ENCODEDUNDERLYINGISSUER, val: v } => {
-
-                if encoded_underlying_issuer.is_some() { break; }
-
-                encoded_underlying_issuer = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_UNDERLYINGSECURITYDESC, val: v } => {
-
-                if underlying_security_desc.is_some() { break; }
-
-                underlying_security_desc = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_ENCODEDUNDERLYINGSECURITYDESCLEN, val: v } => {
-
-                if encoded_underlying_security_desc_len.is_some() { break; }
-
-                encoded_underlying_security_desc_len = Some( usize::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_ENCODEDUNDERLYINGSECURITYDESC, val: v } => {
-
-                if encoded_underlying_security_desc.is_some() { break; }
-
-                encoded_underlying_security_desc = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_TOTQUOTEENTRIES, val: v } => {
-
-                if tot_quote_entries.is_some() { break; }
-
-                tot_quote_entries = Some( i32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_NOQUOTEENTRIES, val: v } => {
-
-                if no_quote_entries.is_some() { break; }
-
-                let size = usize::from_str(v).unwrap();
-                let items = build_group_no_quote_entries18_fields(consumer, size);
-                no_quote_entries = Some(items);
-                continue;
-            },
-
-
-            _ => { break; }
-        };
-        // consume only if recognized
-        consumer.next();
-    }
-
-    // construction
-    NoQuoteSets22Fields {
-        quote_set_id: quote_set_id,
-        underlying_symbol: underlying_symbol,
-        underlying_symbol_sfx: underlying_symbol_sfx,
-        underlying_security_id: underlying_security_id,
-        underlying_idsource: underlying_idsource,
-        underlying_security_type: underlying_security_type,
-        underlying_maturity_month_year: underlying_maturity_month_year,
-        underlying_maturity_day: underlying_maturity_day,
-        underlying_put_or_call: underlying_put_or_call,
-        underlying_strike_price: underlying_strike_price,
-        underlying_opt_attribute: underlying_opt_attribute,
-        underlying_contract_multiplier: underlying_contract_multiplier,
-        underlying_coupon_rate: underlying_coupon_rate,
-        underlying_security_exchange: underlying_security_exchange,
-        underlying_issuer: underlying_issuer,
-        encoded_underlying_issuer_len: encoded_underlying_issuer_len,
-        encoded_underlying_issuer: encoded_underlying_issuer,
-        underlying_security_desc: underlying_security_desc,
-        encoded_underlying_security_desc_len: encoded_underlying_security_desc_len,
-        encoded_underlying_security_desc: encoded_underlying_security_desc,
-        tot_quote_entries: tot_quote_entries,
-        no_quote_entries: no_quote_entries,
-    }
-}
-
-
-fn build_group_no_msg_types14_fields(consumer: &mut FixConsumer, size: usize) -> Vec<NoMsgTypes14Fields> {
-    let mut items : Vec<NoMsgTypes14Fields> = Vec::with_capacity(size);
-
-    for _ in 0..size {
-        let party = build_group_no_msg_types14_fields_line( consumer );
-        items.push(party);
-    }
-
-    items
-}
-
-fn build_group_no_msg_types14_fields_line(consumer: &mut FixConsumer) -> NoMsgTypes14Fields {
-    // fields
-    let mut ref_msg_type : Option<String> = None;
-    let mut msg_direction : Option<FieldMsgDirectionEnum> = None;
-
-    // loop
-    while let Some(fld) = consumer.peek() {
-        match fld {
-            &FieldVal { id: FIELD_REFMSGTYPE, val: v } => {
-
-                if ref_msg_type.is_some() { break; }
-
-                ref_msg_type = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_MSGDIRECTION, val: v } => {
-
-                if msg_direction.is_some() { break; }
-
-                msg_direction = Some( FieldMsgDirectionEnum::from_str(v).unwrap() );
-            },
-
-
-            _ => { break; }
-        };
-        // consume only if recognized
-        consumer.next();
-    }
-
-    // construction
-    NoMsgTypes14Fields {
-        ref_msg_type: ref_msg_type,
-        msg_direction: msg_direction,
-    }
-}
-
-
-fn build_group_no_related_sym26_fields(consumer: &mut FixConsumer, size: usize) -> Vec<NoRelatedSym26Fields> {
-    let mut items : Vec<NoRelatedSym26Fields> = Vec::with_capacity(size);
-
-    for _ in 0..size {
-        let party = build_group_no_related_sym26_fields_line( consumer );
-        items.push(party);
-    }
-
-    items
-}
-
-fn build_group_no_related_sym26_fields_line(consumer: &mut FixConsumer) -> NoRelatedSym26Fields {
-    // fields
-    let mut underlying_symbol : Option<String> = None;
-    let mut underlying_symbol_sfx : Option<String> = None;
-    let mut underlying_security_id : Option<String> = None;
-    let mut underlying_idsource : Option<String> = None;
-    let mut underlying_security_type : Option<String> = None;
-    let mut underlying_maturity_month_year : Option<UtcDate> = None;
-    let mut underlying_maturity_day : Option<i32> = None;
-    let mut underlying_put_or_call : Option<i32> = None;
-    let mut underlying_strike_price : Option<f32> = None;
-    let mut underlying_opt_attribute : Option<char> = None;
-    let mut underlying_contract_multiplier : Option<f32> = None;
-    let mut underlying_coupon_rate : Option<f32> = None;
-    let mut underlying_security_exchange : Option<String> = None;
-    let mut underlying_issuer : Option<String> = None;
-    let mut encoded_underlying_issuer_len : Option<usize> = None;
-    let mut encoded_underlying_issuer : Option<String> = None;
-    let mut underlying_security_desc : Option<String> = None;
-    let mut encoded_underlying_security_desc_len : Option<usize> = None;
-    let mut encoded_underlying_security_desc : Option<String> = None;
-    let mut ratio_qty : Option<f32> = None;
-    let mut side : Option<FieldSideEnum> = None;
-    let mut underlying_currency : Option<f32> = None;
-
-    // loop
-    while let Some(fld) = consumer.peek() {
-        match fld {
-            &FieldVal { id: FIELD_UNDERLYINGSYMBOL, val: v } => {
-
-                if underlying_symbol.is_some() { break; }
-
-                underlying_symbol = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_UNDERLYINGSYMBOLSFX, val: v } => {
-
-                if underlying_symbol_sfx.is_some() { break; }
-
-                underlying_symbol_sfx = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_UNDERLYINGSECURITYID, val: v } => {
-
-                if underlying_security_id.is_some() { break; }
-
-                underlying_security_id = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_UNDERLYINGIDSOURCE, val: v } => {
-
-                if underlying_idsource.is_some() { break; }
-
-                underlying_idsource = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_UNDERLYINGSECURITYTYPE, val: v } => {
-
-                if underlying_security_type.is_some() { break; }
-
-                underlying_security_type = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_UNDERLYINGMATURITYMONTHYEAR, val: v } => {
-
-                if underlying_maturity_month_year.is_some() { break; }
-
-                underlying_maturity_month_year = Some( UtcDate::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_UNDERLYINGMATURITYDAY, val: v } => {
-
-                if underlying_maturity_day.is_some() { break; }
-
-                underlying_maturity_day = Some( i32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_UNDERLYINGPUTORCALL, val: v } => {
-
-                if underlying_put_or_call.is_some() { break; }
-
-                underlying_put_or_call = Some( i32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_UNDERLYINGSTRIKEPRICE, val: v } => {
-
-                if underlying_strike_price.is_some() { break; }
-
-                underlying_strike_price = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_UNDERLYINGOPTATTRIBUTE, val: v } => {
-
-                if underlying_opt_attribute.is_some() { break; }
-
-                underlying_opt_attribute = Some( char::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_UNDERLYINGCONTRACTMULTIPLIER, val: v } => {
-
-                if underlying_contract_multiplier.is_some() { break; }
-
-                underlying_contract_multiplier = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_UNDERLYINGCOUPONRATE, val: v } => {
-
-                if underlying_coupon_rate.is_some() { break; }
-
-                underlying_coupon_rate = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_UNDERLYINGSECURITYEXCHANGE, val: v } => {
-
-                if underlying_security_exchange.is_some() { break; }
-
-                underlying_security_exchange = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_UNDERLYINGISSUER, val: v } => {
-
-                if underlying_issuer.is_some() { break; }
-
-                underlying_issuer = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_ENCODEDUNDERLYINGISSUERLEN, val: v } => {
-
-                if encoded_underlying_issuer_len.is_some() { break; }
-
-                encoded_underlying_issuer_len = Some( usize::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_ENCODEDUNDERLYINGISSUER, val: v } => {
-
-                if encoded_underlying_issuer.is_some() { break; }
-
-                encoded_underlying_issuer = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_UNDERLYINGSECURITYDESC, val: v } => {
-
-                if underlying_security_desc.is_some() { break; }
-
-                underlying_security_desc = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_ENCODEDUNDERLYINGSECURITYDESCLEN, val: v } => {
-
-                if encoded_underlying_security_desc_len.is_some() { break; }
-
-                encoded_underlying_security_desc_len = Some( usize::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_ENCODEDUNDERLYINGSECURITYDESC, val: v } => {
-
-                if encoded_underlying_security_desc.is_some() { break; }
-
-                encoded_underlying_security_desc = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_RATIOQTY, val: v } => {
-
-                if ratio_qty.is_some() { break; }
-
-                ratio_qty = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_SIDE, val: v } => {
-
-                if side.is_some() { break; }
-
-                side = Some( FieldSideEnum::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_UNDERLYINGCURRENCY, val: v } => {
-
-                if underlying_currency.is_some() { break; }
-
-                underlying_currency = Some( f32::from_str(v).unwrap() );
-            },
-
-
-            _ => { break; }
-        };
-        // consume only if recognized
-        consumer.next();
-    }
-
-    // construction
-    NoRelatedSym26Fields {
-        underlying_symbol: underlying_symbol,
-        underlying_symbol_sfx: underlying_symbol_sfx,
-        underlying_security_id: underlying_security_id,
-        underlying_idsource: underlying_idsource,
-        underlying_security_type: underlying_security_type,
-        underlying_maturity_month_year: underlying_maturity_month_year,
-        underlying_maturity_day: underlying_maturity_day,
-        underlying_put_or_call: underlying_put_or_call,
-        underlying_strike_price: underlying_strike_price,
-        underlying_opt_attribute: underlying_opt_attribute,
-        underlying_contract_multiplier: underlying_contract_multiplier,
-        underlying_coupon_rate: underlying_coupon_rate,
-        underlying_security_exchange: underlying_security_exchange,
-        underlying_issuer: underlying_issuer,
-        encoded_underlying_issuer_len: encoded_underlying_issuer_len,
-        encoded_underlying_issuer: encoded_underlying_issuer,
-        underlying_security_desc: underlying_security_desc,
-        encoded_underlying_security_desc_len: encoded_underlying_security_desc_len,
-        encoded_underlying_security_desc: encoded_underlying_security_desc,
-        ratio_qty: ratio_qty,
-        side: side,
-        underlying_currency: underlying_currency,
-    }
-}
-
-
-fn build_group_no_quote_entries18_fields(consumer: &mut FixConsumer, size: usize) -> Vec<NoQuoteEntries18Fields> {
-    let mut items : Vec<NoQuoteEntries18Fields> = Vec::with_capacity(size);
-
-    for _ in 0..size {
-        let party = build_group_no_quote_entries18_fields_line( consumer );
-        items.push(party);
-    }
-
-    items
-}
-
-fn build_group_no_quote_entries18_fields_line(consumer: &mut FixConsumer) -> NoQuoteEntries18Fields {
-    // fields
-    let mut quote_entry_id : Option<String> = None;
-    let mut symbol : Option<String> = None;
-    let mut symbol_sfx : Option<String> = None;
-    let mut security_id : Option<String> = None;
-    let mut idsource : Option<FieldIDSourceEnum> = None;
-    let mut security_type : Option<FieldSecurityTypeEnum> = None;
-    let mut maturity_month_year : Option<UtcDate> = None;
-    let mut maturity_day : Option<i32> = None;
-    let mut put_or_call : Option<FieldPutOrCallEnum> = None;
-    let mut strike_price : Option<f32> = None;
-    let mut opt_attribute : Option<char> = None;
-    let mut contract_multiplier : Option<f32> = None;
-    let mut coupon_rate : Option<f32> = None;
-    let mut security_exchange : Option<String> = None;
-    let mut issuer : Option<String> = None;
-    let mut encoded_issuer_len : Option<usize> = None;
-    let mut encoded_issuer : Option<String> = None;
-    let mut security_desc : Option<String> = None;
-    let mut encoded_security_desc_len : Option<usize> = None;
-    let mut encoded_security_desc : Option<String> = None;
-    let mut quote_entry_reject_reason : Option<FieldQuoteEntryRejectReasonEnum> = None;
-
-    // loop
-    while let Some(fld) = consumer.peek() {
-        match fld {
-            &FieldVal { id: FIELD_QUOTEENTRYID, val: v } => {
-
-                if quote_entry_id.is_some() { break; }
-
-                quote_entry_id = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_SYMBOL, val: v } => {
-
-                if symbol.is_some() { break; }
-
-                symbol = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_SYMBOLSFX, val: v } => {
-
-                if symbol_sfx.is_some() { break; }
-
-                symbol_sfx = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_SECURITYID, val: v } => {
-
-                if security_id.is_some() { break; }
-
-                security_id = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_IDSOURCE, val: v } => {
-
-                if idsource.is_some() { break; }
-
-                idsource = Some( FieldIDSourceEnum::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_SECURITYTYPE, val: v } => {
-
-                if security_type.is_some() { break; }
-
-                security_type = Some( FieldSecurityTypeEnum::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_MATURITYMONTHYEAR, val: v } => {
-
-                if maturity_month_year.is_some() { break; }
-
-                maturity_month_year = Some( UtcDate::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_MATURITYDAY, val: v } => {
-
-                if maturity_day.is_some() { break; }
-
-                maturity_day = Some( i32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_PUTORCALL, val: v } => {
-
-                if put_or_call.is_some() { break; }
-
-                put_or_call = Some( FieldPutOrCallEnum::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_STRIKEPRICE, val: v } => {
-
-                if strike_price.is_some() { break; }
-
-                strike_price = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_OPTATTRIBUTE, val: v } => {
-
-                if opt_attribute.is_some() { break; }
-
-                opt_attribute = Some( char::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_CONTRACTMULTIPLIER, val: v } => {
-
-                if contract_multiplier.is_some() { break; }
-
-                contract_multiplier = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_COUPONRATE, val: v } => {
-
-                if coupon_rate.is_some() { break; }
-
-                coupon_rate = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_SECURITYEXCHANGE, val: v } => {
-
-                if security_exchange.is_some() { break; }
-
-                security_exchange = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_ISSUER, val: v } => {
-
-                if issuer.is_some() { break; }
-
-                issuer = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_ENCODEDISSUERLEN, val: v } => {
-
-                if encoded_issuer_len.is_some() { break; }
-
-                encoded_issuer_len = Some( usize::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_ENCODEDISSUER, val: v } => {
-
-                if encoded_issuer.is_some() { break; }
-
-                encoded_issuer = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_SECURITYDESC, val: v } => {
-
-                if security_desc.is_some() { break; }
-
-                security_desc = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_ENCODEDSECURITYDESCLEN, val: v } => {
-
-                if encoded_security_desc_len.is_some() { break; }
-
-                encoded_security_desc_len = Some( usize::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_ENCODEDSECURITYDESC, val: v } => {
-
-                if encoded_security_desc.is_some() { break; }
-
-                encoded_security_desc = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_QUOTEENTRYREJECTREASON, val: v } => {
-
-                if quote_entry_reject_reason.is_some() { break; }
-
-                quote_entry_reject_reason = Some( FieldQuoteEntryRejectReasonEnum::from_str(v).unwrap() );
-            },
-
-
-            _ => { break; }
-        };
-        // consume only if recognized
-        consumer.next();
-    }
-
-    // construction
-    NoQuoteEntries18Fields {
-        quote_entry_id: quote_entry_id,
-        symbol: symbol,
-        symbol_sfx: symbol_sfx,
-        security_id: security_id,
-        idsource: idsource,
-        security_type: security_type,
-        maturity_month_year: maturity_month_year,
-        maturity_day: maturity_day,
-        put_or_call: put_or_call,
-        strike_price: strike_price,
-        opt_attribute: opt_attribute,
-        contract_multiplier: contract_multiplier,
-        coupon_rate: coupon_rate,
-        security_exchange: security_exchange,
-        issuer: issuer,
-        encoded_issuer_len: encoded_issuer_len,
-        encoded_issuer: encoded_issuer,
-        security_desc: security_desc,
-        encoded_security_desc_len: encoded_security_desc_len,
-        encoded_security_desc: encoded_security_desc,
-        quote_entry_reject_reason: quote_entry_reject_reason,
-    }
-}
-
-
-fn build_group_no_strikes28_fields(consumer: &mut FixConsumer, size: usize) -> Vec<NoStrikes28Fields> {
-    let mut items : Vec<NoStrikes28Fields> = Vec::with_capacity(size);
-
-    for _ in 0..size {
-        let party = build_group_no_strikes28_fields_line( consumer );
-        items.push(party);
-    }
-
-    items
-}
-
-fn build_group_no_strikes28_fields_line(consumer: &mut FixConsumer) -> NoStrikes28Fields {
-    // fields
-    let mut symbol : Option<String> = None;
-    let mut symbol_sfx : Option<String> = None;
-    let mut security_id : Option<String> = None;
-    let mut idsource : Option<FieldIDSourceEnum> = None;
-    let mut security_type : Option<FieldSecurityTypeEnum> = None;
-    let mut maturity_month_year : Option<UtcDate> = None;
-    let mut maturity_day : Option<i32> = None;
-    let mut put_or_call : Option<FieldPutOrCallEnum> = None;
-    let mut strike_price : Option<f32> = None;
-    let mut opt_attribute : Option<char> = None;
-    let mut contract_multiplier : Option<f32> = None;
-    let mut coupon_rate : Option<f32> = None;
-    let mut security_exchange : Option<String> = None;
-    let mut issuer : Option<String> = None;
-    let mut encoded_issuer_len : Option<usize> = None;
-    let mut encoded_issuer : Option<String> = None;
-    let mut security_desc : Option<String> = None;
-    let mut encoded_security_desc_len : Option<usize> = None;
-    let mut encoded_security_desc : Option<String> = None;
-    let mut prev_close_px : Option<f32> = None;
-    let mut cl_ord_id : Option<String> = None;
-    let mut side : Option<FieldSideEnum> = None;
-    let mut price : Option<f32> = None;
-    let mut currency : Option<f32> = None;
-    let mut text : Option<String> = None;
-    let mut encoded_text_len : Option<usize> = None;
-    let mut encoded_text : Option<String> = None;
-
-    // loop
-    while let Some(fld) = consumer.peek() {
-        match fld {
-            &FieldVal { id: FIELD_SYMBOL, val: v } => {
-
-                if symbol.is_some() { break; }
-
-                symbol = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_SYMBOLSFX, val: v } => {
-
-                if symbol_sfx.is_some() { break; }
-
-                symbol_sfx = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_SECURITYID, val: v } => {
-
-                if security_id.is_some() { break; }
-
-                security_id = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_IDSOURCE, val: v } => {
-
-                if idsource.is_some() { break; }
-
-                idsource = Some( FieldIDSourceEnum::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_SECURITYTYPE, val: v } => {
-
-                if security_type.is_some() { break; }
-
-                security_type = Some( FieldSecurityTypeEnum::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_MATURITYMONTHYEAR, val: v } => {
-
-                if maturity_month_year.is_some() { break; }
-
-                maturity_month_year = Some( UtcDate::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_MATURITYDAY, val: v } => {
-
-                if maturity_day.is_some() { break; }
-
-                maturity_day = Some( i32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_PUTORCALL, val: v } => {
-
-                if put_or_call.is_some() { break; }
-
-                put_or_call = Some( FieldPutOrCallEnum::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_STRIKEPRICE, val: v } => {
-
-                if strike_price.is_some() { break; }
-
-                strike_price = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_OPTATTRIBUTE, val: v } => {
-
-                if opt_attribute.is_some() { break; }
-
-                opt_attribute = Some( char::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_CONTRACTMULTIPLIER, val: v } => {
-
-                if contract_multiplier.is_some() { break; }
-
-                contract_multiplier = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_COUPONRATE, val: v } => {
-
-                if coupon_rate.is_some() { break; }
-
-                coupon_rate = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_SECURITYEXCHANGE, val: v } => {
-
-                if security_exchange.is_some() { break; }
-
-                security_exchange = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_ISSUER, val: v } => {
-
-                if issuer.is_some() { break; }
-
-                issuer = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_ENCODEDISSUERLEN, val: v } => {
-
-                if encoded_issuer_len.is_some() { break; }
-
-                encoded_issuer_len = Some( usize::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_ENCODEDISSUER, val: v } => {
-
-                if encoded_issuer.is_some() { break; }
-
-                encoded_issuer = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_SECURITYDESC, val: v } => {
-
-                if security_desc.is_some() { break; }
-
-                security_desc = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_ENCODEDSECURITYDESCLEN, val: v } => {
-
-                if encoded_security_desc_len.is_some() { break; }
-
-                encoded_security_desc_len = Some( usize::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_ENCODEDSECURITYDESC, val: v } => {
-
-                if encoded_security_desc.is_some() { break; }
-
-                encoded_security_desc = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_PREVCLOSEPX, val: v } => {
-
-                if prev_close_px.is_some() { break; }
-
-                prev_close_px = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_CLORDID, val: v } => {
-
-                if cl_ord_id.is_some() { break; }
-
-                cl_ord_id = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_SIDE, val: v } => {
-
-                if side.is_some() { break; }
-
-                side = Some( FieldSideEnum::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_PRICE, val: v } => {
-
-                if price.is_some() { break; }
-
-                price = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_CURRENCY, val: v } => {
-
-                if currency.is_some() { break; }
-
-                currency = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_TEXT, val: v } => {
-
-                if text.is_some() { break; }
-
-                text = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_ENCODEDTEXTLEN, val: v } => {
-
-                if encoded_text_len.is_some() { break; }
-
-                encoded_text_len = Some( usize::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_ENCODEDTEXT, val: v } => {
-
-                if encoded_text.is_some() { break; }
-
-                encoded_text = Some( v.to_string() );
-            },
-
-
-            _ => { break; }
-        };
-        // consume only if recognized
-        consumer.next();
-    }
-
-    // construction
-    NoStrikes28Fields {
-        symbol: symbol.unwrap() ,
-        symbol_sfx: symbol_sfx,
-        security_id: security_id,
-        idsource: idsource,
-        security_type: security_type,
-        maturity_month_year: maturity_month_year,
-        maturity_day: maturity_day,
-        put_or_call: put_or_call,
-        strike_price: strike_price,
-        opt_attribute: opt_attribute,
-        contract_multiplier: contract_multiplier,
-        coupon_rate: coupon_rate,
-        security_exchange: security_exchange,
-        issuer: issuer,
-        encoded_issuer_len: encoded_issuer_len,
-        encoded_issuer: encoded_issuer,
-        security_desc: security_desc,
-        encoded_security_desc_len: encoded_security_desc_len,
-        encoded_security_desc: encoded_security_desc,
-        prev_close_px: prev_close_px,
-        cl_ord_id: cl_ord_id,
-        side: side,
-        price: price.unwrap() ,
-        currency: currency,
-        text: text,
-        encoded_text_len: encoded_text_len,
-        encoded_text: encoded_text,
-    }
-}
-
-
-fn build_group_no_mdentries10_fields(consumer: &mut FixConsumer, size: usize) -> Vec<NoMDEntries10Fields> {
-    let mut items : Vec<NoMDEntries10Fields> = Vec::with_capacity(size);
-
-    for _ in 0..size {
-        let party = build_group_no_mdentries10_fields_line( consumer );
-        items.push(party);
-    }
-
-    items
-}
-
-fn build_group_no_mdentries10_fields_line(consumer: &mut FixConsumer) -> NoMDEntries10Fields {
-    // fields
-    let mut mdentry_type : Option<FieldMDEntryTypeEnum> = None;
-    let mut mdentry_px : Option<f32> = None;
-    let mut currency : Option<f32> = None;
-    let mut mdentry_size : Option<f32> = None;
-    let mut mdentry_date : Option<UtcDate> = None;
-    let mut mdentry_time : Option<UtcTime> = None;
-    let mut tick_direction : Option<FieldTickDirectionEnum> = None;
-    let mut mdmkt : Option<String> = None;
-    let mut trading_session_id : Option<String> = None;
-    let mut quote_condition : Option<FieldQuoteConditionEnum> = None;
-    let mut trade_condition : Option<FieldTradeConditionEnum> = None;
-    let mut mdentry_originator : Option<String> = None;
-    let mut location_id : Option<String> = None;
-    let mut desk_id : Option<String> = None;
-    let mut open_close_settle_flag : Option<FieldOpenCloseSettleFlagEnum> = None;
-    let mut time_in_force : Option<FieldTimeInForceEnum> = None;
-    let mut expire_date : Option<UtcDateTime> = None;
-    let mut expire_time : Option<UtcDateTime> = None;
-    let mut min_qty : Option<f32> = None;
-    let mut exec_inst : Option<FieldExecInstEnum> = None;
-    let mut seller_days : Option<i32> = None;
-    let mut order_id : Option<String> = None;
-    let mut quote_entry_id : Option<String> = None;
-    let mut mdentry_buyer : Option<String> = None;
-    let mut mdentry_seller : Option<String> = None;
-    let mut number_of_orders : Option<i32> = None;
-    let mut mdentry_position_no : Option<i32> = None;
-    let mut text : Option<String> = None;
-    let mut encoded_text_len : Option<usize> = None;
-    let mut encoded_text : Option<String> = None;
-
-    // loop
-    while let Some(fld) = consumer.peek() {
-        match fld {
-            &FieldVal { id: FIELD_MDENTRYTYPE, val: v } => {
-
-                if mdentry_type.is_some() { break; }
-
-                mdentry_type = Some( FieldMDEntryTypeEnum::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_MDENTRYPX, val: v } => {
-
-                if mdentry_px.is_some() { break; }
-
-                mdentry_px = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_CURRENCY, val: v } => {
-
-                if currency.is_some() { break; }
-
-                currency = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_MDENTRYSIZE, val: v } => {
-
-                if mdentry_size.is_some() { break; }
-
-                mdentry_size = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_MDENTRYDATE, val: v } => {
-
-                if mdentry_date.is_some() { break; }
-
-                mdentry_date = Some( UtcDate::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_MDENTRYTIME, val: v } => {
-
-                if mdentry_time.is_some() { break; }
-
-                mdentry_time = Some( UtcTime::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_TICKDIRECTION, val: v } => {
-
-                if tick_direction.is_some() { break; }
-
-                tick_direction = Some( FieldTickDirectionEnum::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_MDMKT, val: v } => {
-
-                if mdmkt.is_some() { break; }
-
-                mdmkt = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_TRADINGSESSIONID, val: v } => {
-
-                if trading_session_id.is_some() { break; }
-
-                trading_session_id = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_QUOTECONDITION, val: v } => {
-
-                if quote_condition.is_some() { break; }
-
-                quote_condition = Some( FieldQuoteConditionEnum::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_TRADECONDITION, val: v } => {
-
-                if trade_condition.is_some() { break; }
-
-                trade_condition = Some( FieldTradeConditionEnum::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_MDENTRYORIGINATOR, val: v } => {
-
-                if mdentry_originator.is_some() { break; }
-
-                mdentry_originator = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_LOCATIONID, val: v } => {
-
-                if location_id.is_some() { break; }
-
-                location_id = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_DESKID, val: v } => {
-
-                if desk_id.is_some() { break; }
-
-                desk_id = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_OPENCLOSESETTLEFLAG, val: v } => {
-
-                if open_close_settle_flag.is_some() { break; }
-
-                open_close_settle_flag = Some( FieldOpenCloseSettleFlagEnum::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_TIMEINFORCE, val: v } => {
-
-                if time_in_force.is_some() { break; }
-
-                time_in_force = Some( FieldTimeInForceEnum::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_EXPIREDATE, val: v } => {
-
-                if expire_date.is_some() { break; }
-
-                expire_date = Some( UtcDateTime::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_EXPIRETIME, val: v } => {
-
-                if expire_time.is_some() { break; }
-
-                expire_time = Some( UtcDateTime::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_MINQTY, val: v } => {
-
-                if min_qty.is_some() { break; }
-
-                min_qty = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_EXECINST, val: v } => {
-
-                if exec_inst.is_some() { break; }
-
-                exec_inst = Some( FieldExecInstEnum::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_SELLERDAYS, val: v } => {
-
-                if seller_days.is_some() { break; }
-
-                seller_days = Some( i32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_ORDERID, val: v } => {
-
-                if order_id.is_some() { break; }
-
-                order_id = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_QUOTEENTRYID, val: v } => {
-
-                if quote_entry_id.is_some() { break; }
-
-                quote_entry_id = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_MDENTRYBUYER, val: v } => {
-
-                if mdentry_buyer.is_some() { break; }
-
-                mdentry_buyer = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_MDENTRYSELLER, val: v } => {
-
-                if mdentry_seller.is_some() { break; }
-
-                mdentry_seller = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_NUMBEROFORDERS, val: v } => {
-
-                if number_of_orders.is_some() { break; }
-
-                number_of_orders = Some( i32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_MDENTRYPOSITIONNO, val: v } => {
-
-                if mdentry_position_no.is_some() { break; }
-
-                mdentry_position_no = Some( i32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_TEXT, val: v } => {
-
-                if text.is_some() { break; }
-
-                text = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_ENCODEDTEXTLEN, val: v } => {
-
-                if encoded_text_len.is_some() { break; }
-
-                encoded_text_len = Some( usize::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_ENCODEDTEXT, val: v } => {
-
-                if encoded_text.is_some() { break; }
-
-                encoded_text = Some( v.to_string() );
-            },
-
-
-            _ => { break; }
-        };
-        // consume only if recognized
-        consumer.next();
-    }
-
-    // construction
-    NoMDEntries10Fields {
-        mdentry_type: mdentry_type.unwrap() ,
-        mdentry_px: mdentry_px.unwrap() ,
-        currency: currency,
-        mdentry_size: mdentry_size,
-        mdentry_date: mdentry_date,
-        mdentry_time: mdentry_time,
-        tick_direction: tick_direction,
-        mdmkt: mdmkt,
-        trading_session_id: trading_session_id,
-        quote_condition: quote_condition,
-        trade_condition: trade_condition,
-        mdentry_originator: mdentry_originator,
-        location_id: location_id,
-        desk_id: desk_id,
-        open_close_settle_flag: open_close_settle_flag,
-        time_in_force: time_in_force,
-        expire_date: expire_date,
-        expire_time: expire_time,
-        min_qty: min_qty,
-        exec_inst: exec_inst,
-        seller_days: seller_days,
-        order_id: order_id,
-        quote_entry_id: quote_entry_id,
-        mdentry_buyer: mdentry_buyer,
-        mdentry_seller: mdentry_seller,
-        number_of_orders: number_of_orders,
-        mdentry_position_no: mdentry_position_no,
-        text: text,
-        encoded_text_len: encoded_text_len,
-        encoded_text: encoded_text,
-    }
-}
-
-
-fn build_group_no_quote_sets21_fields(consumer: &mut FixConsumer, size: usize) -> Vec<NoQuoteSets21Fields> {
-    let mut items : Vec<NoQuoteSets21Fields> = Vec::with_capacity(size);
-
-    for _ in 0..size {
-        let party = build_group_no_quote_sets21_fields_line( consumer );
-        items.push(party);
-    }
-
-    items
-}
-
-fn build_group_no_quote_sets21_fields_line(consumer: &mut FixConsumer) -> NoQuoteSets21Fields {
-    // fields
-    let mut quote_set_id : Option<String> = None;
-    let mut underlying_symbol : Option<String> = None;
-    let mut underlying_symbol_sfx : Option<String> = None;
-    let mut underlying_security_id : Option<String> = None;
-    let mut underlying_idsource : Option<String> = None;
-    let mut underlying_security_type : Option<String> = None;
-    let mut underlying_maturity_month_year : Option<UtcDate> = None;
-    let mut underlying_maturity_day : Option<i32> = None;
-    let mut underlying_put_or_call : Option<i32> = None;
-    let mut underlying_strike_price : Option<f32> = None;
-    let mut underlying_opt_attribute : Option<char> = None;
-    let mut underlying_contract_multiplier : Option<f32> = None;
-    let mut underlying_coupon_rate : Option<f32> = None;
-    let mut underlying_security_exchange : Option<String> = None;
-    let mut underlying_issuer : Option<String> = None;
-    let mut encoded_underlying_issuer_len : Option<usize> = None;
-    let mut encoded_underlying_issuer : Option<String> = None;
-    let mut underlying_security_desc : Option<String> = None;
-    let mut encoded_underlying_security_desc_len : Option<usize> = None;
-    let mut encoded_underlying_security_desc : Option<String> = None;
-    let mut quote_set_valid_until_time : Option<UtcDateTime> = None;
-    let mut tot_quote_entries : Option<i32> = None;
-    let mut no_quote_entries : Option<Vec<NoQuoteEntries19Fields>> = None;
-
-    // loop
-    while let Some(fld) = consumer.peek() {
-        match fld {
-            &FieldVal { id: FIELD_QUOTESETID, val: v } => {
-
-                if quote_set_id.is_some() { break; }
-
-                quote_set_id = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_UNDERLYINGSYMBOL, val: v } => {
-
-                if underlying_symbol.is_some() { break; }
-
-                underlying_symbol = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_UNDERLYINGSYMBOLSFX, val: v } => {
-
-                if underlying_symbol_sfx.is_some() { break; }
-
-                underlying_symbol_sfx = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_UNDERLYINGSECURITYID, val: v } => {
-
-                if underlying_security_id.is_some() { break; }
-
-                underlying_security_id = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_UNDERLYINGIDSOURCE, val: v } => {
-
-                if underlying_idsource.is_some() { break; }
-
-                underlying_idsource = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_UNDERLYINGSECURITYTYPE, val: v } => {
-
-                if underlying_security_type.is_some() { break; }
-
-                underlying_security_type = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_UNDERLYINGMATURITYMONTHYEAR, val: v } => {
-
-                if underlying_maturity_month_year.is_some() { break; }
-
-                underlying_maturity_month_year = Some( UtcDate::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_UNDERLYINGMATURITYDAY, val: v } => {
-
-                if underlying_maturity_day.is_some() { break; }
-
-                underlying_maturity_day = Some( i32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_UNDERLYINGPUTORCALL, val: v } => {
-
-                if underlying_put_or_call.is_some() { break; }
-
-                underlying_put_or_call = Some( i32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_UNDERLYINGSTRIKEPRICE, val: v } => {
-
-                if underlying_strike_price.is_some() { break; }
-
-                underlying_strike_price = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_UNDERLYINGOPTATTRIBUTE, val: v } => {
-
-                if underlying_opt_attribute.is_some() { break; }
-
-                underlying_opt_attribute = Some( char::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_UNDERLYINGCONTRACTMULTIPLIER, val: v } => {
-
-                if underlying_contract_multiplier.is_some() { break; }
-
-                underlying_contract_multiplier = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_UNDERLYINGCOUPONRATE, val: v } => {
-
-                if underlying_coupon_rate.is_some() { break; }
-
-                underlying_coupon_rate = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_UNDERLYINGSECURITYEXCHANGE, val: v } => {
-
-                if underlying_security_exchange.is_some() { break; }
-
-                underlying_security_exchange = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_UNDERLYINGISSUER, val: v } => {
-
-                if underlying_issuer.is_some() { break; }
-
-                underlying_issuer = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_ENCODEDUNDERLYINGISSUERLEN, val: v } => {
-
-                if encoded_underlying_issuer_len.is_some() { break; }
-
-                encoded_underlying_issuer_len = Some( usize::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_ENCODEDUNDERLYINGISSUER, val: v } => {
-
-                if encoded_underlying_issuer.is_some() { break; }
-
-                encoded_underlying_issuer = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_UNDERLYINGSECURITYDESC, val: v } => {
-
-                if underlying_security_desc.is_some() { break; }
-
-                underlying_security_desc = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_ENCODEDUNDERLYINGSECURITYDESCLEN, val: v } => {
-
-                if encoded_underlying_security_desc_len.is_some() { break; }
-
-                encoded_underlying_security_desc_len = Some( usize::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_ENCODEDUNDERLYINGSECURITYDESC, val: v } => {
-
-                if encoded_underlying_security_desc.is_some() { break; }
-
-                encoded_underlying_security_desc = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_QUOTESETVALIDUNTILTIME, val: v } => {
-
-                if quote_set_valid_until_time.is_some() { break; }
-
-                quote_set_valid_until_time = Some( UtcDateTime::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_TOTQUOTEENTRIES, val: v } => {
-
-                if tot_quote_entries.is_some() { break; }
-
-                tot_quote_entries = Some( i32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_NOQUOTEENTRIES, val: v } => {
-
-                if no_quote_entries.is_some() { break; }
-
-                let size = usize::from_str(v).unwrap();
-                let items = build_group_no_quote_entries19_fields(consumer, size);
-                no_quote_entries = Some(items);
-                continue;
-            },
-
-
-            _ => { break; }
-        };
-        // consume only if recognized
-        consumer.next();
-    }
-
-    // construction
-    NoQuoteSets21Fields {
-        quote_set_id: quote_set_id.unwrap() ,
-        underlying_symbol: underlying_symbol.unwrap() ,
-        underlying_symbol_sfx: underlying_symbol_sfx,
-        underlying_security_id: underlying_security_id,
-        underlying_idsource: underlying_idsource,
-        underlying_security_type: underlying_security_type,
-        underlying_maturity_month_year: underlying_maturity_month_year,
-        underlying_maturity_day: underlying_maturity_day,
-        underlying_put_or_call: underlying_put_or_call,
-        underlying_strike_price: underlying_strike_price,
-        underlying_opt_attribute: underlying_opt_attribute,
-        underlying_contract_multiplier: underlying_contract_multiplier,
-        underlying_coupon_rate: underlying_coupon_rate,
-        underlying_security_exchange: underlying_security_exchange,
-        underlying_issuer: underlying_issuer,
-        encoded_underlying_issuer_len: encoded_underlying_issuer_len,
-        encoded_underlying_issuer: encoded_underlying_issuer,
-        underlying_security_desc: underlying_security_desc,
-        encoded_underlying_security_desc_len: encoded_underlying_security_desc_len,
-        encoded_underlying_security_desc: encoded_underlying_security_desc,
-        quote_set_valid_until_time: quote_set_valid_until_time,
-        tot_quote_entries: tot_quote_entries.unwrap() ,
-        no_quote_entries: no_quote_entries.unwrap() ,
-    }
-}
-
-
-fn build_group_no_allocs3_fields(consumer: &mut FixConsumer, size: usize) -> Vec<NoAllocs3Fields> {
-    let mut items : Vec<NoAllocs3Fields> = Vec::with_capacity(size);
-
-    for _ in 0..size {
-        let party = build_group_no_allocs3_fields_line( consumer );
-        items.push(party);
-    }
-
-    items
-}
-
-fn build_group_no_allocs3_fields_line(consumer: &mut FixConsumer) -> NoAllocs3Fields {
-    // fields
-    let mut alloc_account : Option<String> = None;
-    let mut alloc_price : Option<f32> = None;
-    let mut alloc_shares : Option<f32> = None;
-    let mut process_code : Option<FieldProcessCodeEnum> = None;
-    let mut broker_of_credit : Option<String> = None;
-    let mut notify_broker_of_credit : Option<bool> = None;
-    let mut alloc_handl_inst : Option<FieldAllocHandlInstEnum> = None;
-    let mut alloc_text : Option<String> = None;
-    let mut encoded_alloc_text_len : Option<usize> = None;
-    let mut encoded_alloc_text : Option<String> = None;
-    let mut exec_broker : Option<String> = None;
-    let mut client_id : Option<String> = None;
-    let mut commission : Option<f32> = None;
-    let mut comm_type : Option<FieldCommTypeEnum> = None;
-    let mut alloc_avg_px : Option<f32> = None;
-    let mut alloc_net_money : Option<f32> = None;
-    let mut settl_curr_amt : Option<f32> = None;
-    let mut settl_currency : Option<f32> = None;
-    let mut settl_curr_fx_rate : Option<f32> = None;
-    let mut settl_curr_fx_rate_calc : Option<FieldSettlCurrFxRateCalcEnum> = None;
-    let mut accrued_interest_amt : Option<f32> = None;
-    let mut settl_inst_mode : Option<FieldSettlInstModeEnum> = None;
-    let mut no_misc_fees : Option<Vec<NoMiscFees13Fields>> = None;
-
-    // loop
-    while let Some(fld) = consumer.peek() {
-        match fld {
-            &FieldVal { id: FIELD_ALLOCACCOUNT, val: v } => {
-
-                if alloc_account.is_some() { break; }
-
-                alloc_account = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_ALLOCPRICE, val: v } => {
-
-                if alloc_price.is_some() { break; }
-
-                alloc_price = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_ALLOCSHARES, val: v } => {
-
-                if alloc_shares.is_some() { break; }
-
-                alloc_shares = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_PROCESSCODE, val: v } => {
-
-                if process_code.is_some() { break; }
-
-                process_code = Some( FieldProcessCodeEnum::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_BROKEROFCREDIT, val: v } => {
-
-                if broker_of_credit.is_some() { break; }
-
-                broker_of_credit = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_NOTIFYBROKEROFCREDIT, val: v } => {
-
-                if notify_broker_of_credit.is_some() { break; }
-
-                notify_broker_of_credit = Some( boolconv(v) );
-            },
-
-            &FieldVal { id: FIELD_ALLOCHANDLINST, val: v } => {
-
-                if alloc_handl_inst.is_some() { break; }
-
-                alloc_handl_inst = Some( FieldAllocHandlInstEnum::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_ALLOCTEXT, val: v } => {
-
-                if alloc_text.is_some() { break; }
-
-                alloc_text = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_ENCODEDALLOCTEXTLEN, val: v } => {
-
-                if encoded_alloc_text_len.is_some() { break; }
-
-                encoded_alloc_text_len = Some( usize::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_ENCODEDALLOCTEXT, val: v } => {
-
-                if encoded_alloc_text.is_some() { break; }
-
-                encoded_alloc_text = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_EXECBROKER, val: v } => {
-
-                if exec_broker.is_some() { break; }
-
-                exec_broker = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_CLIENTID, val: v } => {
-
-                if client_id.is_some() { break; }
-
-                client_id = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_COMMISSION, val: v } => {
-
-                if commission.is_some() { break; }
-
-                commission = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_COMMTYPE, val: v } => {
-
-                if comm_type.is_some() { break; }
-
-                comm_type = Some( FieldCommTypeEnum::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_ALLOCAVGPX, val: v } => {
-
-                if alloc_avg_px.is_some() { break; }
-
-                alloc_avg_px = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_ALLOCNETMONEY, val: v } => {
-
-                if alloc_net_money.is_some() { break; }
-
-                alloc_net_money = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_SETTLCURRAMT, val: v } => {
-
-                if settl_curr_amt.is_some() { break; }
-
-                settl_curr_amt = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_SETTLCURRENCY, val: v } => {
-
-                if settl_currency.is_some() { break; }
-
-                settl_currency = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_SETTLCURRFXRATE, val: v } => {
-
-                if settl_curr_fx_rate.is_some() { break; }
-
-                settl_curr_fx_rate = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_SETTLCURRFXRATECALC, val: v } => {
-
-                if settl_curr_fx_rate_calc.is_some() { break; }
-
-                settl_curr_fx_rate_calc = Some( FieldSettlCurrFxRateCalcEnum::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_ACCRUEDINTERESTAMT, val: v } => {
-
-                if accrued_interest_amt.is_some() { break; }
-
-                accrued_interest_amt = Some( f32::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_SETTLINSTMODE, val: v } => {
-
-                if settl_inst_mode.is_some() { break; }
-
-                settl_inst_mode = Some( FieldSettlInstModeEnum::from_str(v).unwrap() );
-            },
-
-            &FieldVal { id: FIELD_NOMISCFEES, val: v } => {
-
-                if no_misc_fees.is_some() { break; }
-
-                let size = usize::from_str(v).unwrap();
-                let items = build_group_no_misc_fees13_fields(consumer, size);
-                no_misc_fees = Some(items);
-                continue;
-            },
-
-
-            _ => { break; }
-        };
-        // consume only if recognized
-        consumer.next();
-    }
-
-    // construction
-    NoAllocs3Fields {
-        alloc_account: alloc_account,
-        alloc_price: alloc_price,
-        alloc_shares: alloc_shares.unwrap() ,
-        process_code: process_code,
-        broker_of_credit: broker_of_credit,
-        notify_broker_of_credit: notify_broker_of_credit,
-        alloc_handl_inst: alloc_handl_inst,
-        alloc_text: alloc_text,
-        encoded_alloc_text_len: encoded_alloc_text_len,
-        encoded_alloc_text: encoded_alloc_text,
-        exec_broker: exec_broker,
-        client_id: client_id,
-        commission: commission,
-        comm_type: comm_type,
-        alloc_avg_px: alloc_avg_px,
-        alloc_net_money: alloc_net_money,
-        settl_curr_amt: settl_curr_amt,
-        settl_currency: settl_currency,
-        settl_curr_fx_rate: settl_curr_fx_rate,
-        settl_curr_fx_rate_calc: settl_curr_fx_rate_calc,
-        accrued_interest_amt: accrued_interest_amt,
-        settl_inst_mode: settl_inst_mode,
-        no_misc_fees: no_misc_fees,
-    }
-}
-
 
 
 
@@ -21182,11 +11987,6 @@ pub fn write_fix_message(msg: &FixMessage, buf: &mut BytesMut) -> Result<(), io:
             write_logout_fields(box_flds, &mut writer_wrapper)?;
             Ok ( () )
         },
-        // type: 6
-        &FixMessage::IOI(ref box_flds) => {
-            write_ioifields(box_flds, &mut writer_wrapper)?;
-            Ok ( () )
-        },
         // type: 7
         &FixMessage::Advertisement(ref box_flds) => {
             write_advertisement_fields(box_flds, &mut writer_wrapper)?;
@@ -21205,16 +12005,6 @@ pub fn write_fix_message(msg: &FixMessage, buf: &mut BytesMut) -> Result<(), io:
         // type: A
         &FixMessage::Logon(ref box_flds) => {
             write_logon_fields(box_flds, &mut writer_wrapper)?;
-            Ok ( () )
-        },
-        // type: B
-        &FixMessage::News(ref box_flds) => {
-            write_news_fields(box_flds, &mut writer_wrapper)?;
-            Ok ( () )
-        },
-        // type: C
-        &FixMessage::Email(ref box_flds) => {
-            write_email_fields(box_flds, &mut writer_wrapper)?;
             Ok ( () )
         },
         // type: D
@@ -21240,146 +12030,6 @@ pub fn write_fix_message(msg: &FixMessage, buf: &mut BytesMut) -> Result<(), io:
         // type: H
         &FixMessage::OrderStatusRequest(ref box_flds) => {
             write_order_status_request_fields(box_flds, &mut writer_wrapper)?;
-            Ok ( () )
-        },
-        // type: J
-        &FixMessage::Allocation(ref box_flds) => {
-            write_allocation_fields(box_flds, &mut writer_wrapper)?;
-            Ok ( () )
-        },
-        // type: K
-        &FixMessage::ListCancelRequest(ref box_flds) => {
-            write_list_cancel_request_fields(box_flds, &mut writer_wrapper)?;
-            Ok ( () )
-        },
-        // type: L
-        &FixMessage::ListExecute(ref box_flds) => {
-            write_list_execute_fields(box_flds, &mut writer_wrapper)?;
-            Ok ( () )
-        },
-        // type: M
-        &FixMessage::ListStatusRequest(ref box_flds) => {
-            write_list_status_request_fields(box_flds, &mut writer_wrapper)?;
-            Ok ( () )
-        },
-        // type: N
-        &FixMessage::ListStatus(ref box_flds) => {
-            write_list_status_fields(box_flds, &mut writer_wrapper)?;
-            Ok ( () )
-        },
-        // type: P
-        &FixMessage::AllocationInstructionAck(ref box_flds) => {
-            write_allocation_instruction_ack_fields(box_flds, &mut writer_wrapper)?;
-            Ok ( () )
-        },
-        // type: Q
-        &FixMessage::DontKnowTrade(ref box_flds) => {
-            write_dont_know_trade_fields(box_flds, &mut writer_wrapper)?;
-            Ok ( () )
-        },
-        // type: R
-        &FixMessage::QuoteRequest(ref box_flds) => {
-            write_quote_request_fields(box_flds, &mut writer_wrapper)?;
-            Ok ( () )
-        },
-        // type: S
-        &FixMessage::Quote(ref box_flds) => {
-            write_quote_fields(box_flds, &mut writer_wrapper)?;
-            Ok ( () )
-        },
-        // type: T
-        &FixMessage::SettlementInstructions(ref box_flds) => {
-            write_settlement_instructions_fields(box_flds, &mut writer_wrapper)?;
-            Ok ( () )
-        },
-        // type: V
-        &FixMessage::MarketDataRequest(ref box_flds) => {
-            write_market_data_request_fields(box_flds, &mut writer_wrapper)?;
-            Ok ( () )
-        },
-        // type: W
-        &FixMessage::MarketDataSnapshotFullRefresh(ref box_flds) => {
-            write_market_data_snapshot_full_refresh_fields(box_flds, &mut writer_wrapper)?;
-            Ok ( () )
-        },
-        // type: X
-        &FixMessage::MarketDataIncrementalRefresh(ref box_flds) => {
-            write_market_data_incremental_refresh_fields(box_flds, &mut writer_wrapper)?;
-            Ok ( () )
-        },
-        // type: Y
-        &FixMessage::MarketDataRequestReject(ref box_flds) => {
-            write_market_data_request_reject_fields(box_flds, &mut writer_wrapper)?;
-            Ok ( () )
-        },
-        // type: Z
-        &FixMessage::QuoteCancel(ref box_flds) => {
-            write_quote_cancel_fields(box_flds, &mut writer_wrapper)?;
-            Ok ( () )
-        },
-        // type: a
-        &FixMessage::QuoteStatusRequest(ref box_flds) => {
-            write_quote_status_request_fields(box_flds, &mut writer_wrapper)?;
-            Ok ( () )
-        },
-        // type: b
-        &FixMessage::QuoteAcknowledgement(ref box_flds) => {
-            write_quote_acknowledgement_fields(box_flds, &mut writer_wrapper)?;
-            Ok ( () )
-        },
-        // type: c
-        &FixMessage::SecurityDefinitionRequest(ref box_flds) => {
-            write_security_definition_request_fields(box_flds, &mut writer_wrapper)?;
-            Ok ( () )
-        },
-        // type: d
-        &FixMessage::SecurityDefinition(ref box_flds) => {
-            write_security_definition_fields(box_flds, &mut writer_wrapper)?;
-            Ok ( () )
-        },
-        // type: e
-        &FixMessage::SecurityStatusRequest(ref box_flds) => {
-            write_security_status_request_fields(box_flds, &mut writer_wrapper)?;
-            Ok ( () )
-        },
-        // type: f
-        &FixMessage::SecurityStatus(ref box_flds) => {
-            write_security_status_fields(box_flds, &mut writer_wrapper)?;
-            Ok ( () )
-        },
-        // type: g
-        &FixMessage::TradingSessionStatusRequest(ref box_flds) => {
-            write_trading_session_status_request_fields(box_flds, &mut writer_wrapper)?;
-            Ok ( () )
-        },
-        // type: h
-        &FixMessage::TradingSessionStatus(ref box_flds) => {
-            write_trading_session_status_fields(box_flds, &mut writer_wrapper)?;
-            Ok ( () )
-        },
-        // type: i
-        &FixMessage::MassQuote(ref box_flds) => {
-            write_mass_quote_fields(box_flds, &mut writer_wrapper)?;
-            Ok ( () )
-        },
-        // type: j
-        &FixMessage::BusinessMessageReject(ref box_flds) => {
-            write_business_message_reject_fields(box_flds, &mut writer_wrapper)?;
-            Ok ( () )
-        },
-        // type: k
-        &FixMessage::BidRequest(ref box_flds) => {
-            write_bid_request_fields(box_flds, &mut writer_wrapper)?;
-            Ok ( () )
-        },
-        // type: l
-        &FixMessage::BidResponse(ref box_flds) => {
-            write_bid_response_fields(box_flds, &mut writer_wrapper)?;
-            Ok ( () )
-        },
-        // type: m
-        &FixMessage::ListStrikePrice(ref box_flds) => {
-            write_list_strike_price_fields(box_flds, &mut writer_wrapper)?;
             Ok ( () )
         },
         _ => {
@@ -21504,202 +12154,6 @@ fn write_logout_fields(flds: &LogoutFields, output: &mut Write) -> Result<(), io
         let val = flds.encoded_text.as_ref().unwrap();
 
         write!(output, "355={}\u{01}", val )?; // FIELD_ENCODEDTEXT
-    }
-    Ok( () )
-}
-
-
-fn write_ioifields(flds: &IOIFields, output: &mut Write) -> Result<(), io::Error> {
-
-    {
-        let val = &flds.ioiid;
-
-        write!(output, "23={}\u{01}", val )?; // FIELD_IOIID
-    }
-    {
-        let val = &flds.ioitrans_type;
-
-        write!(output, "28={}\u{01}", val )?; // FIELD_IOITRANSTYPE
-    }
-    if flds.ioiref_id.is_some() {
-        let val = flds.ioiref_id.as_ref().unwrap();
-
-        write!(output, "26={}\u{01}", val )?; // FIELD_IOIREFID
-    }
-    {
-        let val = &flds.symbol;
-
-        write!(output, "55={}\u{01}", val )?; // FIELD_SYMBOL
-    }
-    if flds.symbol_sfx.is_some() {
-        let val = flds.symbol_sfx.as_ref().unwrap();
-
-        write!(output, "65={}\u{01}", val )?; // FIELD_SYMBOLSFX
-    }
-    if flds.security_id.is_some() {
-        let val = flds.security_id.as_ref().unwrap();
-
-        write!(output, "48={}\u{01}", val )?; // FIELD_SECURITYID
-    }
-    if flds.idsource.is_some() {
-        let val = flds.idsource.as_ref().unwrap();
-
-        write!(output, "22={}\u{01}", val )?; // FIELD_IDSOURCE
-    }
-    if flds.security_type.is_some() {
-        let val = flds.security_type.as_ref().unwrap();
-
-        write!(output, "167={}\u{01}", val )?; // FIELD_SECURITYTYPE
-    }
-    if flds.maturity_month_year.is_some() {
-        let val = flds.maturity_month_year.as_ref().unwrap();
-
-        write!(output, "200={}\u{01}", val )?; // FIELD_MATURITYMONTHYEAR
-    }
-    if flds.maturity_day.is_some() {
-        let val = flds.maturity_day.as_ref().unwrap();
-
-        write!(output, "205={}\u{01}", val )?; // FIELD_MATURITYDAY
-    }
-    if flds.put_or_call.is_some() {
-        let val = flds.put_or_call.as_ref().unwrap();
-
-        write!(output, "201={}\u{01}", val )?; // FIELD_PUTORCALL
-    }
-    if flds.strike_price.is_some() {
-        let val = flds.strike_price.as_ref().unwrap();
-
-        write!(output, "202={}\u{01}", val )?; // FIELD_STRIKEPRICE
-    }
-    if flds.opt_attribute.is_some() {
-        let val = flds.opt_attribute.as_ref().unwrap();
-
-        write!(output, "206={}\u{01}", val )?; // FIELD_OPTATTRIBUTE
-    }
-    if flds.contract_multiplier.is_some() {
-        let val = flds.contract_multiplier.as_ref().unwrap();
-
-        write!(output, "231={}\u{01}", val )?; // FIELD_CONTRACTMULTIPLIER
-    }
-    if flds.coupon_rate.is_some() {
-        let val = flds.coupon_rate.as_ref().unwrap();
-
-        write!(output, "223={}\u{01}", val )?; // FIELD_COUPONRATE
-    }
-    if flds.security_exchange.is_some() {
-        let val = flds.security_exchange.as_ref().unwrap();
-
-        write!(output, "207={}\u{01}", val )?; // FIELD_SECURITYEXCHANGE
-    }
-    if flds.issuer.is_some() {
-        let val = flds.issuer.as_ref().unwrap();
-
-        write!(output, "106={}\u{01}", val )?; // FIELD_ISSUER
-    }
-    if flds.encoded_issuer_len.is_some() {
-        let val = flds.encoded_issuer_len.as_ref().unwrap();
-
-        write!(output, "348={}\u{01}", val )?; // FIELD_ENCODEDISSUERLEN
-    }
-    if flds.encoded_issuer.is_some() {
-        let val = flds.encoded_issuer.as_ref().unwrap();
-
-        write!(output, "349={}\u{01}", val )?; // FIELD_ENCODEDISSUER
-    }
-    if flds.security_desc.is_some() {
-        let val = flds.security_desc.as_ref().unwrap();
-
-        write!(output, "107={}\u{01}", val )?; // FIELD_SECURITYDESC
-    }
-    if flds.encoded_security_desc_len.is_some() {
-        let val = flds.encoded_security_desc_len.as_ref().unwrap();
-
-        write!(output, "350={}\u{01}", val )?; // FIELD_ENCODEDSECURITYDESCLEN
-    }
-    if flds.encoded_security_desc.is_some() {
-        let val = flds.encoded_security_desc.as_ref().unwrap();
-
-        write!(output, "351={}\u{01}", val )?; // FIELD_ENCODEDSECURITYDESC
-    }
-    {
-        let val = &flds.side;
-
-        write!(output, "54={}\u{01}", val )?; // FIELD_SIDE
-    }
-    {
-        let val = &flds.ioishares;
-
-        write!(output, "27={}\u{01}", val )?; // FIELD_IOISHARES
-    }
-    if flds.price.is_some() {
-        let val = flds.price.as_ref().unwrap();
-
-        write!(output, "44={}\u{01}", val )?; // FIELD_PRICE
-    }
-    if flds.currency.is_some() {
-        let val = flds.currency.as_ref().unwrap();
-
-        write!(output, "15={}\u{01}", val )?; // FIELD_CURRENCY
-    }
-    if flds.valid_until_time.is_some() {
-        let val = flds.valid_until_time.as_ref().unwrap();
-
-        write!(output, "62={}\u{01}", val )?; // FIELD_VALIDUNTILTIME
-    }
-    if flds.ioiqlty_ind.is_some() {
-        let val = flds.ioiqlty_ind.as_ref().unwrap();
-
-        write!(output, "25={}\u{01}", val )?; // FIELD_IOIQLTYIND
-    }
-    if flds.ioinatural_flag.is_some() {
-        let val = flds.ioinatural_flag.as_ref().unwrap();
-
-        write!(output, "130={}\u{01}", to_boolconv(val) )?; // FIELD_IOINATURALFLAG
-    }
-    if flds.no_ioiqualifiers.is_some() {
-        let val = flds.no_ioiqualifiers.as_ref().unwrap();
-
-        write_group_no_ioiqualifiers9_fields( val, output )?;
-    }
-    if flds.text.is_some() {
-        let val = flds.text.as_ref().unwrap();
-
-        write!(output, "58={}\u{01}", val )?; // FIELD_TEXT
-    }
-    if flds.encoded_text_len.is_some() {
-        let val = flds.encoded_text_len.as_ref().unwrap();
-
-        write!(output, "354={}\u{01}", val )?; // FIELD_ENCODEDTEXTLEN
-    }
-    if flds.encoded_text.is_some() {
-        let val = flds.encoded_text.as_ref().unwrap();
-
-        write!(output, "355={}\u{01}", val )?; // FIELD_ENCODEDTEXT
-    }
-    if flds.transact_time.is_some() {
-        let val = flds.transact_time.as_ref().unwrap();
-
-        write!(output, "60={}\u{01}", val )?; // FIELD_TRANSACTTIME
-    }
-    if flds.urllink.is_some() {
-        let val = flds.urllink.as_ref().unwrap();
-
-        write!(output, "149={}\u{01}", val )?; // FIELD_URLLINK
-    }
-    if flds.no_routing_ids.is_some() {
-        let val = flds.no_routing_ids.as_ref().unwrap();
-
-        write_group_no_routing_ids27_fields( val, output )?;
-    }
-    if flds.spread_to_benchmark.is_some() {
-        let val = flds.spread_to_benchmark.as_ref().unwrap();
-
-        write!(output, "218={}\u{01}", val )?; // FIELD_SPREADTOBENCHMARK
-    }
-    if flds.benchmark.is_some() {
-        let val = flds.benchmark.as_ref().unwrap();
-
-        write!(output, "219={}\u{01}", val )?; // FIELD_BENCHMARK
     }
     Ok( () )
 }
@@ -21916,7 +12370,7 @@ fn write_execution_report_fields(flds: &ExecutionReportFields, output: &mut Writ
     if flds.no_contra_brokers.is_some() {
         let val = flds.no_contra_brokers.as_ref().unwrap();
 
-        write_group_no_contra_brokers7_fields( val, output )?;
+        write_group_no_contra_brokers2_fields( val, output )?;
     }
     if flds.list_id.is_some() {
         let val = flds.list_id.as_ref().unwrap();
@@ -22463,139 +12917,7 @@ fn write_logon_fields(flds: &LogonFields, output: &mut Write) -> Result<(), io::
     if flds.no_msg_types.is_some() {
         let val = flds.no_msg_types.as_ref().unwrap();
 
-        write_group_no_msg_types14_fields( val, output )?;
-    }
-    Ok( () )
-}
-
-
-fn write_news_fields(flds: &NewsFields, output: &mut Write) -> Result<(), io::Error> {
-
-    if flds.orig_time.is_some() {
-        let val = flds.orig_time.as_ref().unwrap();
-
-        write!(output, "42={}\u{01}", val )?; // FIELD_ORIGTIME
-    }
-    if flds.urgency.is_some() {
-        let val = flds.urgency.as_ref().unwrap();
-
-        write!(output, "61={}\u{01}", val )?; // FIELD_URGENCY
-    }
-    {
-        let val = &flds.headline;
-
-        write!(output, "148={}\u{01}", val )?; // FIELD_HEADLINE
-    }
-    if flds.encoded_headline_len.is_some() {
-        let val = flds.encoded_headline_len.as_ref().unwrap();
-
-        write!(output, "358={}\u{01}", val )?; // FIELD_ENCODEDHEADLINELEN
-    }
-    if flds.encoded_headline.is_some() {
-        let val = flds.encoded_headline.as_ref().unwrap();
-
-        write!(output, "359={}\u{01}", val )?; // FIELD_ENCODEDHEADLINE
-    }
-    if flds.no_routing_ids.is_some() {
-        let val = flds.no_routing_ids.as_ref().unwrap();
-
-        write_group_no_routing_ids27_fields( val, output )?;
-    }
-    if flds.no_related_sym.is_some() {
-        let val = flds.no_related_sym.as_ref().unwrap();
-
-        write_group_no_related_sym25_fields( val, output )?;
-    }
-    {
-        let val = &flds.lines_of_text;
-
-        write_group_lines_of_text1_fields( val, output )?;
-    }
-    if flds.urllink.is_some() {
-        let val = flds.urllink.as_ref().unwrap();
-
-        write!(output, "149={}\u{01}", val )?; // FIELD_URLLINK
-    }
-    if flds.raw_data_length.is_some() {
-        let val = flds.raw_data_length.as_ref().unwrap();
-
-        write!(output, "95={}\u{01}", val )?; // FIELD_RAWDATALENGTH
-    }
-    if flds.raw_data.is_some() {
-        let val = flds.raw_data.as_ref().unwrap();
-
-        write!(output, "96={}\u{01}", val )?; // FIELD_RAWDATA
-    }
-    Ok( () )
-}
-
-
-fn write_email_fields(flds: &EmailFields, output: &mut Write) -> Result<(), io::Error> {
-
-    {
-        let val = &flds.email_thread_id;
-
-        write!(output, "164={}\u{01}", val )?; // FIELD_EMAILTHREADID
-    }
-    {
-        let val = &flds.email_type;
-
-        write!(output, "94={}\u{01}", val )?; // FIELD_EMAILTYPE
-    }
-    if flds.orig_time.is_some() {
-        let val = flds.orig_time.as_ref().unwrap();
-
-        write!(output, "42={}\u{01}", val )?; // FIELD_ORIGTIME
-    }
-    {
-        let val = &flds.subject;
-
-        write!(output, "147={}\u{01}", val )?; // FIELD_SUBJECT
-    }
-    if flds.encoded_subject_len.is_some() {
-        let val = flds.encoded_subject_len.as_ref().unwrap();
-
-        write!(output, "356={}\u{01}", val )?; // FIELD_ENCODEDSUBJECTLEN
-    }
-    if flds.encoded_subject.is_some() {
-        let val = flds.encoded_subject.as_ref().unwrap();
-
-        write!(output, "357={}\u{01}", val )?; // FIELD_ENCODEDSUBJECT
-    }
-    if flds.no_routing_ids.is_some() {
-        let val = flds.no_routing_ids.as_ref().unwrap();
-
-        write_group_no_routing_ids27_fields( val, output )?;
-    }
-    if flds.no_related_sym.is_some() {
-        let val = flds.no_related_sym.as_ref().unwrap();
-
-        write_group_no_related_sym25_fields( val, output )?;
-    }
-    if flds.order_id.is_some() {
-        let val = flds.order_id.as_ref().unwrap();
-
-        write!(output, "37={}\u{01}", val )?; // FIELD_ORDERID
-    }
-    if flds.cl_ord_id.is_some() {
-        let val = flds.cl_ord_id.as_ref().unwrap();
-
-        write!(output, "11={}\u{01}", val )?; // FIELD_CLORDID
-    }
-    {
-        let val = &flds.lines_of_text;
-
-        write_group_lines_of_text1_fields( val, output )?;
-    }
-    if flds.raw_data_length.is_some() {
-        let val = flds.raw_data_length.as_ref().unwrap();
-
-        write!(output, "95={}\u{01}", val )?; // FIELD_RAWDATALENGTH
-    }
-    if flds.raw_data.is_some() {
-        let val = flds.raw_data.as_ref().unwrap();
-
-        write!(output, "96={}\u{01}", val )?; // FIELD_RAWDATA
+        write_group_no_msg_types3_fields( val, output )?;
     }
     Ok( () )
 }
@@ -22626,7 +12948,7 @@ fn write_new_order_single_fields(flds: &NewOrderSingleFields, output: &mut Write
     if flds.no_allocs.is_some() {
         let val = flds.no_allocs.as_ref().unwrap();
 
-        write_group_no_allocs2_fields( val, output )?;
+        write_group_no_allocs1_fields( val, output )?;
     }
     if flds.settlmnt_typ.is_some() {
         let val = flds.settlmnt_typ.as_ref().unwrap();
@@ -22666,7 +12988,7 @@ fn write_new_order_single_fields(flds: &NewOrderSingleFields, output: &mut Write
     if flds.no_trading_sessions.is_some() {
         let val = flds.no_trading_sessions.as_ref().unwrap();
 
-        write_group_no_trading_sessions29_fields( val, output )?;
+        write_group_no_trading_sessions5_fields( val, output )?;
     }
     if flds.process_code.is_some() {
         let val = flds.process_code.as_ref().unwrap();
@@ -23022,7 +13344,7 @@ fn write_new_order_list_fields(flds: &NewOrderListFields, output: &mut Write) ->
     {
         let val = &flds.no_orders;
 
-        write_group_no_orders16_fields( val, output )?;
+        write_group_no_orders4_fields( val, output )?;
     }
     Ok( () )
 }
@@ -23249,7 +13571,7 @@ fn write_order_cancel_replace_request_fields(flds: &OrderCancelReplaceRequestFie
     if flds.no_allocs.is_some() {
         let val = flds.no_allocs.as_ref().unwrap();
 
-        write_group_no_allocs2_fields( val, output )?;
+        write_group_no_allocs1_fields( val, output )?;
     }
     if flds.settlmnt_typ.is_some() {
         let val = flds.settlmnt_typ.as_ref().unwrap();
@@ -23289,7 +13611,7 @@ fn write_order_cancel_replace_request_fields(flds: &OrderCancelReplaceRequestFie
     if flds.no_trading_sessions.is_some() {
         let val = flds.no_trading_sessions.as_ref().unwrap();
 
-        write_group_no_trading_sessions29_fields( val, output )?;
+        write_group_no_trading_sessions5_fields( val, output )?;
     }
     {
         let val = &flds.symbol;
@@ -23696,2477 +14018,44 @@ fn write_order_status_request_fields(flds: &OrderStatusRequestFields, output: &m
 }
 
 
-fn write_allocation_fields(flds: &AllocationFields, output: &mut Write) -> Result<(), io::Error> {
 
-    {
-        let val = &flds.alloc_id;
 
-        write!(output, "70={}\u{01}", val )?; // FIELD_ALLOCID
-    }
-    {
-        let val = &flds.alloc_trans_type;
 
-        write!(output, "71={}\u{01}", val )?; // FIELD_ALLOCTRANSTYPE
-    }
-    if flds.ref_alloc_id.is_some() {
-        let val = flds.ref_alloc_id.as_ref().unwrap();
 
-        write!(output, "72={}\u{01}", val )?; // FIELD_REFALLOCID
-    }
-    if flds.alloc_link_id.is_some() {
-        let val = flds.alloc_link_id.as_ref().unwrap();
 
-        write!(output, "196={}\u{01}", val )?; // FIELD_ALLOCLINKID
-    }
-    if flds.alloc_link_type.is_some() {
-        let val = flds.alloc_link_type.as_ref().unwrap();
 
-        write!(output, "197={}\u{01}", val )?; // FIELD_ALLOCLINKTYPE
-    }
-    if flds.no_orders.is_some() {
-        let val = flds.no_orders.as_ref().unwrap();
-
-        write_group_no_orders17_fields( val, output )?;
-    }
-    if flds.no_execs.is_some() {
-        let val = flds.no_execs.as_ref().unwrap();
-
-        write_group_no_execs8_fields( val, output )?;
-    }
-    {
-        let val = &flds.side;
-
-        write!(output, "54={}\u{01}", val )?; // FIELD_SIDE
-    }
-    {
-        let val = &flds.symbol;
-
-        write!(output, "55={}\u{01}", val )?; // FIELD_SYMBOL
-    }
-    if flds.symbol_sfx.is_some() {
-        let val = flds.symbol_sfx.as_ref().unwrap();
-
-        write!(output, "65={}\u{01}", val )?; // FIELD_SYMBOLSFX
-    }
-    if flds.security_id.is_some() {
-        let val = flds.security_id.as_ref().unwrap();
-
-        write!(output, "48={}\u{01}", val )?; // FIELD_SECURITYID
-    }
-    if flds.idsource.is_some() {
-        let val = flds.idsource.as_ref().unwrap();
-
-        write!(output, "22={}\u{01}", val )?; // FIELD_IDSOURCE
-    }
-    if flds.security_type.is_some() {
-        let val = flds.security_type.as_ref().unwrap();
-
-        write!(output, "167={}\u{01}", val )?; // FIELD_SECURITYTYPE
-    }
-    if flds.maturity_month_year.is_some() {
-        let val = flds.maturity_month_year.as_ref().unwrap();
-
-        write!(output, "200={}\u{01}", val )?; // FIELD_MATURITYMONTHYEAR
-    }
-    if flds.maturity_day.is_some() {
-        let val = flds.maturity_day.as_ref().unwrap();
-
-        write!(output, "205={}\u{01}", val )?; // FIELD_MATURITYDAY
-    }
-    if flds.put_or_call.is_some() {
-        let val = flds.put_or_call.as_ref().unwrap();
-
-        write!(output, "201={}\u{01}", val )?; // FIELD_PUTORCALL
-    }
-    if flds.strike_price.is_some() {
-        let val = flds.strike_price.as_ref().unwrap();
-
-        write!(output, "202={}\u{01}", val )?; // FIELD_STRIKEPRICE
-    }
-    if flds.opt_attribute.is_some() {
-        let val = flds.opt_attribute.as_ref().unwrap();
-
-        write!(output, "206={}\u{01}", val )?; // FIELD_OPTATTRIBUTE
-    }
-    if flds.contract_multiplier.is_some() {
-        let val = flds.contract_multiplier.as_ref().unwrap();
-
-        write!(output, "231={}\u{01}", val )?; // FIELD_CONTRACTMULTIPLIER
-    }
-    if flds.coupon_rate.is_some() {
-        let val = flds.coupon_rate.as_ref().unwrap();
-
-        write!(output, "223={}\u{01}", val )?; // FIELD_COUPONRATE
-    }
-    if flds.security_exchange.is_some() {
-        let val = flds.security_exchange.as_ref().unwrap();
-
-        write!(output, "207={}\u{01}", val )?; // FIELD_SECURITYEXCHANGE
-    }
-    if flds.issuer.is_some() {
-        let val = flds.issuer.as_ref().unwrap();
-
-        write!(output, "106={}\u{01}", val )?; // FIELD_ISSUER
-    }
-    if flds.encoded_issuer_len.is_some() {
-        let val = flds.encoded_issuer_len.as_ref().unwrap();
-
-        write!(output, "348={}\u{01}", val )?; // FIELD_ENCODEDISSUERLEN
-    }
-    if flds.encoded_issuer.is_some() {
-        let val = flds.encoded_issuer.as_ref().unwrap();
-
-        write!(output, "349={}\u{01}", val )?; // FIELD_ENCODEDISSUER
-    }
-    if flds.security_desc.is_some() {
-        let val = flds.security_desc.as_ref().unwrap();
-
-        write!(output, "107={}\u{01}", val )?; // FIELD_SECURITYDESC
-    }
-    if flds.encoded_security_desc_len.is_some() {
-        let val = flds.encoded_security_desc_len.as_ref().unwrap();
-
-        write!(output, "350={}\u{01}", val )?; // FIELD_ENCODEDSECURITYDESCLEN
-    }
-    if flds.encoded_security_desc.is_some() {
-        let val = flds.encoded_security_desc.as_ref().unwrap();
-
-        write!(output, "351={}\u{01}", val )?; // FIELD_ENCODEDSECURITYDESC
-    }
-    {
-        let val = &flds.shares;
-
-        write!(output, "53={}\u{01}", val )?; // FIELD_SHARES
-    }
-    if flds.last_mkt.is_some() {
-        let val = flds.last_mkt.as_ref().unwrap();
-
-        write!(output, "30={}\u{01}", val )?; // FIELD_LASTMKT
-    }
-    if flds.trading_session_id.is_some() {
-        let val = flds.trading_session_id.as_ref().unwrap();
-
-        write!(output, "336={}\u{01}", val )?; // FIELD_TRADINGSESSIONID
-    }
-    {
-        let val = &flds.avg_px;
-
-        write!(output, "6={}\u{01}", val )?; // FIELD_AVGPX
-    }
-    if flds.currency.is_some() {
-        let val = flds.currency.as_ref().unwrap();
-
-        write!(output, "15={}\u{01}", val )?; // FIELD_CURRENCY
-    }
-    if flds.avg_prx_precision.is_some() {
-        let val = flds.avg_prx_precision.as_ref().unwrap();
-
-        write!(output, "74={}\u{01}", val )?; // FIELD_AVGPRXPRECISION
-    }
-    {
-        let val = &flds.trade_date;
-
-        write!(output, "75={}\u{01}", val )?; // FIELD_TRADEDATE
-    }
-    if flds.transact_time.is_some() {
-        let val = flds.transact_time.as_ref().unwrap();
-
-        write!(output, "60={}\u{01}", val )?; // FIELD_TRANSACTTIME
-    }
-    if flds.settlmnt_typ.is_some() {
-        let val = flds.settlmnt_typ.as_ref().unwrap();
-
-        write!(output, "63={}\u{01}", val )?; // FIELD_SETTLMNTTYP
-    }
-    if flds.fut_sett_date.is_some() {
-        let val = flds.fut_sett_date.as_ref().unwrap();
-
-        write!(output, "64={}\u{01}", val )?; // FIELD_FUTSETTDATE
-    }
-    if flds.gross_trade_amt.is_some() {
-        let val = flds.gross_trade_amt.as_ref().unwrap();
-
-        write!(output, "381={}\u{01}", val )?; // FIELD_GROSSTRADEAMT
-    }
-    if flds.net_money.is_some() {
-        let val = flds.net_money.as_ref().unwrap();
-
-        write!(output, "118={}\u{01}", val )?; // FIELD_NETMONEY
-    }
-    if flds.open_close.is_some() {
-        let val = flds.open_close.as_ref().unwrap();
-
-        write!(output, "77={}\u{01}", val )?; // FIELD_OPENCLOSE
-    }
-    if flds.text.is_some() {
-        let val = flds.text.as_ref().unwrap();
-
-        write!(output, "58={}\u{01}", val )?; // FIELD_TEXT
-    }
-    if flds.encoded_text_len.is_some() {
-        let val = flds.encoded_text_len.as_ref().unwrap();
-
-        write!(output, "354={}\u{01}", val )?; // FIELD_ENCODEDTEXTLEN
-    }
-    if flds.encoded_text.is_some() {
-        let val = flds.encoded_text.as_ref().unwrap();
-
-        write!(output, "355={}\u{01}", val )?; // FIELD_ENCODEDTEXT
-    }
-    if flds.num_days_interest.is_some() {
-        let val = flds.num_days_interest.as_ref().unwrap();
-
-        write!(output, "157={}\u{01}", val )?; // FIELD_NUMDAYSINTEREST
-    }
-    if flds.accrued_interest_rate.is_some() {
-        let val = flds.accrued_interest_rate.as_ref().unwrap();
-
-        write!(output, "158={}\u{01}", val )?; // FIELD_ACCRUEDINTERESTRATE
-    }
-    if flds.no_allocs.is_some() {
-        let val = flds.no_allocs.as_ref().unwrap();
-
-        write_group_no_allocs3_fields( val, output )?;
-    }
-    Ok( () )
-}
-
-
-fn write_list_cancel_request_fields(flds: &ListCancelRequestFields, output: &mut Write) -> Result<(), io::Error> {
-
-    {
-        let val = &flds.list_id;
-
-        write!(output, "66={}\u{01}", val )?; // FIELD_LISTID
-    }
-    {
-        let val = &flds.transact_time;
-
-        write!(output, "60={}\u{01}", val )?; // FIELD_TRANSACTTIME
-    }
-    if flds.text.is_some() {
-        let val = flds.text.as_ref().unwrap();
-
-        write!(output, "58={}\u{01}", val )?; // FIELD_TEXT
-    }
-    if flds.encoded_text_len.is_some() {
-        let val = flds.encoded_text_len.as_ref().unwrap();
-
-        write!(output, "354={}\u{01}", val )?; // FIELD_ENCODEDTEXTLEN
-    }
-    if flds.encoded_text.is_some() {
-        let val = flds.encoded_text.as_ref().unwrap();
-
-        write!(output, "355={}\u{01}", val )?; // FIELD_ENCODEDTEXT
-    }
-    Ok( () )
-}
-
-
-fn write_list_execute_fields(flds: &ListExecuteFields, output: &mut Write) -> Result<(), io::Error> {
-
-    {
-        let val = &flds.list_id;
-
-        write!(output, "66={}\u{01}", val )?; // FIELD_LISTID
-    }
-    if flds.client_bid_id.is_some() {
-        let val = flds.client_bid_id.as_ref().unwrap();
-
-        write!(output, "391={}\u{01}", val )?; // FIELD_CLIENTBIDID
-    }
-    if flds.bid_id.is_some() {
-        let val = flds.bid_id.as_ref().unwrap();
-
-        write!(output, "390={}\u{01}", val )?; // FIELD_BIDID
-    }
-    {
-        let val = &flds.transact_time;
-
-        write!(output, "60={}\u{01}", val )?; // FIELD_TRANSACTTIME
-    }
-    if flds.text.is_some() {
-        let val = flds.text.as_ref().unwrap();
-
-        write!(output, "58={}\u{01}", val )?; // FIELD_TEXT
-    }
-    if flds.encoded_text_len.is_some() {
-        let val = flds.encoded_text_len.as_ref().unwrap();
-
-        write!(output, "354={}\u{01}", val )?; // FIELD_ENCODEDTEXTLEN
-    }
-    if flds.encoded_text.is_some() {
-        let val = flds.encoded_text.as_ref().unwrap();
-
-        write!(output, "355={}\u{01}", val )?; // FIELD_ENCODEDTEXT
-    }
-    Ok( () )
-}
-
-
-fn write_list_status_request_fields(flds: &ListStatusRequestFields, output: &mut Write) -> Result<(), io::Error> {
-
-    {
-        let val = &flds.list_id;
-
-        write!(output, "66={}\u{01}", val )?; // FIELD_LISTID
-    }
-    if flds.text.is_some() {
-        let val = flds.text.as_ref().unwrap();
-
-        write!(output, "58={}\u{01}", val )?; // FIELD_TEXT
-    }
-    if flds.encoded_text_len.is_some() {
-        let val = flds.encoded_text_len.as_ref().unwrap();
-
-        write!(output, "354={}\u{01}", val )?; // FIELD_ENCODEDTEXTLEN
-    }
-    if flds.encoded_text.is_some() {
-        let val = flds.encoded_text.as_ref().unwrap();
-
-        write!(output, "355={}\u{01}", val )?; // FIELD_ENCODEDTEXT
-    }
-    Ok( () )
-}
-
-
-fn write_list_status_fields(flds: &ListStatusFields, output: &mut Write) -> Result<(), io::Error> {
-
-    {
-        let val = &flds.list_id;
-
-        write!(output, "66={}\u{01}", val )?; // FIELD_LISTID
-    }
-    {
-        let val = &flds.list_status_type;
-
-        write!(output, "429={}\u{01}", val )?; // FIELD_LISTSTATUSTYPE
-    }
-    {
-        let val = &flds.no_rpts;
-
-        write!(output, "82={}\u{01}", val )?; // FIELD_NORPTS
-    }
-    {
-        let val = &flds.list_order_status;
-
-        write!(output, "431={}\u{01}", val )?; // FIELD_LISTORDERSTATUS
-    }
-    {
-        let val = &flds.rpt_seq;
-
-        write!(output, "83={}\u{01}", val )?; // FIELD_RPTSEQ
-    }
-    if flds.list_status_text.is_some() {
-        let val = flds.list_status_text.as_ref().unwrap();
-
-        write!(output, "444={}\u{01}", val )?; // FIELD_LISTSTATUSTEXT
-    }
-    if flds.encoded_list_status_text_len.is_some() {
-        let val = flds.encoded_list_status_text_len.as_ref().unwrap();
-
-        write!(output, "445={}\u{01}", val )?; // FIELD_ENCODEDLISTSTATUSTEXTLEN
-    }
-    if flds.encoded_list_status_text.is_some() {
-        let val = flds.encoded_list_status_text.as_ref().unwrap();
-
-        write!(output, "446={}\u{01}", val )?; // FIELD_ENCODEDLISTSTATUSTEXT
-    }
-    if flds.transact_time.is_some() {
-        let val = flds.transact_time.as_ref().unwrap();
-
-        write!(output, "60={}\u{01}", val )?; // FIELD_TRANSACTTIME
-    }
-    {
-        let val = &flds.tot_no_orders;
-
-        write!(output, "68={}\u{01}", val )?; // FIELD_TOTNOORDERS
-    }
-    {
-        let val = &flds.no_orders;
-
-        write_group_no_orders15_fields( val, output )?;
-    }
-    Ok( () )
-}
-
-
-fn write_allocation_instruction_ack_fields(flds: &AllocationInstructionAckFields, output: &mut Write) -> Result<(), io::Error> {
-
-    if flds.client_id.is_some() {
-        let val = flds.client_id.as_ref().unwrap();
-
-        write!(output, "109={}\u{01}", val )?; // FIELD_CLIENTID
-    }
-    if flds.exec_broker.is_some() {
-        let val = flds.exec_broker.as_ref().unwrap();
-
-        write!(output, "76={}\u{01}", val )?; // FIELD_EXECBROKER
-    }
-    {
-        let val = &flds.alloc_id;
-
-        write!(output, "70={}\u{01}", val )?; // FIELD_ALLOCID
-    }
-    {
-        let val = &flds.trade_date;
-
-        write!(output, "75={}\u{01}", val )?; // FIELD_TRADEDATE
-    }
-    if flds.transact_time.is_some() {
-        let val = flds.transact_time.as_ref().unwrap();
-
-        write!(output, "60={}\u{01}", val )?; // FIELD_TRANSACTTIME
-    }
-    {
-        let val = &flds.alloc_status;
-
-        write!(output, "87={}\u{01}", val )?; // FIELD_ALLOCSTATUS
-    }
-    if flds.alloc_rej_code.is_some() {
-        let val = flds.alloc_rej_code.as_ref().unwrap();
-
-        write!(output, "88={}\u{01}", val )?; // FIELD_ALLOCREJCODE
-    }
-    if flds.text.is_some() {
-        let val = flds.text.as_ref().unwrap();
-
-        write!(output, "58={}\u{01}", val )?; // FIELD_TEXT
-    }
-    if flds.encoded_text_len.is_some() {
-        let val = flds.encoded_text_len.as_ref().unwrap();
-
-        write!(output, "354={}\u{01}", val )?; // FIELD_ENCODEDTEXTLEN
-    }
-    if flds.encoded_text.is_some() {
-        let val = flds.encoded_text.as_ref().unwrap();
-
-        write!(output, "355={}\u{01}", val )?; // FIELD_ENCODEDTEXT
-    }
-    Ok( () )
-}
-
-
-fn write_dont_know_trade_fields(flds: &DontKnowTradeFields, output: &mut Write) -> Result<(), io::Error> {
-
-    {
-        let val = &flds.order_id;
-
-        write!(output, "37={}\u{01}", val )?; // FIELD_ORDERID
-    }
-    {
-        let val = &flds.exec_id;
-
-        write!(output, "17={}\u{01}", val )?; // FIELD_EXECID
-    }
-    {
-        let val = &flds.dkreason;
-
-        write!(output, "127={}\u{01}", val )?; // FIELD_DKREASON
-    }
-    {
-        let val = &flds.symbol;
-
-        write!(output, "55={}\u{01}", val )?; // FIELD_SYMBOL
-    }
-    if flds.symbol_sfx.is_some() {
-        let val = flds.symbol_sfx.as_ref().unwrap();
-
-        write!(output, "65={}\u{01}", val )?; // FIELD_SYMBOLSFX
-    }
-    if flds.security_id.is_some() {
-        let val = flds.security_id.as_ref().unwrap();
-
-        write!(output, "48={}\u{01}", val )?; // FIELD_SECURITYID
-    }
-    if flds.idsource.is_some() {
-        let val = flds.idsource.as_ref().unwrap();
-
-        write!(output, "22={}\u{01}", val )?; // FIELD_IDSOURCE
-    }
-    if flds.security_type.is_some() {
-        let val = flds.security_type.as_ref().unwrap();
-
-        write!(output, "167={}\u{01}", val )?; // FIELD_SECURITYTYPE
-    }
-    if flds.maturity_month_year.is_some() {
-        let val = flds.maturity_month_year.as_ref().unwrap();
-
-        write!(output, "200={}\u{01}", val )?; // FIELD_MATURITYMONTHYEAR
-    }
-    if flds.maturity_day.is_some() {
-        let val = flds.maturity_day.as_ref().unwrap();
-
-        write!(output, "205={}\u{01}", val )?; // FIELD_MATURITYDAY
-    }
-    if flds.put_or_call.is_some() {
-        let val = flds.put_or_call.as_ref().unwrap();
-
-        write!(output, "201={}\u{01}", val )?; // FIELD_PUTORCALL
-    }
-    if flds.strike_price.is_some() {
-        let val = flds.strike_price.as_ref().unwrap();
-
-        write!(output, "202={}\u{01}", val )?; // FIELD_STRIKEPRICE
-    }
-    if flds.opt_attribute.is_some() {
-        let val = flds.opt_attribute.as_ref().unwrap();
-
-        write!(output, "206={}\u{01}", val )?; // FIELD_OPTATTRIBUTE
-    }
-    if flds.contract_multiplier.is_some() {
-        let val = flds.contract_multiplier.as_ref().unwrap();
-
-        write!(output, "231={}\u{01}", val )?; // FIELD_CONTRACTMULTIPLIER
-    }
-    if flds.coupon_rate.is_some() {
-        let val = flds.coupon_rate.as_ref().unwrap();
-
-        write!(output, "223={}\u{01}", val )?; // FIELD_COUPONRATE
-    }
-    if flds.security_exchange.is_some() {
-        let val = flds.security_exchange.as_ref().unwrap();
-
-        write!(output, "207={}\u{01}", val )?; // FIELD_SECURITYEXCHANGE
-    }
-    if flds.issuer.is_some() {
-        let val = flds.issuer.as_ref().unwrap();
-
-        write!(output, "106={}\u{01}", val )?; // FIELD_ISSUER
-    }
-    if flds.encoded_issuer_len.is_some() {
-        let val = flds.encoded_issuer_len.as_ref().unwrap();
-
-        write!(output, "348={}\u{01}", val )?; // FIELD_ENCODEDISSUERLEN
-    }
-    if flds.encoded_issuer.is_some() {
-        let val = flds.encoded_issuer.as_ref().unwrap();
-
-        write!(output, "349={}\u{01}", val )?; // FIELD_ENCODEDISSUER
-    }
-    if flds.security_desc.is_some() {
-        let val = flds.security_desc.as_ref().unwrap();
-
-        write!(output, "107={}\u{01}", val )?; // FIELD_SECURITYDESC
-    }
-    if flds.encoded_security_desc_len.is_some() {
-        let val = flds.encoded_security_desc_len.as_ref().unwrap();
-
-        write!(output, "350={}\u{01}", val )?; // FIELD_ENCODEDSECURITYDESCLEN
-    }
-    if flds.encoded_security_desc.is_some() {
-        let val = flds.encoded_security_desc.as_ref().unwrap();
-
-        write!(output, "351={}\u{01}", val )?; // FIELD_ENCODEDSECURITYDESC
-    }
-    {
-        let val = &flds.side;
-
-        write!(output, "54={}\u{01}", val )?; // FIELD_SIDE
-    }
-    if flds.order_qty.is_some() {
-        let val = flds.order_qty.as_ref().unwrap();
-
-        write!(output, "38={}\u{01}", val )?; // FIELD_ORDERQTY
-    }
-    if flds.cash_order_qty.is_some() {
-        let val = flds.cash_order_qty.as_ref().unwrap();
-
-        write!(output, "152={}\u{01}", val )?; // FIELD_CASHORDERQTY
-    }
-    if flds.last_shares.is_some() {
-        let val = flds.last_shares.as_ref().unwrap();
-
-        write!(output, "32={}\u{01}", val )?; // FIELD_LASTSHARES
-    }
-    if flds.last_px.is_some() {
-        let val = flds.last_px.as_ref().unwrap();
-
-        write!(output, "31={}\u{01}", val )?; // FIELD_LASTPX
-    }
-    if flds.text.is_some() {
-        let val = flds.text.as_ref().unwrap();
-
-        write!(output, "58={}\u{01}", val )?; // FIELD_TEXT
-    }
-    if flds.encoded_text_len.is_some() {
-        let val = flds.encoded_text_len.as_ref().unwrap();
-
-        write!(output, "354={}\u{01}", val )?; // FIELD_ENCODEDTEXTLEN
-    }
-    if flds.encoded_text.is_some() {
-        let val = flds.encoded_text.as_ref().unwrap();
-
-        write!(output, "355={}\u{01}", val )?; // FIELD_ENCODEDTEXT
-    }
-    Ok( () )
-}
-
-
-fn write_quote_request_fields(flds: &QuoteRequestFields, output: &mut Write) -> Result<(), io::Error> {
-
-    {
-        let val = &flds.quote_req_id;
-
-        write!(output, "131={}\u{01}", val )?; // FIELD_QUOTEREQID
-    }
-    {
-        let val = &flds.no_related_sym;
-
-        write_group_no_related_sym24_fields( val, output )?;
-    }
-    Ok( () )
-}
-
-
-fn write_quote_fields(flds: &QuoteFields, output: &mut Write) -> Result<(), io::Error> {
-
-    if flds.quote_req_id.is_some() {
-        let val = flds.quote_req_id.as_ref().unwrap();
-
-        write!(output, "131={}\u{01}", val )?; // FIELD_QUOTEREQID
-    }
-    {
-        let val = &flds.quote_id;
-
-        write!(output, "117={}\u{01}", val )?; // FIELD_QUOTEID
-    }
-    if flds.quote_response_level.is_some() {
-        let val = flds.quote_response_level.as_ref().unwrap();
-
-        write!(output, "301={}\u{01}", val )?; // FIELD_QUOTERESPONSELEVEL
-    }
-    if flds.trading_session_id.is_some() {
-        let val = flds.trading_session_id.as_ref().unwrap();
-
-        write!(output, "336={}\u{01}", val )?; // FIELD_TRADINGSESSIONID
-    }
-    {
-        let val = &flds.symbol;
-
-        write!(output, "55={}\u{01}", val )?; // FIELD_SYMBOL
-    }
-    if flds.symbol_sfx.is_some() {
-        let val = flds.symbol_sfx.as_ref().unwrap();
-
-        write!(output, "65={}\u{01}", val )?; // FIELD_SYMBOLSFX
-    }
-    if flds.security_id.is_some() {
-        let val = flds.security_id.as_ref().unwrap();
-
-        write!(output, "48={}\u{01}", val )?; // FIELD_SECURITYID
-    }
-    if flds.idsource.is_some() {
-        let val = flds.idsource.as_ref().unwrap();
-
-        write!(output, "22={}\u{01}", val )?; // FIELD_IDSOURCE
-    }
-    if flds.security_type.is_some() {
-        let val = flds.security_type.as_ref().unwrap();
-
-        write!(output, "167={}\u{01}", val )?; // FIELD_SECURITYTYPE
-    }
-    if flds.maturity_month_year.is_some() {
-        let val = flds.maturity_month_year.as_ref().unwrap();
-
-        write!(output, "200={}\u{01}", val )?; // FIELD_MATURITYMONTHYEAR
-    }
-    if flds.maturity_day.is_some() {
-        let val = flds.maturity_day.as_ref().unwrap();
-
-        write!(output, "205={}\u{01}", val )?; // FIELD_MATURITYDAY
-    }
-    if flds.put_or_call.is_some() {
-        let val = flds.put_or_call.as_ref().unwrap();
-
-        write!(output, "201={}\u{01}", val )?; // FIELD_PUTORCALL
-    }
-    if flds.strike_price.is_some() {
-        let val = flds.strike_price.as_ref().unwrap();
-
-        write!(output, "202={}\u{01}", val )?; // FIELD_STRIKEPRICE
-    }
-    if flds.opt_attribute.is_some() {
-        let val = flds.opt_attribute.as_ref().unwrap();
-
-        write!(output, "206={}\u{01}", val )?; // FIELD_OPTATTRIBUTE
-    }
-    if flds.contract_multiplier.is_some() {
-        let val = flds.contract_multiplier.as_ref().unwrap();
-
-        write!(output, "231={}\u{01}", val )?; // FIELD_CONTRACTMULTIPLIER
-    }
-    if flds.coupon_rate.is_some() {
-        let val = flds.coupon_rate.as_ref().unwrap();
-
-        write!(output, "223={}\u{01}", val )?; // FIELD_COUPONRATE
-    }
-    if flds.security_exchange.is_some() {
-        let val = flds.security_exchange.as_ref().unwrap();
-
-        write!(output, "207={}\u{01}", val )?; // FIELD_SECURITYEXCHANGE
-    }
-    if flds.issuer.is_some() {
-        let val = flds.issuer.as_ref().unwrap();
-
-        write!(output, "106={}\u{01}", val )?; // FIELD_ISSUER
-    }
-    if flds.encoded_issuer_len.is_some() {
-        let val = flds.encoded_issuer_len.as_ref().unwrap();
-
-        write!(output, "348={}\u{01}", val )?; // FIELD_ENCODEDISSUERLEN
-    }
-    if flds.encoded_issuer.is_some() {
-        let val = flds.encoded_issuer.as_ref().unwrap();
-
-        write!(output, "349={}\u{01}", val )?; // FIELD_ENCODEDISSUER
-    }
-    if flds.security_desc.is_some() {
-        let val = flds.security_desc.as_ref().unwrap();
-
-        write!(output, "107={}\u{01}", val )?; // FIELD_SECURITYDESC
-    }
-    if flds.encoded_security_desc_len.is_some() {
-        let val = flds.encoded_security_desc_len.as_ref().unwrap();
-
-        write!(output, "350={}\u{01}", val )?; // FIELD_ENCODEDSECURITYDESCLEN
-    }
-    if flds.encoded_security_desc.is_some() {
-        let val = flds.encoded_security_desc.as_ref().unwrap();
-
-        write!(output, "351={}\u{01}", val )?; // FIELD_ENCODEDSECURITYDESC
-    }
-    if flds.bid_px.is_some() {
-        let val = flds.bid_px.as_ref().unwrap();
-
-        write!(output, "132={}\u{01}", val )?; // FIELD_BIDPX
-    }
-    if flds.offer_px.is_some() {
-        let val = flds.offer_px.as_ref().unwrap();
-
-        write!(output, "133={}\u{01}", val )?; // FIELD_OFFERPX
-    }
-    if flds.bid_size.is_some() {
-        let val = flds.bid_size.as_ref().unwrap();
-
-        write!(output, "134={}\u{01}", val )?; // FIELD_BIDSIZE
-    }
-    if flds.offer_size.is_some() {
-        let val = flds.offer_size.as_ref().unwrap();
-
-        write!(output, "135={}\u{01}", val )?; // FIELD_OFFERSIZE
-    }
-    if flds.valid_until_time.is_some() {
-        let val = flds.valid_until_time.as_ref().unwrap();
-
-        write!(output, "62={}\u{01}", val )?; // FIELD_VALIDUNTILTIME
-    }
-    if flds.bid_spot_rate.is_some() {
-        let val = flds.bid_spot_rate.as_ref().unwrap();
-
-        write!(output, "188={}\u{01}", val )?; // FIELD_BIDSPOTRATE
-    }
-    if flds.offer_spot_rate.is_some() {
-        let val = flds.offer_spot_rate.as_ref().unwrap();
-
-        write!(output, "190={}\u{01}", val )?; // FIELD_OFFERSPOTRATE
-    }
-    if flds.bid_forward_points.is_some() {
-        let val = flds.bid_forward_points.as_ref().unwrap();
-
-        write!(output, "189={}\u{01}", val )?; // FIELD_BIDFORWARDPOINTS
-    }
-    if flds.offer_forward_points.is_some() {
-        let val = flds.offer_forward_points.as_ref().unwrap();
-
-        write!(output, "191={}\u{01}", val )?; // FIELD_OFFERFORWARDPOINTS
-    }
-    if flds.transact_time.is_some() {
-        let val = flds.transact_time.as_ref().unwrap();
-
-        write!(output, "60={}\u{01}", val )?; // FIELD_TRANSACTTIME
-    }
-    if flds.fut_sett_date.is_some() {
-        let val = flds.fut_sett_date.as_ref().unwrap();
-
-        write!(output, "64={}\u{01}", val )?; // FIELD_FUTSETTDATE
-    }
-    if flds.ord_type.is_some() {
-        let val = flds.ord_type.as_ref().unwrap();
-
-        write!(output, "40={}\u{01}", val )?; // FIELD_ORDTYPE
-    }
-    if flds.fut_sett_date2.is_some() {
-        let val = flds.fut_sett_date2.as_ref().unwrap();
-
-        write!(output, "193={}\u{01}", val )?; // FIELD_FUTSETTDATE2
-    }
-    if flds.order_qty2.is_some() {
-        let val = flds.order_qty2.as_ref().unwrap();
-
-        write!(output, "192={}\u{01}", val )?; // FIELD_ORDERQTY2
-    }
-    if flds.currency.is_some() {
-        let val = flds.currency.as_ref().unwrap();
-
-        write!(output, "15={}\u{01}", val )?; // FIELD_CURRENCY
-    }
-    Ok( () )
-}
-
-
-fn write_settlement_instructions_fields(flds: &SettlementInstructionsFields, output: &mut Write) -> Result<(), io::Error> {
-
-    {
-        let val = &flds.settl_inst_id;
-
-        write!(output, "162={}\u{01}", val )?; // FIELD_SETTLINSTID
-    }
-    {
-        let val = &flds.settl_inst_trans_type;
-
-        write!(output, "163={}\u{01}", val )?; // FIELD_SETTLINSTTRANSTYPE
-    }
-    {
-        let val = &flds.settl_inst_ref_id;
-
-        write!(output, "214={}\u{01}", val )?; // FIELD_SETTLINSTREFID
-    }
-    {
-        let val = &flds.settl_inst_mode;
-
-        write!(output, "160={}\u{01}", val )?; // FIELD_SETTLINSTMODE
-    }
-    {
-        let val = &flds.settl_inst_source;
-
-        write!(output, "165={}\u{01}", val )?; // FIELD_SETTLINSTSOURCE
-    }
-    {
-        let val = &flds.alloc_account;
-
-        write!(output, "79={}\u{01}", val )?; // FIELD_ALLOCACCOUNT
-    }
-    if flds.settl_location.is_some() {
-        let val = flds.settl_location.as_ref().unwrap();
-
-        write!(output, "166={}\u{01}", val )?; // FIELD_SETTLLOCATION
-    }
-    if flds.trade_date.is_some() {
-        let val = flds.trade_date.as_ref().unwrap();
-
-        write!(output, "75={}\u{01}", val )?; // FIELD_TRADEDATE
-    }
-    if flds.alloc_id.is_some() {
-        let val = flds.alloc_id.as_ref().unwrap();
-
-        write!(output, "70={}\u{01}", val )?; // FIELD_ALLOCID
-    }
-    if flds.last_mkt.is_some() {
-        let val = flds.last_mkt.as_ref().unwrap();
-
-        write!(output, "30={}\u{01}", val )?; // FIELD_LASTMKT
-    }
-    if flds.trading_session_id.is_some() {
-        let val = flds.trading_session_id.as_ref().unwrap();
-
-        write!(output, "336={}\u{01}", val )?; // FIELD_TRADINGSESSIONID
-    }
-    if flds.side.is_some() {
-        let val = flds.side.as_ref().unwrap();
-
-        write!(output, "54={}\u{01}", val )?; // FIELD_SIDE
-    }
-    if flds.security_type.is_some() {
-        let val = flds.security_type.as_ref().unwrap();
-
-        write!(output, "167={}\u{01}", val )?; // FIELD_SECURITYTYPE
-    }
-    if flds.effective_time.is_some() {
-        let val = flds.effective_time.as_ref().unwrap();
-
-        write!(output, "168={}\u{01}", val )?; // FIELD_EFFECTIVETIME
-    }
-    {
-        let val = &flds.transact_time;
-
-        write!(output, "60={}\u{01}", val )?; // FIELD_TRANSACTTIME
-    }
-    if flds.client_id.is_some() {
-        let val = flds.client_id.as_ref().unwrap();
-
-        write!(output, "109={}\u{01}", val )?; // FIELD_CLIENTID
-    }
-    if flds.exec_broker.is_some() {
-        let val = flds.exec_broker.as_ref().unwrap();
-
-        write!(output, "76={}\u{01}", val )?; // FIELD_EXECBROKER
-    }
-    if flds.stand_inst_db_type.is_some() {
-        let val = flds.stand_inst_db_type.as_ref().unwrap();
-
-        write!(output, "169={}\u{01}", val )?; // FIELD_STANDINSTDBTYPE
-    }
-    if flds.stand_inst_db_name.is_some() {
-        let val = flds.stand_inst_db_name.as_ref().unwrap();
-
-        write!(output, "170={}\u{01}", val )?; // FIELD_STANDINSTDBNAME
-    }
-    if flds.stand_inst_db_id.is_some() {
-        let val = flds.stand_inst_db_id.as_ref().unwrap();
-
-        write!(output, "171={}\u{01}", val )?; // FIELD_STANDINSTDBID
-    }
-    if flds.settl_delivery_type.is_some() {
-        let val = flds.settl_delivery_type.as_ref().unwrap();
-
-        write!(output, "172={}\u{01}", val )?; // FIELD_SETTLDELIVERYTYPE
-    }
-    if flds.settl_depository_code.is_some() {
-        let val = flds.settl_depository_code.as_ref().unwrap();
-
-        write!(output, "173={}\u{01}", val )?; // FIELD_SETTLDEPOSITORYCODE
-    }
-    if flds.settl_brkr_code.is_some() {
-        let val = flds.settl_brkr_code.as_ref().unwrap();
-
-        write!(output, "174={}\u{01}", val )?; // FIELD_SETTLBRKRCODE
-    }
-    if flds.settl_inst_code.is_some() {
-        let val = flds.settl_inst_code.as_ref().unwrap();
-
-        write!(output, "175={}\u{01}", val )?; // FIELD_SETTLINSTCODE
-    }
-    if flds.security_settl_agent_name.is_some() {
-        let val = flds.security_settl_agent_name.as_ref().unwrap();
-
-        write!(output, "176={}\u{01}", val )?; // FIELD_SECURITYSETTLAGENTNAME
-    }
-    if flds.security_settl_agent_code.is_some() {
-        let val = flds.security_settl_agent_code.as_ref().unwrap();
-
-        write!(output, "177={}\u{01}", val )?; // FIELD_SECURITYSETTLAGENTCODE
-    }
-    if flds.security_settl_agent_acct_num.is_some() {
-        let val = flds.security_settl_agent_acct_num.as_ref().unwrap();
-
-        write!(output, "178={}\u{01}", val )?; // FIELD_SECURITYSETTLAGENTACCTNUM
-    }
-    if flds.security_settl_agent_acct_name.is_some() {
-        let val = flds.security_settl_agent_acct_name.as_ref().unwrap();
-
-        write!(output, "179={}\u{01}", val )?; // FIELD_SECURITYSETTLAGENTACCTNAME
-    }
-    if flds.security_settl_agent_contact_name.is_some() {
-        let val = flds.security_settl_agent_contact_name.as_ref().unwrap();
-
-        write!(output, "180={}\u{01}", val )?; // FIELD_SECURITYSETTLAGENTCONTACTNAME
-    }
-    if flds.security_settl_agent_contact_phone.is_some() {
-        let val = flds.security_settl_agent_contact_phone.as_ref().unwrap();
-
-        write!(output, "181={}\u{01}", val )?; // FIELD_SECURITYSETTLAGENTCONTACTPHONE
-    }
-    if flds.cash_settl_agent_name.is_some() {
-        let val = flds.cash_settl_agent_name.as_ref().unwrap();
-
-        write!(output, "182={}\u{01}", val )?; // FIELD_CASHSETTLAGENTNAME
-    }
-    if flds.cash_settl_agent_code.is_some() {
-        let val = flds.cash_settl_agent_code.as_ref().unwrap();
-
-        write!(output, "183={}\u{01}", val )?; // FIELD_CASHSETTLAGENTCODE
-    }
-    if flds.cash_settl_agent_acct_num.is_some() {
-        let val = flds.cash_settl_agent_acct_num.as_ref().unwrap();
-
-        write!(output, "184={}\u{01}", val )?; // FIELD_CASHSETTLAGENTACCTNUM
-    }
-    if flds.cash_settl_agent_acct_name.is_some() {
-        let val = flds.cash_settl_agent_acct_name.as_ref().unwrap();
-
-        write!(output, "185={}\u{01}", val )?; // FIELD_CASHSETTLAGENTACCTNAME
-    }
-    if flds.cash_settl_agent_contact_name.is_some() {
-        let val = flds.cash_settl_agent_contact_name.as_ref().unwrap();
-
-        write!(output, "186={}\u{01}", val )?; // FIELD_CASHSETTLAGENTCONTACTNAME
-    }
-    if flds.cash_settl_agent_contact_phone.is_some() {
-        let val = flds.cash_settl_agent_contact_phone.as_ref().unwrap();
-
-        write!(output, "187={}\u{01}", val )?; // FIELD_CASHSETTLAGENTCONTACTPHONE
-    }
-    Ok( () )
-}
-
-
-fn write_market_data_request_fields(flds: &MarketDataRequestFields, output: &mut Write) -> Result<(), io::Error> {
-
-    {
-        let val = &flds.mdreq_id;
-
-        write!(output, "262={}\u{01}", val )?; // FIELD_MDREQID
-    }
-    {
-        let val = &flds.subscription_request_type;
-
-        write!(output, "263={}\u{01}", val )?; // FIELD_SUBSCRIPTIONREQUESTTYPE
-    }
-    {
-        let val = &flds.market_depth;
-
-        write!(output, "264={}\u{01}", val )?; // FIELD_MARKETDEPTH
-    }
-    if flds.mdupdate_type.is_some() {
-        let val = flds.mdupdate_type.as_ref().unwrap();
-
-        write!(output, "265={}\u{01}", val )?; // FIELD_MDUPDATETYPE
-    }
-    if flds.aggregated_book.is_some() {
-        let val = flds.aggregated_book.as_ref().unwrap();
-
-        write!(output, "266={}\u{01}", to_boolconv(val) )?; // FIELD_AGGREGATEDBOOK
-    }
-    {
-        let val = &flds.no_mdentry_types;
-
-        write_group_no_mdentry_types12_fields( val, output )?;
-    }
-    {
-        let val = &flds.no_related_sym;
-
-        write_group_no_related_sym23_fields( val, output )?;
-    }
-    Ok( () )
-}
-
-
-fn write_market_data_snapshot_full_refresh_fields(flds: &MarketDataSnapshotFullRefreshFields, output: &mut Write) -> Result<(), io::Error> {
-
-    if flds.mdreq_id.is_some() {
-        let val = flds.mdreq_id.as_ref().unwrap();
-
-        write!(output, "262={}\u{01}", val )?; // FIELD_MDREQID
-    }
-    {
-        let val = &flds.symbol;
-
-        write!(output, "55={}\u{01}", val )?; // FIELD_SYMBOL
-    }
-    if flds.symbol_sfx.is_some() {
-        let val = flds.symbol_sfx.as_ref().unwrap();
-
-        write!(output, "65={}\u{01}", val )?; // FIELD_SYMBOLSFX
-    }
-    if flds.security_id.is_some() {
-        let val = flds.security_id.as_ref().unwrap();
-
-        write!(output, "48={}\u{01}", val )?; // FIELD_SECURITYID
-    }
-    if flds.idsource.is_some() {
-        let val = flds.idsource.as_ref().unwrap();
-
-        write!(output, "22={}\u{01}", val )?; // FIELD_IDSOURCE
-    }
-    if flds.security_type.is_some() {
-        let val = flds.security_type.as_ref().unwrap();
-
-        write!(output, "167={}\u{01}", val )?; // FIELD_SECURITYTYPE
-    }
-    if flds.maturity_month_year.is_some() {
-        let val = flds.maturity_month_year.as_ref().unwrap();
-
-        write!(output, "200={}\u{01}", val )?; // FIELD_MATURITYMONTHYEAR
-    }
-    if flds.maturity_day.is_some() {
-        let val = flds.maturity_day.as_ref().unwrap();
-
-        write!(output, "205={}\u{01}", val )?; // FIELD_MATURITYDAY
-    }
-    if flds.put_or_call.is_some() {
-        let val = flds.put_or_call.as_ref().unwrap();
-
-        write!(output, "201={}\u{01}", val )?; // FIELD_PUTORCALL
-    }
-    if flds.strike_price.is_some() {
-        let val = flds.strike_price.as_ref().unwrap();
-
-        write!(output, "202={}\u{01}", val )?; // FIELD_STRIKEPRICE
-    }
-    if flds.opt_attribute.is_some() {
-        let val = flds.opt_attribute.as_ref().unwrap();
-
-        write!(output, "206={}\u{01}", val )?; // FIELD_OPTATTRIBUTE
-    }
-    if flds.contract_multiplier.is_some() {
-        let val = flds.contract_multiplier.as_ref().unwrap();
-
-        write!(output, "231={}\u{01}", val )?; // FIELD_CONTRACTMULTIPLIER
-    }
-    if flds.coupon_rate.is_some() {
-        let val = flds.coupon_rate.as_ref().unwrap();
-
-        write!(output, "223={}\u{01}", val )?; // FIELD_COUPONRATE
-    }
-    if flds.security_exchange.is_some() {
-        let val = flds.security_exchange.as_ref().unwrap();
-
-        write!(output, "207={}\u{01}", val )?; // FIELD_SECURITYEXCHANGE
-    }
-    if flds.issuer.is_some() {
-        let val = flds.issuer.as_ref().unwrap();
-
-        write!(output, "106={}\u{01}", val )?; // FIELD_ISSUER
-    }
-    if flds.encoded_issuer_len.is_some() {
-        let val = flds.encoded_issuer_len.as_ref().unwrap();
-
-        write!(output, "348={}\u{01}", val )?; // FIELD_ENCODEDISSUERLEN
-    }
-    if flds.encoded_issuer.is_some() {
-        let val = flds.encoded_issuer.as_ref().unwrap();
-
-        write!(output, "349={}\u{01}", val )?; // FIELD_ENCODEDISSUER
-    }
-    if flds.security_desc.is_some() {
-        let val = flds.security_desc.as_ref().unwrap();
-
-        write!(output, "107={}\u{01}", val )?; // FIELD_SECURITYDESC
-    }
-    if flds.encoded_security_desc_len.is_some() {
-        let val = flds.encoded_security_desc_len.as_ref().unwrap();
-
-        write!(output, "350={}\u{01}", val )?; // FIELD_ENCODEDSECURITYDESCLEN
-    }
-    if flds.encoded_security_desc.is_some() {
-        let val = flds.encoded_security_desc.as_ref().unwrap();
-
-        write!(output, "351={}\u{01}", val )?; // FIELD_ENCODEDSECURITYDESC
-    }
-    if flds.financial_status.is_some() {
-        let val = flds.financial_status.as_ref().unwrap();
-
-        write!(output, "291={}\u{01}", val )?; // FIELD_FINANCIALSTATUS
-    }
-    if flds.corporate_action.is_some() {
-        let val = flds.corporate_action.as_ref().unwrap();
-
-        write!(output, "292={}\u{01}", val )?; // FIELD_CORPORATEACTION
-    }
-    if flds.total_volume_traded.is_some() {
-        let val = flds.total_volume_traded.as_ref().unwrap();
-
-        write!(output, "387={}\u{01}", val )?; // FIELD_TOTALVOLUMETRADED
-    }
-    {
-        let val = &flds.no_mdentries;
-
-        write_group_no_mdentries10_fields( val, output )?;
-    }
-    Ok( () )
-}
-
-
-fn write_market_data_incremental_refresh_fields(flds: &MarketDataIncrementalRefreshFields, output: &mut Write) -> Result<(), io::Error> {
-
-    if flds.mdreq_id.is_some() {
-        let val = flds.mdreq_id.as_ref().unwrap();
-
-        write!(output, "262={}\u{01}", val )?; // FIELD_MDREQID
-    }
-    {
-        let val = &flds.no_mdentries;
-
-        write_group_no_mdentries11_fields( val, output )?;
-    }
-    Ok( () )
-}
-
-
-fn write_market_data_request_reject_fields(flds: &MarketDataRequestRejectFields, output: &mut Write) -> Result<(), io::Error> {
-
-    {
-        let val = &flds.mdreq_id;
-
-        write!(output, "262={}\u{01}", val )?; // FIELD_MDREQID
-    }
-    if flds.mdreq_rej_reason.is_some() {
-        let val = flds.mdreq_rej_reason.as_ref().unwrap();
-
-        write!(output, "281={}\u{01}", val )?; // FIELD_MDREQREJREASON
-    }
-    if flds.text.is_some() {
-        let val = flds.text.as_ref().unwrap();
-
-        write!(output, "58={}\u{01}", val )?; // FIELD_TEXT
-    }
-    if flds.encoded_text_len.is_some() {
-        let val = flds.encoded_text_len.as_ref().unwrap();
-
-        write!(output, "354={}\u{01}", val )?; // FIELD_ENCODEDTEXTLEN
-    }
-    if flds.encoded_text.is_some() {
-        let val = flds.encoded_text.as_ref().unwrap();
-
-        write!(output, "355={}\u{01}", val )?; // FIELD_ENCODEDTEXT
-    }
-    Ok( () )
-}
-
-
-fn write_quote_cancel_fields(flds: &QuoteCancelFields, output: &mut Write) -> Result<(), io::Error> {
-
-    if flds.quote_req_id.is_some() {
-        let val = flds.quote_req_id.as_ref().unwrap();
-
-        write!(output, "131={}\u{01}", val )?; // FIELD_QUOTEREQID
-    }
-    {
-        let val = &flds.quote_id;
-
-        write!(output, "117={}\u{01}", val )?; // FIELD_QUOTEID
-    }
-    {
-        let val = &flds.quote_cancel_type;
-
-        write!(output, "298={}\u{01}", val )?; // FIELD_QUOTECANCELTYPE
-    }
-    if flds.quote_response_level.is_some() {
-        let val = flds.quote_response_level.as_ref().unwrap();
-
-        write!(output, "301={}\u{01}", val )?; // FIELD_QUOTERESPONSELEVEL
-    }
-    if flds.trading_session_id.is_some() {
-        let val = flds.trading_session_id.as_ref().unwrap();
-
-        write!(output, "336={}\u{01}", val )?; // FIELD_TRADINGSESSIONID
-    }
-    {
-        let val = &flds.no_quote_entries;
-
-        write_group_no_quote_entries20_fields( val, output )?;
-    }
-    Ok( () )
-}
-
-
-fn write_quote_status_request_fields(flds: &QuoteStatusRequestFields, output: &mut Write) -> Result<(), io::Error> {
-
-    if flds.quote_id.is_some() {
-        let val = flds.quote_id.as_ref().unwrap();
-
-        write!(output, "117={}\u{01}", val )?; // FIELD_QUOTEID
-    }
-    {
-        let val = &flds.symbol;
-
-        write!(output, "55={}\u{01}", val )?; // FIELD_SYMBOL
-    }
-    if flds.symbol_sfx.is_some() {
-        let val = flds.symbol_sfx.as_ref().unwrap();
-
-        write!(output, "65={}\u{01}", val )?; // FIELD_SYMBOLSFX
-    }
-    if flds.security_id.is_some() {
-        let val = flds.security_id.as_ref().unwrap();
-
-        write!(output, "48={}\u{01}", val )?; // FIELD_SECURITYID
-    }
-    if flds.idsource.is_some() {
-        let val = flds.idsource.as_ref().unwrap();
-
-        write!(output, "22={}\u{01}", val )?; // FIELD_IDSOURCE
-    }
-    if flds.security_type.is_some() {
-        let val = flds.security_type.as_ref().unwrap();
-
-        write!(output, "167={}\u{01}", val )?; // FIELD_SECURITYTYPE
-    }
-    if flds.maturity_month_year.is_some() {
-        let val = flds.maturity_month_year.as_ref().unwrap();
-
-        write!(output, "200={}\u{01}", val )?; // FIELD_MATURITYMONTHYEAR
-    }
-    if flds.maturity_day.is_some() {
-        let val = flds.maturity_day.as_ref().unwrap();
-
-        write!(output, "205={}\u{01}", val )?; // FIELD_MATURITYDAY
-    }
-    if flds.put_or_call.is_some() {
-        let val = flds.put_or_call.as_ref().unwrap();
-
-        write!(output, "201={}\u{01}", val )?; // FIELD_PUTORCALL
-    }
-    if flds.strike_price.is_some() {
-        let val = flds.strike_price.as_ref().unwrap();
-
-        write!(output, "202={}\u{01}", val )?; // FIELD_STRIKEPRICE
-    }
-    if flds.opt_attribute.is_some() {
-        let val = flds.opt_attribute.as_ref().unwrap();
-
-        write!(output, "206={}\u{01}", val )?; // FIELD_OPTATTRIBUTE
-    }
-    if flds.contract_multiplier.is_some() {
-        let val = flds.contract_multiplier.as_ref().unwrap();
-
-        write!(output, "231={}\u{01}", val )?; // FIELD_CONTRACTMULTIPLIER
-    }
-    if flds.coupon_rate.is_some() {
-        let val = flds.coupon_rate.as_ref().unwrap();
-
-        write!(output, "223={}\u{01}", val )?; // FIELD_COUPONRATE
-    }
-    if flds.security_exchange.is_some() {
-        let val = flds.security_exchange.as_ref().unwrap();
-
-        write!(output, "207={}\u{01}", val )?; // FIELD_SECURITYEXCHANGE
-    }
-    if flds.issuer.is_some() {
-        let val = flds.issuer.as_ref().unwrap();
-
-        write!(output, "106={}\u{01}", val )?; // FIELD_ISSUER
-    }
-    if flds.encoded_issuer_len.is_some() {
-        let val = flds.encoded_issuer_len.as_ref().unwrap();
-
-        write!(output, "348={}\u{01}", val )?; // FIELD_ENCODEDISSUERLEN
-    }
-    if flds.encoded_issuer.is_some() {
-        let val = flds.encoded_issuer.as_ref().unwrap();
-
-        write!(output, "349={}\u{01}", val )?; // FIELD_ENCODEDISSUER
-    }
-    if flds.security_desc.is_some() {
-        let val = flds.security_desc.as_ref().unwrap();
-
-        write!(output, "107={}\u{01}", val )?; // FIELD_SECURITYDESC
-    }
-    if flds.encoded_security_desc_len.is_some() {
-        let val = flds.encoded_security_desc_len.as_ref().unwrap();
-
-        write!(output, "350={}\u{01}", val )?; // FIELD_ENCODEDSECURITYDESCLEN
-    }
-    if flds.encoded_security_desc.is_some() {
-        let val = flds.encoded_security_desc.as_ref().unwrap();
-
-        write!(output, "351={}\u{01}", val )?; // FIELD_ENCODEDSECURITYDESC
-    }
-    if flds.side.is_some() {
-        let val = flds.side.as_ref().unwrap();
-
-        write!(output, "54={}\u{01}", val )?; // FIELD_SIDE
-    }
-    if flds.trading_session_id.is_some() {
-        let val = flds.trading_session_id.as_ref().unwrap();
-
-        write!(output, "336={}\u{01}", val )?; // FIELD_TRADINGSESSIONID
-    }
-    Ok( () )
-}
-
-
-fn write_quote_acknowledgement_fields(flds: &QuoteAcknowledgementFields, output: &mut Write) -> Result<(), io::Error> {
-
-    if flds.quote_req_id.is_some() {
-        let val = flds.quote_req_id.as_ref().unwrap();
-
-        write!(output, "131={}\u{01}", val )?; // FIELD_QUOTEREQID
-    }
-    if flds.quote_id.is_some() {
-        let val = flds.quote_id.as_ref().unwrap();
-
-        write!(output, "117={}\u{01}", val )?; // FIELD_QUOTEID
-    }
-    {
-        let val = &flds.quote_ack_status;
-
-        write!(output, "297={}\u{01}", val )?; // FIELD_QUOTEACKSTATUS
-    }
-    if flds.quote_reject_reason.is_some() {
-        let val = flds.quote_reject_reason.as_ref().unwrap();
-
-        write!(output, "300={}\u{01}", val )?; // FIELD_QUOTEREJECTREASON
-    }
-    if flds.quote_response_level.is_some() {
-        let val = flds.quote_response_level.as_ref().unwrap();
-
-        write!(output, "301={}\u{01}", val )?; // FIELD_QUOTERESPONSELEVEL
-    }
-    if flds.trading_session_id.is_some() {
-        let val = flds.trading_session_id.as_ref().unwrap();
-
-        write!(output, "336={}\u{01}", val )?; // FIELD_TRADINGSESSIONID
-    }
-    if flds.text.is_some() {
-        let val = flds.text.as_ref().unwrap();
-
-        write!(output, "58={}\u{01}", val )?; // FIELD_TEXT
-    }
-    if flds.no_quote_sets.is_some() {
-        let val = flds.no_quote_sets.as_ref().unwrap();
-
-        write_group_no_quote_sets22_fields( val, output )?;
-    }
-    Ok( () )
-}
-
-
-fn write_security_definition_request_fields(flds: &SecurityDefinitionRequestFields, output: &mut Write) -> Result<(), io::Error> {
-
-    {
-        let val = &flds.security_req_id;
-
-        write!(output, "320={}\u{01}", val )?; // FIELD_SECURITYREQID
-    }
-    {
-        let val = &flds.security_request_type;
-
-        write!(output, "321={}\u{01}", val )?; // FIELD_SECURITYREQUESTTYPE
-    }
-    if flds.symbol.is_some() {
-        let val = flds.symbol.as_ref().unwrap();
-
-        write!(output, "55={}\u{01}", val )?; // FIELD_SYMBOL
-    }
-    if flds.symbol_sfx.is_some() {
-        let val = flds.symbol_sfx.as_ref().unwrap();
-
-        write!(output, "65={}\u{01}", val )?; // FIELD_SYMBOLSFX
-    }
-    if flds.security_id.is_some() {
-        let val = flds.security_id.as_ref().unwrap();
-
-        write!(output, "48={}\u{01}", val )?; // FIELD_SECURITYID
-    }
-    if flds.idsource.is_some() {
-        let val = flds.idsource.as_ref().unwrap();
-
-        write!(output, "22={}\u{01}", val )?; // FIELD_IDSOURCE
-    }
-    if flds.security_type.is_some() {
-        let val = flds.security_type.as_ref().unwrap();
-
-        write!(output, "167={}\u{01}", val )?; // FIELD_SECURITYTYPE
-    }
-    if flds.maturity_month_year.is_some() {
-        let val = flds.maturity_month_year.as_ref().unwrap();
-
-        write!(output, "200={}\u{01}", val )?; // FIELD_MATURITYMONTHYEAR
-    }
-    if flds.maturity_day.is_some() {
-        let val = flds.maturity_day.as_ref().unwrap();
-
-        write!(output, "205={}\u{01}", val )?; // FIELD_MATURITYDAY
-    }
-    if flds.put_or_call.is_some() {
-        let val = flds.put_or_call.as_ref().unwrap();
-
-        write!(output, "201={}\u{01}", val )?; // FIELD_PUTORCALL
-    }
-    if flds.strike_price.is_some() {
-        let val = flds.strike_price.as_ref().unwrap();
-
-        write!(output, "202={}\u{01}", val )?; // FIELD_STRIKEPRICE
-    }
-    if flds.opt_attribute.is_some() {
-        let val = flds.opt_attribute.as_ref().unwrap();
-
-        write!(output, "206={}\u{01}", val )?; // FIELD_OPTATTRIBUTE
-    }
-    if flds.contract_multiplier.is_some() {
-        let val = flds.contract_multiplier.as_ref().unwrap();
-
-        write!(output, "231={}\u{01}", val )?; // FIELD_CONTRACTMULTIPLIER
-    }
-    if flds.coupon_rate.is_some() {
-        let val = flds.coupon_rate.as_ref().unwrap();
-
-        write!(output, "223={}\u{01}", val )?; // FIELD_COUPONRATE
-    }
-    if flds.security_exchange.is_some() {
-        let val = flds.security_exchange.as_ref().unwrap();
-
-        write!(output, "207={}\u{01}", val )?; // FIELD_SECURITYEXCHANGE
-    }
-    if flds.issuer.is_some() {
-        let val = flds.issuer.as_ref().unwrap();
-
-        write!(output, "106={}\u{01}", val )?; // FIELD_ISSUER
-    }
-    if flds.encoded_issuer_len.is_some() {
-        let val = flds.encoded_issuer_len.as_ref().unwrap();
-
-        write!(output, "348={}\u{01}", val )?; // FIELD_ENCODEDISSUERLEN
-    }
-    if flds.encoded_issuer.is_some() {
-        let val = flds.encoded_issuer.as_ref().unwrap();
-
-        write!(output, "349={}\u{01}", val )?; // FIELD_ENCODEDISSUER
-    }
-    if flds.security_desc.is_some() {
-        let val = flds.security_desc.as_ref().unwrap();
-
-        write!(output, "107={}\u{01}", val )?; // FIELD_SECURITYDESC
-    }
-    if flds.encoded_security_desc_len.is_some() {
-        let val = flds.encoded_security_desc_len.as_ref().unwrap();
-
-        write!(output, "350={}\u{01}", val )?; // FIELD_ENCODEDSECURITYDESCLEN
-    }
-    if flds.encoded_security_desc.is_some() {
-        let val = flds.encoded_security_desc.as_ref().unwrap();
-
-        write!(output, "351={}\u{01}", val )?; // FIELD_ENCODEDSECURITYDESC
-    }
-    if flds.currency.is_some() {
-        let val = flds.currency.as_ref().unwrap();
-
-        write!(output, "15={}\u{01}", val )?; // FIELD_CURRENCY
-    }
-    if flds.text.is_some() {
-        let val = flds.text.as_ref().unwrap();
-
-        write!(output, "58={}\u{01}", val )?; // FIELD_TEXT
-    }
-    if flds.encoded_text_len.is_some() {
-        let val = flds.encoded_text_len.as_ref().unwrap();
-
-        write!(output, "354={}\u{01}", val )?; // FIELD_ENCODEDTEXTLEN
-    }
-    if flds.encoded_text.is_some() {
-        let val = flds.encoded_text.as_ref().unwrap();
-
-        write!(output, "355={}\u{01}", val )?; // FIELD_ENCODEDTEXT
-    }
-    if flds.trading_session_id.is_some() {
-        let val = flds.trading_session_id.as_ref().unwrap();
-
-        write!(output, "336={}\u{01}", val )?; // FIELD_TRADINGSESSIONID
-    }
-    if flds.no_related_sym.is_some() {
-        let val = flds.no_related_sym.as_ref().unwrap();
-
-        write_group_no_related_sym26_fields( val, output )?;
-    }
-    Ok( () )
-}
-
-
-fn write_security_definition_fields(flds: &SecurityDefinitionFields, output: &mut Write) -> Result<(), io::Error> {
-
-    {
-        let val = &flds.security_req_id;
-
-        write!(output, "320={}\u{01}", val )?; // FIELD_SECURITYREQID
-    }
-    {
-        let val = &flds.security_response_id;
-
-        write!(output, "322={}\u{01}", val )?; // FIELD_SECURITYRESPONSEID
-    }
-    if flds.security_response_type.is_some() {
-        let val = flds.security_response_type.as_ref().unwrap();
-
-        write!(output, "323={}\u{01}", val )?; // FIELD_SECURITYRESPONSETYPE
-    }
-    {
-        let val = &flds.total_num_securities;
-
-        write!(output, "393={}\u{01}", val )?; // FIELD_TOTALNUMSECURITIES
-    }
-    if flds.symbol.is_some() {
-        let val = flds.symbol.as_ref().unwrap();
-
-        write!(output, "55={}\u{01}", val )?; // FIELD_SYMBOL
-    }
-    if flds.symbol_sfx.is_some() {
-        let val = flds.symbol_sfx.as_ref().unwrap();
-
-        write!(output, "65={}\u{01}", val )?; // FIELD_SYMBOLSFX
-    }
-    if flds.security_id.is_some() {
-        let val = flds.security_id.as_ref().unwrap();
-
-        write!(output, "48={}\u{01}", val )?; // FIELD_SECURITYID
-    }
-    if flds.idsource.is_some() {
-        let val = flds.idsource.as_ref().unwrap();
-
-        write!(output, "22={}\u{01}", val )?; // FIELD_IDSOURCE
-    }
-    if flds.security_type.is_some() {
-        let val = flds.security_type.as_ref().unwrap();
-
-        write!(output, "167={}\u{01}", val )?; // FIELD_SECURITYTYPE
-    }
-    if flds.maturity_month_year.is_some() {
-        let val = flds.maturity_month_year.as_ref().unwrap();
-
-        write!(output, "200={}\u{01}", val )?; // FIELD_MATURITYMONTHYEAR
-    }
-    if flds.maturity_day.is_some() {
-        let val = flds.maturity_day.as_ref().unwrap();
-
-        write!(output, "205={}\u{01}", val )?; // FIELD_MATURITYDAY
-    }
-    if flds.put_or_call.is_some() {
-        let val = flds.put_or_call.as_ref().unwrap();
-
-        write!(output, "201={}\u{01}", val )?; // FIELD_PUTORCALL
-    }
-    if flds.strike_price.is_some() {
-        let val = flds.strike_price.as_ref().unwrap();
-
-        write!(output, "202={}\u{01}", val )?; // FIELD_STRIKEPRICE
-    }
-    if flds.opt_attribute.is_some() {
-        let val = flds.opt_attribute.as_ref().unwrap();
-
-        write!(output, "206={}\u{01}", val )?; // FIELD_OPTATTRIBUTE
-    }
-    if flds.contract_multiplier.is_some() {
-        let val = flds.contract_multiplier.as_ref().unwrap();
-
-        write!(output, "231={}\u{01}", val )?; // FIELD_CONTRACTMULTIPLIER
-    }
-    if flds.coupon_rate.is_some() {
-        let val = flds.coupon_rate.as_ref().unwrap();
-
-        write!(output, "223={}\u{01}", val )?; // FIELD_COUPONRATE
-    }
-    if flds.security_exchange.is_some() {
-        let val = flds.security_exchange.as_ref().unwrap();
-
-        write!(output, "207={}\u{01}", val )?; // FIELD_SECURITYEXCHANGE
-    }
-    if flds.issuer.is_some() {
-        let val = flds.issuer.as_ref().unwrap();
-
-        write!(output, "106={}\u{01}", val )?; // FIELD_ISSUER
-    }
-    if flds.encoded_issuer_len.is_some() {
-        let val = flds.encoded_issuer_len.as_ref().unwrap();
-
-        write!(output, "348={}\u{01}", val )?; // FIELD_ENCODEDISSUERLEN
-    }
-    if flds.encoded_issuer.is_some() {
-        let val = flds.encoded_issuer.as_ref().unwrap();
-
-        write!(output, "349={}\u{01}", val )?; // FIELD_ENCODEDISSUER
-    }
-    if flds.security_desc.is_some() {
-        let val = flds.security_desc.as_ref().unwrap();
-
-        write!(output, "107={}\u{01}", val )?; // FIELD_SECURITYDESC
-    }
-    if flds.encoded_security_desc_len.is_some() {
-        let val = flds.encoded_security_desc_len.as_ref().unwrap();
-
-        write!(output, "350={}\u{01}", val )?; // FIELD_ENCODEDSECURITYDESCLEN
-    }
-    if flds.encoded_security_desc.is_some() {
-        let val = flds.encoded_security_desc.as_ref().unwrap();
-
-        write!(output, "351={}\u{01}", val )?; // FIELD_ENCODEDSECURITYDESC
-    }
-    if flds.currency.is_some() {
-        let val = flds.currency.as_ref().unwrap();
-
-        write!(output, "15={}\u{01}", val )?; // FIELD_CURRENCY
-    }
-    if flds.trading_session_id.is_some() {
-        let val = flds.trading_session_id.as_ref().unwrap();
-
-        write!(output, "336={}\u{01}", val )?; // FIELD_TRADINGSESSIONID
-    }
-    if flds.text.is_some() {
-        let val = flds.text.as_ref().unwrap();
-
-        write!(output, "58={}\u{01}", val )?; // FIELD_TEXT
-    }
-    if flds.encoded_text_len.is_some() {
-        let val = flds.encoded_text_len.as_ref().unwrap();
-
-        write!(output, "354={}\u{01}", val )?; // FIELD_ENCODEDTEXTLEN
-    }
-    if flds.encoded_text.is_some() {
-        let val = flds.encoded_text.as_ref().unwrap();
-
-        write!(output, "355={}\u{01}", val )?; // FIELD_ENCODEDTEXT
-    }
-    if flds.no_related_sym.is_some() {
-        let val = flds.no_related_sym.as_ref().unwrap();
-
-        write_group_no_related_sym26_fields( val, output )?;
-    }
-    Ok( () )
-}
-
-
-fn write_security_status_request_fields(flds: &SecurityStatusRequestFields, output: &mut Write) -> Result<(), io::Error> {
-
-    {
-        let val = &flds.security_status_req_id;
-
-        write!(output, "324={}\u{01}", val )?; // FIELD_SECURITYSTATUSREQID
-    }
-    {
-        let val = &flds.symbol;
-
-        write!(output, "55={}\u{01}", val )?; // FIELD_SYMBOL
-    }
-    if flds.symbol_sfx.is_some() {
-        let val = flds.symbol_sfx.as_ref().unwrap();
-
-        write!(output, "65={}\u{01}", val )?; // FIELD_SYMBOLSFX
-    }
-    if flds.security_id.is_some() {
-        let val = flds.security_id.as_ref().unwrap();
-
-        write!(output, "48={}\u{01}", val )?; // FIELD_SECURITYID
-    }
-    if flds.idsource.is_some() {
-        let val = flds.idsource.as_ref().unwrap();
-
-        write!(output, "22={}\u{01}", val )?; // FIELD_IDSOURCE
-    }
-    if flds.security_type.is_some() {
-        let val = flds.security_type.as_ref().unwrap();
-
-        write!(output, "167={}\u{01}", val )?; // FIELD_SECURITYTYPE
-    }
-    if flds.maturity_month_year.is_some() {
-        let val = flds.maturity_month_year.as_ref().unwrap();
-
-        write!(output, "200={}\u{01}", val )?; // FIELD_MATURITYMONTHYEAR
-    }
-    if flds.maturity_day.is_some() {
-        let val = flds.maturity_day.as_ref().unwrap();
-
-        write!(output, "205={}\u{01}", val )?; // FIELD_MATURITYDAY
-    }
-    if flds.put_or_call.is_some() {
-        let val = flds.put_or_call.as_ref().unwrap();
-
-        write!(output, "201={}\u{01}", val )?; // FIELD_PUTORCALL
-    }
-    if flds.strike_price.is_some() {
-        let val = flds.strike_price.as_ref().unwrap();
-
-        write!(output, "202={}\u{01}", val )?; // FIELD_STRIKEPRICE
-    }
-    if flds.opt_attribute.is_some() {
-        let val = flds.opt_attribute.as_ref().unwrap();
-
-        write!(output, "206={}\u{01}", val )?; // FIELD_OPTATTRIBUTE
-    }
-    if flds.contract_multiplier.is_some() {
-        let val = flds.contract_multiplier.as_ref().unwrap();
-
-        write!(output, "231={}\u{01}", val )?; // FIELD_CONTRACTMULTIPLIER
-    }
-    if flds.coupon_rate.is_some() {
-        let val = flds.coupon_rate.as_ref().unwrap();
-
-        write!(output, "223={}\u{01}", val )?; // FIELD_COUPONRATE
-    }
-    if flds.security_exchange.is_some() {
-        let val = flds.security_exchange.as_ref().unwrap();
-
-        write!(output, "207={}\u{01}", val )?; // FIELD_SECURITYEXCHANGE
-    }
-    if flds.issuer.is_some() {
-        let val = flds.issuer.as_ref().unwrap();
-
-        write!(output, "106={}\u{01}", val )?; // FIELD_ISSUER
-    }
-    if flds.encoded_issuer_len.is_some() {
-        let val = flds.encoded_issuer_len.as_ref().unwrap();
-
-        write!(output, "348={}\u{01}", val )?; // FIELD_ENCODEDISSUERLEN
-    }
-    if flds.encoded_issuer.is_some() {
-        let val = flds.encoded_issuer.as_ref().unwrap();
-
-        write!(output, "349={}\u{01}", val )?; // FIELD_ENCODEDISSUER
-    }
-    if flds.security_desc.is_some() {
-        let val = flds.security_desc.as_ref().unwrap();
-
-        write!(output, "107={}\u{01}", val )?; // FIELD_SECURITYDESC
-    }
-    if flds.encoded_security_desc_len.is_some() {
-        let val = flds.encoded_security_desc_len.as_ref().unwrap();
-
-        write!(output, "350={}\u{01}", val )?; // FIELD_ENCODEDSECURITYDESCLEN
-    }
-    if flds.encoded_security_desc.is_some() {
-        let val = flds.encoded_security_desc.as_ref().unwrap();
-
-        write!(output, "351={}\u{01}", val )?; // FIELD_ENCODEDSECURITYDESC
-    }
-    if flds.currency.is_some() {
-        let val = flds.currency.as_ref().unwrap();
-
-        write!(output, "15={}\u{01}", val )?; // FIELD_CURRENCY
-    }
-    {
-        let val = &flds.subscription_request_type;
-
-        write!(output, "263={}\u{01}", val )?; // FIELD_SUBSCRIPTIONREQUESTTYPE
-    }
-    if flds.trading_session_id.is_some() {
-        let val = flds.trading_session_id.as_ref().unwrap();
-
-        write!(output, "336={}\u{01}", val )?; // FIELD_TRADINGSESSIONID
-    }
-    Ok( () )
-}
-
-
-fn write_security_status_fields(flds: &SecurityStatusFields, output: &mut Write) -> Result<(), io::Error> {
-
-    if flds.security_status_req_id.is_some() {
-        let val = flds.security_status_req_id.as_ref().unwrap();
-
-        write!(output, "324={}\u{01}", val )?; // FIELD_SECURITYSTATUSREQID
-    }
-    {
-        let val = &flds.symbol;
-
-        write!(output, "55={}\u{01}", val )?; // FIELD_SYMBOL
-    }
-    if flds.symbol_sfx.is_some() {
-        let val = flds.symbol_sfx.as_ref().unwrap();
-
-        write!(output, "65={}\u{01}", val )?; // FIELD_SYMBOLSFX
-    }
-    if flds.security_id.is_some() {
-        let val = flds.security_id.as_ref().unwrap();
-
-        write!(output, "48={}\u{01}", val )?; // FIELD_SECURITYID
-    }
-    if flds.idsource.is_some() {
-        let val = flds.idsource.as_ref().unwrap();
-
-        write!(output, "22={}\u{01}", val )?; // FIELD_IDSOURCE
-    }
-    if flds.security_type.is_some() {
-        let val = flds.security_type.as_ref().unwrap();
-
-        write!(output, "167={}\u{01}", val )?; // FIELD_SECURITYTYPE
-    }
-    if flds.maturity_month_year.is_some() {
-        let val = flds.maturity_month_year.as_ref().unwrap();
-
-        write!(output, "200={}\u{01}", val )?; // FIELD_MATURITYMONTHYEAR
-    }
-    if flds.maturity_day.is_some() {
-        let val = flds.maturity_day.as_ref().unwrap();
-
-        write!(output, "205={}\u{01}", val )?; // FIELD_MATURITYDAY
-    }
-    if flds.put_or_call.is_some() {
-        let val = flds.put_or_call.as_ref().unwrap();
-
-        write!(output, "201={}\u{01}", val )?; // FIELD_PUTORCALL
-    }
-    if flds.strike_price.is_some() {
-        let val = flds.strike_price.as_ref().unwrap();
-
-        write!(output, "202={}\u{01}", val )?; // FIELD_STRIKEPRICE
-    }
-    if flds.opt_attribute.is_some() {
-        let val = flds.opt_attribute.as_ref().unwrap();
-
-        write!(output, "206={}\u{01}", val )?; // FIELD_OPTATTRIBUTE
-    }
-    if flds.contract_multiplier.is_some() {
-        let val = flds.contract_multiplier.as_ref().unwrap();
-
-        write!(output, "231={}\u{01}", val )?; // FIELD_CONTRACTMULTIPLIER
-    }
-    if flds.coupon_rate.is_some() {
-        let val = flds.coupon_rate.as_ref().unwrap();
-
-        write!(output, "223={}\u{01}", val )?; // FIELD_COUPONRATE
-    }
-    if flds.security_exchange.is_some() {
-        let val = flds.security_exchange.as_ref().unwrap();
-
-        write!(output, "207={}\u{01}", val )?; // FIELD_SECURITYEXCHANGE
-    }
-    if flds.issuer.is_some() {
-        let val = flds.issuer.as_ref().unwrap();
-
-        write!(output, "106={}\u{01}", val )?; // FIELD_ISSUER
-    }
-    if flds.encoded_issuer_len.is_some() {
-        let val = flds.encoded_issuer_len.as_ref().unwrap();
-
-        write!(output, "348={}\u{01}", val )?; // FIELD_ENCODEDISSUERLEN
-    }
-    if flds.encoded_issuer.is_some() {
-        let val = flds.encoded_issuer.as_ref().unwrap();
-
-        write!(output, "349={}\u{01}", val )?; // FIELD_ENCODEDISSUER
-    }
-    if flds.security_desc.is_some() {
-        let val = flds.security_desc.as_ref().unwrap();
-
-        write!(output, "107={}\u{01}", val )?; // FIELD_SECURITYDESC
-    }
-    if flds.encoded_security_desc_len.is_some() {
-        let val = flds.encoded_security_desc_len.as_ref().unwrap();
-
-        write!(output, "350={}\u{01}", val )?; // FIELD_ENCODEDSECURITYDESCLEN
-    }
-    if flds.encoded_security_desc.is_some() {
-        let val = flds.encoded_security_desc.as_ref().unwrap();
-
-        write!(output, "351={}\u{01}", val )?; // FIELD_ENCODEDSECURITYDESC
-    }
-    if flds.currency.is_some() {
-        let val = flds.currency.as_ref().unwrap();
-
-        write!(output, "15={}\u{01}", val )?; // FIELD_CURRENCY
-    }
-    if flds.trading_session_id.is_some() {
-        let val = flds.trading_session_id.as_ref().unwrap();
-
-        write!(output, "336={}\u{01}", val )?; // FIELD_TRADINGSESSIONID
-    }
-    if flds.unsolicited_indicator.is_some() {
-        let val = flds.unsolicited_indicator.as_ref().unwrap();
-
-        write!(output, "325={}\u{01}", to_boolconv(val) )?; // FIELD_UNSOLICITEDINDICATOR
-    }
-    if flds.security_trading_status.is_some() {
-        let val = flds.security_trading_status.as_ref().unwrap();
-
-        write!(output, "326={}\u{01}", val )?; // FIELD_SECURITYTRADINGSTATUS
-    }
-    if flds.financial_status.is_some() {
-        let val = flds.financial_status.as_ref().unwrap();
-
-        write!(output, "291={}\u{01}", val )?; // FIELD_FINANCIALSTATUS
-    }
-    if flds.corporate_action.is_some() {
-        let val = flds.corporate_action.as_ref().unwrap();
-
-        write!(output, "292={}\u{01}", val )?; // FIELD_CORPORATEACTION
-    }
-    if flds.halt_reason_char.is_some() {
-        let val = flds.halt_reason_char.as_ref().unwrap();
-
-        write!(output, "327={}\u{01}", val )?; // FIELD_HALTREASONCHAR
-    }
-    if flds.in_view_of_common.is_some() {
-        let val = flds.in_view_of_common.as_ref().unwrap();
-
-        write!(output, "328={}\u{01}", to_boolconv(val) )?; // FIELD_INVIEWOFCOMMON
-    }
-    if flds.due_to_related.is_some() {
-        let val = flds.due_to_related.as_ref().unwrap();
-
-        write!(output, "329={}\u{01}", to_boolconv(val) )?; // FIELD_DUETORELATED
-    }
-    if flds.buy_volume.is_some() {
-        let val = flds.buy_volume.as_ref().unwrap();
-
-        write!(output, "330={}\u{01}", val )?; // FIELD_BUYVOLUME
-    }
-    if flds.sell_volume.is_some() {
-        let val = flds.sell_volume.as_ref().unwrap();
-
-        write!(output, "331={}\u{01}", val )?; // FIELD_SELLVOLUME
-    }
-    if flds.high_px.is_some() {
-        let val = flds.high_px.as_ref().unwrap();
-
-        write!(output, "332={}\u{01}", val )?; // FIELD_HIGHPX
-    }
-    if flds.low_px.is_some() {
-        let val = flds.low_px.as_ref().unwrap();
-
-        write!(output, "333={}\u{01}", val )?; // FIELD_LOWPX
-    }
-    if flds.last_px.is_some() {
-        let val = flds.last_px.as_ref().unwrap();
-
-        write!(output, "31={}\u{01}", val )?; // FIELD_LASTPX
-    }
-    if flds.transact_time.is_some() {
-        let val = flds.transact_time.as_ref().unwrap();
-
-        write!(output, "60={}\u{01}", val )?; // FIELD_TRANSACTTIME
-    }
-    if flds.adjustment.is_some() {
-        let val = flds.adjustment.as_ref().unwrap();
-
-        write!(output, "334={}\u{01}", val )?; // FIELD_ADJUSTMENT
-    }
-    Ok( () )
-}
-
-
-fn write_trading_session_status_request_fields(flds: &TradingSessionStatusRequestFields, output: &mut Write) -> Result<(), io::Error> {
-
-    {
-        let val = &flds.trad_ses_req_id;
-
-        write!(output, "335={}\u{01}", val )?; // FIELD_TRADSESREQID
-    }
-    if flds.trading_session_id.is_some() {
-        let val = flds.trading_session_id.as_ref().unwrap();
-
-        write!(output, "336={}\u{01}", val )?; // FIELD_TRADINGSESSIONID
-    }
-    if flds.trad_ses_method.is_some() {
-        let val = flds.trad_ses_method.as_ref().unwrap();
-
-        write!(output, "338={}\u{01}", val )?; // FIELD_TRADSESMETHOD
-    }
-    if flds.trad_ses_mode.is_some() {
-        let val = flds.trad_ses_mode.as_ref().unwrap();
-
-        write!(output, "339={}\u{01}", val )?; // FIELD_TRADSESMODE
-    }
-    {
-        let val = &flds.subscription_request_type;
-
-        write!(output, "263={}\u{01}", val )?; // FIELD_SUBSCRIPTIONREQUESTTYPE
-    }
-    Ok( () )
-}
-
-
-fn write_trading_session_status_fields(flds: &TradingSessionStatusFields, output: &mut Write) -> Result<(), io::Error> {
-
-    if flds.trad_ses_req_id.is_some() {
-        let val = flds.trad_ses_req_id.as_ref().unwrap();
-
-        write!(output, "335={}\u{01}", val )?; // FIELD_TRADSESREQID
-    }
-    {
-        let val = &flds.trading_session_id;
-
-        write!(output, "336={}\u{01}", val )?; // FIELD_TRADINGSESSIONID
-    }
-    if flds.trad_ses_method.is_some() {
-        let val = flds.trad_ses_method.as_ref().unwrap();
-
-        write!(output, "338={}\u{01}", val )?; // FIELD_TRADSESMETHOD
-    }
-    if flds.trad_ses_mode.is_some() {
-        let val = flds.trad_ses_mode.as_ref().unwrap();
-
-        write!(output, "339={}\u{01}", val )?; // FIELD_TRADSESMODE
-    }
-    if flds.unsolicited_indicator.is_some() {
-        let val = flds.unsolicited_indicator.as_ref().unwrap();
-
-        write!(output, "325={}\u{01}", to_boolconv(val) )?; // FIELD_UNSOLICITEDINDICATOR
-    }
-    {
-        let val = &flds.trad_ses_status;
-
-        write!(output, "340={}\u{01}", val )?; // FIELD_TRADSESSTATUS
-    }
-    if flds.trad_ses_start_time.is_some() {
-        let val = flds.trad_ses_start_time.as_ref().unwrap();
-
-        write!(output, "341={}\u{01}", val )?; // FIELD_TRADSESSTARTTIME
-    }
-    if flds.trad_ses_open_time.is_some() {
-        let val = flds.trad_ses_open_time.as_ref().unwrap();
-
-        write!(output, "342={}\u{01}", val )?; // FIELD_TRADSESOPENTIME
-    }
-    if flds.trad_ses_pre_close_time.is_some() {
-        let val = flds.trad_ses_pre_close_time.as_ref().unwrap();
-
-        write!(output, "343={}\u{01}", val )?; // FIELD_TRADSESPRECLOSETIME
-    }
-    if flds.trad_ses_close_time.is_some() {
-        let val = flds.trad_ses_close_time.as_ref().unwrap();
-
-        write!(output, "344={}\u{01}", val )?; // FIELD_TRADSESCLOSETIME
-    }
-    if flds.trad_ses_end_time.is_some() {
-        let val = flds.trad_ses_end_time.as_ref().unwrap();
-
-        write!(output, "345={}\u{01}", val )?; // FIELD_TRADSESENDTIME
-    }
-    if flds.total_volume_traded.is_some() {
-        let val = flds.total_volume_traded.as_ref().unwrap();
-
-        write!(output, "387={}\u{01}", val )?; // FIELD_TOTALVOLUMETRADED
-    }
-    if flds.text.is_some() {
-        let val = flds.text.as_ref().unwrap();
-
-        write!(output, "58={}\u{01}", val )?; // FIELD_TEXT
-    }
-    if flds.encoded_text_len.is_some() {
-        let val = flds.encoded_text_len.as_ref().unwrap();
-
-        write!(output, "354={}\u{01}", val )?; // FIELD_ENCODEDTEXTLEN
-    }
-    if flds.encoded_text.is_some() {
-        let val = flds.encoded_text.as_ref().unwrap();
-
-        write!(output, "355={}\u{01}", val )?; // FIELD_ENCODEDTEXT
-    }
-    Ok( () )
-}
-
-
-fn write_mass_quote_fields(flds: &MassQuoteFields, output: &mut Write) -> Result<(), io::Error> {
-
-    if flds.quote_req_id.is_some() {
-        let val = flds.quote_req_id.as_ref().unwrap();
-
-        write!(output, "131={}\u{01}", val )?; // FIELD_QUOTEREQID
-    }
-    {
-        let val = &flds.quote_id;
-
-        write!(output, "117={}\u{01}", val )?; // FIELD_QUOTEID
-    }
-    if flds.quote_response_level.is_some() {
-        let val = flds.quote_response_level.as_ref().unwrap();
-
-        write!(output, "301={}\u{01}", val )?; // FIELD_QUOTERESPONSELEVEL
-    }
-    if flds.def_bid_size.is_some() {
-        let val = flds.def_bid_size.as_ref().unwrap();
-
-        write!(output, "293={}\u{01}", val )?; // FIELD_DEFBIDSIZE
-    }
-    if flds.def_offer_size.is_some() {
-        let val = flds.def_offer_size.as_ref().unwrap();
-
-        write!(output, "294={}\u{01}", val )?; // FIELD_DEFOFFERSIZE
-    }
-    {
-        let val = &flds.no_quote_sets;
-
-        write_group_no_quote_sets21_fields( val, output )?;
-    }
-    Ok( () )
-}
-
-
-fn write_business_message_reject_fields(flds: &BusinessMessageRejectFields, output: &mut Write) -> Result<(), io::Error> {
-
-    if flds.ref_seq_num.is_some() {
-        let val = flds.ref_seq_num.as_ref().unwrap();
-
-        write!(output, "45={}\u{01}", val )?; // FIELD_REFSEQNUM
-    }
-    {
-        let val = &flds.ref_msg_type;
-
-        write!(output, "372={}\u{01}", val )?; // FIELD_REFMSGTYPE
-    }
-    if flds.business_reject_ref_id.is_some() {
-        let val = flds.business_reject_ref_id.as_ref().unwrap();
-
-        write!(output, "379={}\u{01}", val )?; // FIELD_BUSINESSREJECTREFID
-    }
-    {
-        let val = &flds.business_reject_reason;
-
-        write!(output, "380={}\u{01}", val )?; // FIELD_BUSINESSREJECTREASON
-    }
-    if flds.text.is_some() {
-        let val = flds.text.as_ref().unwrap();
-
-        write!(output, "58={}\u{01}", val )?; // FIELD_TEXT
-    }
-    if flds.encoded_text_len.is_some() {
-        let val = flds.encoded_text_len.as_ref().unwrap();
-
-        write!(output, "354={}\u{01}", val )?; // FIELD_ENCODEDTEXTLEN
-    }
-    if flds.encoded_text.is_some() {
-        let val = flds.encoded_text.as_ref().unwrap();
-
-        write!(output, "355={}\u{01}", val )?; // FIELD_ENCODEDTEXT
-    }
-    Ok( () )
-}
-
-
-fn write_bid_request_fields(flds: &BidRequestFields, output: &mut Write) -> Result<(), io::Error> {
-
-    if flds.bid_id.is_some() {
-        let val = flds.bid_id.as_ref().unwrap();
-
-        write!(output, "390={}\u{01}", val )?; // FIELD_BIDID
-    }
-    {
-        let val = &flds.client_bid_id;
-
-        write!(output, "391={}\u{01}", val )?; // FIELD_CLIENTBIDID
-    }
-    {
-        let val = &flds.bid_request_trans_type;
-
-        write!(output, "374={}\u{01}", val )?; // FIELD_BIDREQUESTTRANSTYPE
-    }
-    if flds.list_name.is_some() {
-        let val = flds.list_name.as_ref().unwrap();
-
-        write!(output, "392={}\u{01}", val )?; // FIELD_LISTNAME
-    }
-    {
-        let val = &flds.total_num_securities;
-
-        write!(output, "393={}\u{01}", val )?; // FIELD_TOTALNUMSECURITIES
-    }
-    {
-        let val = &flds.bid_type;
-
-        write!(output, "394={}\u{01}", val )?; // FIELD_BIDTYPE
-    }
-    if flds.num_tickets.is_some() {
-        let val = flds.num_tickets.as_ref().unwrap();
-
-        write!(output, "395={}\u{01}", val )?; // FIELD_NUMTICKETS
-    }
-    if flds.currency.is_some() {
-        let val = flds.currency.as_ref().unwrap();
-
-        write!(output, "15={}\u{01}", val )?; // FIELD_CURRENCY
-    }
-    if flds.side_value1.is_some() {
-        let val = flds.side_value1.as_ref().unwrap();
-
-        write!(output, "396={}\u{01}", val )?; // FIELD_SIDEVALUE1
-    }
-    if flds.side_value2.is_some() {
-        let val = flds.side_value2.as_ref().unwrap();
-
-        write!(output, "397={}\u{01}", val )?; // FIELD_SIDEVALUE2
-    }
-    if flds.no_bid_descriptors.is_some() {
-        let val = flds.no_bid_descriptors.as_ref().unwrap();
-
-        write_group_no_bid_descriptors6_fields( val, output )?;
-    }
-    if flds.no_bid_components.is_some() {
-        let val = flds.no_bid_components.as_ref().unwrap();
-
-        write_group_no_bid_components5_fields( val, output )?;
-    }
-    if flds.liquidity_ind_type.is_some() {
-        let val = flds.liquidity_ind_type.as_ref().unwrap();
-
-        write!(output, "409={}\u{01}", val )?; // FIELD_LIQUIDITYINDTYPE
-    }
-    if flds.wt_average_liquidity.is_some() {
-        let val = flds.wt_average_liquidity.as_ref().unwrap();
-
-        write!(output, "410={}\u{01}", val )?; // FIELD_WTAVERAGELIQUIDITY
-    }
-    if flds.exchange_for_physical.is_some() {
-        let val = flds.exchange_for_physical.as_ref().unwrap();
-
-        write!(output, "411={}\u{01}", to_boolconv(val) )?; // FIELD_EXCHANGEFORPHYSICAL
-    }
-    if flds.out_main_cntry_uindex.is_some() {
-        let val = flds.out_main_cntry_uindex.as_ref().unwrap();
-
-        write!(output, "412={}\u{01}", val )?; // FIELD_OUTMAINCNTRYUINDEX
-    }
-    if flds.cross_percent.is_some() {
-        let val = flds.cross_percent.as_ref().unwrap();
-
-        write!(output, "413={}\u{01}", val )?; // FIELD_CROSSPERCENT
-    }
-    if flds.prog_rpt_reqs.is_some() {
-        let val = flds.prog_rpt_reqs.as_ref().unwrap();
-
-        write!(output, "414={}\u{01}", val )?; // FIELD_PROGRPTREQS
-    }
-    if flds.prog_period_interval.is_some() {
-        let val = flds.prog_period_interval.as_ref().unwrap();
-
-        write!(output, "415={}\u{01}", val )?; // FIELD_PROGPERIODINTERVAL
-    }
-    if flds.inc_tax_ind.is_some() {
-        let val = flds.inc_tax_ind.as_ref().unwrap();
-
-        write!(output, "416={}\u{01}", val )?; // FIELD_INCTAXIND
-    }
-    if flds.forex_req.is_some() {
-        let val = flds.forex_req.as_ref().unwrap();
-
-        write!(output, "121={}\u{01}", to_boolconv(val) )?; // FIELD_FOREXREQ
-    }
-    if flds.num_bidders.is_some() {
-        let val = flds.num_bidders.as_ref().unwrap();
-
-        write!(output, "417={}\u{01}", val )?; // FIELD_NUMBIDDERS
-    }
-    if flds.trade_date.is_some() {
-        let val = flds.trade_date.as_ref().unwrap();
-
-        write!(output, "75={}\u{01}", val )?; // FIELD_TRADEDATE
-    }
-    {
-        let val = &flds.trade_type;
-
-        write!(output, "418={}\u{01}", val )?; // FIELD_TRADETYPE
-    }
-    {
-        let val = &flds.basis_px_type;
-
-        write!(output, "419={}\u{01}", val )?; // FIELD_BASISPXTYPE
-    }
-    if flds.strike_time.is_some() {
-        let val = flds.strike_time.as_ref().unwrap();
-
-        write!(output, "443={}\u{01}", val )?; // FIELD_STRIKETIME
-    }
-    if flds.text.is_some() {
-        let val = flds.text.as_ref().unwrap();
-
-        write!(output, "58={}\u{01}", val )?; // FIELD_TEXT
-    }
-    if flds.encoded_text_len.is_some() {
-        let val = flds.encoded_text_len.as_ref().unwrap();
-
-        write!(output, "354={}\u{01}", val )?; // FIELD_ENCODEDTEXTLEN
-    }
-    if flds.encoded_text.is_some() {
-        let val = flds.encoded_text.as_ref().unwrap();
-
-        write!(output, "355={}\u{01}", val )?; // FIELD_ENCODEDTEXT
-    }
-    Ok( () )
-}
-
-
-fn write_bid_response_fields(flds: &BidResponseFields, output: &mut Write) -> Result<(), io::Error> {
-
-    if flds.bid_id.is_some() {
-        let val = flds.bid_id.as_ref().unwrap();
-
-        write!(output, "390={}\u{01}", val )?; // FIELD_BIDID
-    }
-    if flds.client_bid_id.is_some() {
-        let val = flds.client_bid_id.as_ref().unwrap();
-
-        write!(output, "391={}\u{01}", val )?; // FIELD_CLIENTBIDID
-    }
-    {
-        let val = &flds.no_bid_components;
-
-        write_group_no_bid_components4_fields( val, output )?;
-    }
-    Ok( () )
-}
-
-
-fn write_list_strike_price_fields(flds: &ListStrikePriceFields, output: &mut Write) -> Result<(), io::Error> {
-
-    {
-        let val = &flds.list_id;
-
-        write!(output, "66={}\u{01}", val )?; // FIELD_LISTID
-    }
-    {
-        let val = &flds.tot_no_strikes;
-
-        write!(output, "422={}\u{01}", val )?; // FIELD_TOTNOSTRIKES
-    }
-    {
-        let val = &flds.no_strikes;
-
-        write_group_no_strikes28_fields( val, output )?;
-    }
-    Ok( () )
-}
-
-
-
-
-
-
-
-
-fn write_group_no_bid_descriptors6_fields( group: &Vec<NoBidDescriptors6Fields>, output: &mut Write ) -> Result<(), io::Error> {
+fn write_group_no_contra_brokers2_fields( group: &Vec<NoContraBrokers2Fields>, output: &mut Write ) -> Result<(), io::Error> {
     let len = group.len();
-    write!(output, "{}={}\u{01}", FIELD_NOBIDDESCRIPTORS, len )?;
+    write!(output, "{}={}\u{01}", FIELD_NOCONTRABROKERS, len )?;
 
     for g in group {
-        write_group_no_bid_descriptors6_fields_line( g, output )?;
+        write_group_no_contra_brokers2_fields_line( g, output )?;
     }
 
     Ok( () )
 }
 
-fn write_group_no_bid_descriptors6_fields_line( flds: &NoBidDescriptors6Fields, output: &mut Write) -> Result<(), io::Error> {
+fn write_group_no_contra_brokers2_fields_line( flds: &NoContraBrokers2Fields, output: &mut Write) -> Result<(), io::Error> {
 
-    if flds.bid_descriptor_type.is_some() {
-        let val = flds.bid_descriptor_type.as_ref().unwrap();
+    if flds.contra_broker.is_some() {
+        let val = flds.contra_broker.as_ref().unwrap();
 
-        write!(output, "399={}\u{01}", val )?; // FIELD_BIDDESCRIPTORTYPE
+        write!(output, "375={}\u{01}", val )?; // FIELD_CONTRABROKER
     }
-    if flds.bid_descriptor.is_some() {
-        let val = flds.bid_descriptor.as_ref().unwrap();
+    if flds.contra_trader.is_some() {
+        let val = flds.contra_trader.as_ref().unwrap();
 
-        write!(output, "400={}\u{01}", val )?; // FIELD_BIDDESCRIPTOR
+        write!(output, "337={}\u{01}", val )?; // FIELD_CONTRATRADER
     }
-    if flds.side_value_ind.is_some() {
-        let val = flds.side_value_ind.as_ref().unwrap();
+    if flds.contra_trade_qty.is_some() {
+        let val = flds.contra_trade_qty.as_ref().unwrap();
 
-        write!(output, "401={}\u{01}", val )?; // FIELD_SIDEVALUEIND
+        write!(output, "437={}\u{01}", val )?; // FIELD_CONTRATRADEQTY
     }
-    if flds.liquidity_value.is_some() {
-        let val = flds.liquidity_value.as_ref().unwrap();
+    if flds.contra_trade_time.is_some() {
+        let val = flds.contra_trade_time.as_ref().unwrap();
 
-        write!(output, "404={}\u{01}", val )?; // FIELD_LIQUIDITYVALUE
-    }
-    if flds.liquidity_num_securities.is_some() {
-        let val = flds.liquidity_num_securities.as_ref().unwrap();
-
-        write!(output, "441={}\u{01}", val )?; // FIELD_LIQUIDITYNUMSECURITIES
-    }
-    if flds.liquidity_pct_low.is_some() {
-        let val = flds.liquidity_pct_low.as_ref().unwrap();
-
-        write!(output, "402={}\u{01}", val )?; // FIELD_LIQUIDITYPCTLOW
-    }
-    if flds.liquidity_pct_high.is_some() {
-        let val = flds.liquidity_pct_high.as_ref().unwrap();
-
-        write!(output, "403={}\u{01}", val )?; // FIELD_LIQUIDITYPCTHIGH
-    }
-    if flds.efptracking_error.is_some() {
-        let val = flds.efptracking_error.as_ref().unwrap();
-
-        write!(output, "405={}\u{01}", val )?; // FIELD_EFPTRACKINGERROR
-    }
-    if flds.fair_value.is_some() {
-        let val = flds.fair_value.as_ref().unwrap();
-
-        write!(output, "406={}\u{01}", val )?; // FIELD_FAIRVALUE
-    }
-    if flds.outside_index_pct.is_some() {
-        let val = flds.outside_index_pct.as_ref().unwrap();
-
-        write!(output, "407={}\u{01}", val )?; // FIELD_OUTSIDEINDEXPCT
-    }
-    if flds.value_of_futures.is_some() {
-        let val = flds.value_of_futures.as_ref().unwrap();
-
-        write!(output, "408={}\u{01}", val )?; // FIELD_VALUEOFFUTURES
+        write!(output, "438={}\u{01}", val )?; // FIELD_CONTRATRADETIME
     }
 
     Ok( () )
@@ -26174,972 +14063,18 @@ fn write_group_no_bid_descriptors6_fields_line( flds: &NoBidDescriptors6Fields, 
 
 
 
-fn write_group_no_related_sym24_fields( group: &Vec<NoRelatedSym24Fields>, output: &mut Write ) -> Result<(), io::Error> {
-    let len = group.len();
-    write!(output, "{}={}\u{01}", FIELD_NORELATEDSYM, len )?;
-
-    for g in group {
-        write_group_no_related_sym24_fields_line( g, output )?;
-    }
-
-    Ok( () )
-}
-
-fn write_group_no_related_sym24_fields_line( flds: &NoRelatedSym24Fields, output: &mut Write) -> Result<(), io::Error> {
-
-    {
-        let val = &flds.symbol;
-
-        write!(output, "55={}\u{01}", val )?; // FIELD_SYMBOL
-    }
-    if flds.symbol_sfx.is_some() {
-        let val = flds.symbol_sfx.as_ref().unwrap();
-
-        write!(output, "65={}\u{01}", val )?; // FIELD_SYMBOLSFX
-    }
-    if flds.security_id.is_some() {
-        let val = flds.security_id.as_ref().unwrap();
-
-        write!(output, "48={}\u{01}", val )?; // FIELD_SECURITYID
-    }
-    if flds.idsource.is_some() {
-        let val = flds.idsource.as_ref().unwrap();
-
-        write!(output, "22={}\u{01}", val )?; // FIELD_IDSOURCE
-    }
-    if flds.security_type.is_some() {
-        let val = flds.security_type.as_ref().unwrap();
-
-        write!(output, "167={}\u{01}", val )?; // FIELD_SECURITYTYPE
-    }
-    if flds.maturity_month_year.is_some() {
-        let val = flds.maturity_month_year.as_ref().unwrap();
-
-        write!(output, "200={}\u{01}", val )?; // FIELD_MATURITYMONTHYEAR
-    }
-    if flds.maturity_day.is_some() {
-        let val = flds.maturity_day.as_ref().unwrap();
-
-        write!(output, "205={}\u{01}", val )?; // FIELD_MATURITYDAY
-    }
-    if flds.put_or_call.is_some() {
-        let val = flds.put_or_call.as_ref().unwrap();
-
-        write!(output, "201={}\u{01}", val )?; // FIELD_PUTORCALL
-    }
-    if flds.strike_price.is_some() {
-        let val = flds.strike_price.as_ref().unwrap();
-
-        write!(output, "202={}\u{01}", val )?; // FIELD_STRIKEPRICE
-    }
-    if flds.opt_attribute.is_some() {
-        let val = flds.opt_attribute.as_ref().unwrap();
-
-        write!(output, "206={}\u{01}", val )?; // FIELD_OPTATTRIBUTE
-    }
-    if flds.contract_multiplier.is_some() {
-        let val = flds.contract_multiplier.as_ref().unwrap();
-
-        write!(output, "231={}\u{01}", val )?; // FIELD_CONTRACTMULTIPLIER
-    }
-    if flds.coupon_rate.is_some() {
-        let val = flds.coupon_rate.as_ref().unwrap();
-
-        write!(output, "223={}\u{01}", val )?; // FIELD_COUPONRATE
-    }
-    if flds.security_exchange.is_some() {
-        let val = flds.security_exchange.as_ref().unwrap();
-
-        write!(output, "207={}\u{01}", val )?; // FIELD_SECURITYEXCHANGE
-    }
-    if flds.issuer.is_some() {
-        let val = flds.issuer.as_ref().unwrap();
-
-        write!(output, "106={}\u{01}", val )?; // FIELD_ISSUER
-    }
-    if flds.encoded_issuer_len.is_some() {
-        let val = flds.encoded_issuer_len.as_ref().unwrap();
-
-        write!(output, "348={}\u{01}", val )?; // FIELD_ENCODEDISSUERLEN
-    }
-    if flds.encoded_issuer.is_some() {
-        let val = flds.encoded_issuer.as_ref().unwrap();
-
-        write!(output, "349={}\u{01}", val )?; // FIELD_ENCODEDISSUER
-    }
-    if flds.security_desc.is_some() {
-        let val = flds.security_desc.as_ref().unwrap();
-
-        write!(output, "107={}\u{01}", val )?; // FIELD_SECURITYDESC
-    }
-    if flds.encoded_security_desc_len.is_some() {
-        let val = flds.encoded_security_desc_len.as_ref().unwrap();
-
-        write!(output, "350={}\u{01}", val )?; // FIELD_ENCODEDSECURITYDESCLEN
-    }
-    if flds.encoded_security_desc.is_some() {
-        let val = flds.encoded_security_desc.as_ref().unwrap();
-
-        write!(output, "351={}\u{01}", val )?; // FIELD_ENCODEDSECURITYDESC
-    }
-    if flds.prev_close_px.is_some() {
-        let val = flds.prev_close_px.as_ref().unwrap();
-
-        write!(output, "140={}\u{01}", val )?; // FIELD_PREVCLOSEPX
-    }
-    if flds.quote_request_type.is_some() {
-        let val = flds.quote_request_type.as_ref().unwrap();
-
-        write!(output, "303={}\u{01}", val )?; // FIELD_QUOTEREQUESTTYPE
-    }
-    if flds.trading_session_id.is_some() {
-        let val = flds.trading_session_id.as_ref().unwrap();
-
-        write!(output, "336={}\u{01}", val )?; // FIELD_TRADINGSESSIONID
-    }
-    if flds.side.is_some() {
-        let val = flds.side.as_ref().unwrap();
-
-        write!(output, "54={}\u{01}", val )?; // FIELD_SIDE
-    }
-    if flds.order_qty.is_some() {
-        let val = flds.order_qty.as_ref().unwrap();
-
-        write!(output, "38={}\u{01}", val )?; // FIELD_ORDERQTY
-    }
-    if flds.fut_sett_date.is_some() {
-        let val = flds.fut_sett_date.as_ref().unwrap();
-
-        write!(output, "64={}\u{01}", val )?; // FIELD_FUTSETTDATE
-    }
-    if flds.ord_type.is_some() {
-        let val = flds.ord_type.as_ref().unwrap();
-
-        write!(output, "40={}\u{01}", val )?; // FIELD_ORDTYPE
-    }
-    if flds.fut_sett_date2.is_some() {
-        let val = flds.fut_sett_date2.as_ref().unwrap();
-
-        write!(output, "193={}\u{01}", val )?; // FIELD_FUTSETTDATE2
-    }
-    if flds.order_qty2.is_some() {
-        let val = flds.order_qty2.as_ref().unwrap();
-
-        write!(output, "192={}\u{01}", val )?; // FIELD_ORDERQTY2
-    }
-    if flds.expire_time.is_some() {
-        let val = flds.expire_time.as_ref().unwrap();
-
-        write!(output, "126={}\u{01}", val )?; // FIELD_EXPIRETIME
-    }
-    if flds.transact_time.is_some() {
-        let val = flds.transact_time.as_ref().unwrap();
-
-        write!(output, "60={}\u{01}", val )?; // FIELD_TRANSACTTIME
-    }
-    if flds.currency.is_some() {
-        let val = flds.currency.as_ref().unwrap();
-
-        write!(output, "15={}\u{01}", val )?; // FIELD_CURRENCY
-    }
-
-    Ok( () )
-}
-
-
-
-fn write_group_no_ioiqualifiers9_fields( group: &Vec<NoIOIQualifiers9Fields>, output: &mut Write ) -> Result<(), io::Error> {
-    let len = group.len();
-    write!(output, "{}={}\u{01}", FIELD_NOIOIQUALIFIERS, len )?;
-
-    for g in group {
-        write_group_no_ioiqualifiers9_fields_line( g, output )?;
-    }
-
-    Ok( () )
-}
-
-fn write_group_no_ioiqualifiers9_fields_line( flds: &NoIOIQualifiers9Fields, output: &mut Write) -> Result<(), io::Error> {
-
-    if flds.ioiqualifier.is_some() {
-        let val = flds.ioiqualifier.as_ref().unwrap();
-
-        write!(output, "104={}\u{01}", val )?; // FIELD_IOIQUALIFIER
-    }
-
-    Ok( () )
-}
-
-
-
-fn write_group_no_bid_components4_fields( group: &Vec<NoBidComponents4Fields>, output: &mut Write ) -> Result<(), io::Error> {
-    let len = group.len();
-    write!(output, "{}={}\u{01}", FIELD_NOBIDCOMPONENTS, len )?;
-
-    for g in group {
-        write_group_no_bid_components4_fields_line( g, output )?;
-    }
-
-    Ok( () )
-}
-
-fn write_group_no_bid_components4_fields_line( flds: &NoBidComponents4Fields, output: &mut Write) -> Result<(), io::Error> {
-
-    {
-        let val = &flds.commission;
-
-        write!(output, "12={}\u{01}", val )?; // FIELD_COMMISSION
-    }
-    {
-        let val = &flds.comm_type;
-
-        write!(output, "13={}\u{01}", val )?; // FIELD_COMMTYPE
-    }
-    if flds.list_id.is_some() {
-        let val = flds.list_id.as_ref().unwrap();
-
-        write!(output, "66={}\u{01}", val )?; // FIELD_LISTID
-    }
-    if flds.country.is_some() {
-        let val = flds.country.as_ref().unwrap();
-
-        write!(output, "421={}\u{01}", val )?; // FIELD_COUNTRY
-    }
-    if flds.side.is_some() {
-        let val = flds.side.as_ref().unwrap();
-
-        write!(output, "54={}\u{01}", val )?; // FIELD_SIDE
-    }
-    if flds.price.is_some() {
-        let val = flds.price.as_ref().unwrap();
-
-        write!(output, "44={}\u{01}", val )?; // FIELD_PRICE
-    }
-    if flds.price_type.is_some() {
-        let val = flds.price_type.as_ref().unwrap();
-
-        write!(output, "423={}\u{01}", val )?; // FIELD_PRICETYPE
-    }
-    if flds.fair_value.is_some() {
-        let val = flds.fair_value.as_ref().unwrap();
-
-        write!(output, "406={}\u{01}", val )?; // FIELD_FAIRVALUE
-    }
-    if flds.net_gross_ind.is_some() {
-        let val = flds.net_gross_ind.as_ref().unwrap();
-
-        write!(output, "430={}\u{01}", val )?; // FIELD_NETGROSSIND
-    }
-    if flds.settlmnt_typ.is_some() {
-        let val = flds.settlmnt_typ.as_ref().unwrap();
-
-        write!(output, "63={}\u{01}", val )?; // FIELD_SETTLMNTTYP
-    }
-    if flds.fut_sett_date.is_some() {
-        let val = flds.fut_sett_date.as_ref().unwrap();
-
-        write!(output, "64={}\u{01}", val )?; // FIELD_FUTSETTDATE
-    }
-    if flds.trading_session_id.is_some() {
-        let val = flds.trading_session_id.as_ref().unwrap();
-
-        write!(output, "336={}\u{01}", val )?; // FIELD_TRADINGSESSIONID
-    }
-    if flds.text.is_some() {
-        let val = flds.text.as_ref().unwrap();
-
-        write!(output, "58={}\u{01}", val )?; // FIELD_TEXT
-    }
-    if flds.encoded_text_len.is_some() {
-        let val = flds.encoded_text_len.as_ref().unwrap();
-
-        write!(output, "354={}\u{01}", val )?; // FIELD_ENCODEDTEXTLEN
-    }
-    if flds.encoded_text.is_some() {
-        let val = flds.encoded_text.as_ref().unwrap();
-
-        write!(output, "355={}\u{01}", val )?; // FIELD_ENCODEDTEXT
-    }
-
-    Ok( () )
-}
-
-
-
-fn write_group_no_mdentries11_fields( group: &Vec<NoMDEntries11Fields>, output: &mut Write ) -> Result<(), io::Error> {
-    let len = group.len();
-    write!(output, "{}={}\u{01}", FIELD_NOMDENTRIES, len )?;
-
-    for g in group {
-        write_group_no_mdentries11_fields_line( g, output )?;
-    }
-
-    Ok( () )
-}
-
-fn write_group_no_mdentries11_fields_line( flds: &NoMDEntries11Fields, output: &mut Write) -> Result<(), io::Error> {
-
-    {
-        let val = &flds.mdupdate_action;
-
-        write!(output, "279={}\u{01}", val )?; // FIELD_MDUPDATEACTION
-    }
-    if flds.delete_reason.is_some() {
-        let val = flds.delete_reason.as_ref().unwrap();
-
-        write!(output, "285={}\u{01}", val )?; // FIELD_DELETEREASON
-    }
-    if flds.mdentry_type.is_some() {
-        let val = flds.mdentry_type.as_ref().unwrap();
-
-        write!(output, "269={}\u{01}", val )?; // FIELD_MDENTRYTYPE
-    }
-    if flds.mdentry_id.is_some() {
-        let val = flds.mdentry_id.as_ref().unwrap();
-
-        write!(output, "278={}\u{01}", val )?; // FIELD_MDENTRYID
-    }
-    if flds.mdentry_ref_id.is_some() {
-        let val = flds.mdentry_ref_id.as_ref().unwrap();
-
-        write!(output, "280={}\u{01}", val )?; // FIELD_MDENTRYREFID
-    }
-    if flds.symbol.is_some() {
-        let val = flds.symbol.as_ref().unwrap();
-
-        write!(output, "55={}\u{01}", val )?; // FIELD_SYMBOL
-    }
-    if flds.symbol_sfx.is_some() {
-        let val = flds.symbol_sfx.as_ref().unwrap();
-
-        write!(output, "65={}\u{01}", val )?; // FIELD_SYMBOLSFX
-    }
-    if flds.security_id.is_some() {
-        let val = flds.security_id.as_ref().unwrap();
-
-        write!(output, "48={}\u{01}", val )?; // FIELD_SECURITYID
-    }
-    if flds.idsource.is_some() {
-        let val = flds.idsource.as_ref().unwrap();
-
-        write!(output, "22={}\u{01}", val )?; // FIELD_IDSOURCE
-    }
-    if flds.security_type.is_some() {
-        let val = flds.security_type.as_ref().unwrap();
-
-        write!(output, "167={}\u{01}", val )?; // FIELD_SECURITYTYPE
-    }
-    if flds.maturity_month_year.is_some() {
-        let val = flds.maturity_month_year.as_ref().unwrap();
-
-        write!(output, "200={}\u{01}", val )?; // FIELD_MATURITYMONTHYEAR
-    }
-    if flds.maturity_day.is_some() {
-        let val = flds.maturity_day.as_ref().unwrap();
-
-        write!(output, "205={}\u{01}", val )?; // FIELD_MATURITYDAY
-    }
-    if flds.put_or_call.is_some() {
-        let val = flds.put_or_call.as_ref().unwrap();
-
-        write!(output, "201={}\u{01}", val )?; // FIELD_PUTORCALL
-    }
-    if flds.strike_price.is_some() {
-        let val = flds.strike_price.as_ref().unwrap();
-
-        write!(output, "202={}\u{01}", val )?; // FIELD_STRIKEPRICE
-    }
-    if flds.opt_attribute.is_some() {
-        let val = flds.opt_attribute.as_ref().unwrap();
-
-        write!(output, "206={}\u{01}", val )?; // FIELD_OPTATTRIBUTE
-    }
-    if flds.contract_multiplier.is_some() {
-        let val = flds.contract_multiplier.as_ref().unwrap();
-
-        write!(output, "231={}\u{01}", val )?; // FIELD_CONTRACTMULTIPLIER
-    }
-    if flds.coupon_rate.is_some() {
-        let val = flds.coupon_rate.as_ref().unwrap();
-
-        write!(output, "223={}\u{01}", val )?; // FIELD_COUPONRATE
-    }
-    if flds.security_exchange.is_some() {
-        let val = flds.security_exchange.as_ref().unwrap();
-
-        write!(output, "207={}\u{01}", val )?; // FIELD_SECURITYEXCHANGE
-    }
-    if flds.issuer.is_some() {
-        let val = flds.issuer.as_ref().unwrap();
-
-        write!(output, "106={}\u{01}", val )?; // FIELD_ISSUER
-    }
-    if flds.encoded_issuer_len.is_some() {
-        let val = flds.encoded_issuer_len.as_ref().unwrap();
-
-        write!(output, "348={}\u{01}", val )?; // FIELD_ENCODEDISSUERLEN
-    }
-    if flds.encoded_issuer.is_some() {
-        let val = flds.encoded_issuer.as_ref().unwrap();
-
-        write!(output, "349={}\u{01}", val )?; // FIELD_ENCODEDISSUER
-    }
-    if flds.security_desc.is_some() {
-        let val = flds.security_desc.as_ref().unwrap();
-
-        write!(output, "107={}\u{01}", val )?; // FIELD_SECURITYDESC
-    }
-    if flds.encoded_security_desc_len.is_some() {
-        let val = flds.encoded_security_desc_len.as_ref().unwrap();
-
-        write!(output, "350={}\u{01}", val )?; // FIELD_ENCODEDSECURITYDESCLEN
-    }
-    if flds.encoded_security_desc.is_some() {
-        let val = flds.encoded_security_desc.as_ref().unwrap();
-
-        write!(output, "351={}\u{01}", val )?; // FIELD_ENCODEDSECURITYDESC
-    }
-    if flds.financial_status.is_some() {
-        let val = flds.financial_status.as_ref().unwrap();
-
-        write!(output, "291={}\u{01}", val )?; // FIELD_FINANCIALSTATUS
-    }
-    if flds.corporate_action.is_some() {
-        let val = flds.corporate_action.as_ref().unwrap();
-
-        write!(output, "292={}\u{01}", val )?; // FIELD_CORPORATEACTION
-    }
-    if flds.mdentry_px.is_some() {
-        let val = flds.mdentry_px.as_ref().unwrap();
-
-        write!(output, "270={}\u{01}", val )?; // FIELD_MDENTRYPX
-    }
-    if flds.currency.is_some() {
-        let val = flds.currency.as_ref().unwrap();
-
-        write!(output, "15={}\u{01}", val )?; // FIELD_CURRENCY
-    }
-    if flds.mdentry_size.is_some() {
-        let val = flds.mdentry_size.as_ref().unwrap();
-
-        write!(output, "271={}\u{01}", val )?; // FIELD_MDENTRYSIZE
-    }
-    if flds.mdentry_date.is_some() {
-        let val = flds.mdentry_date.as_ref().unwrap();
-
-        write!(output, "272={}\u{01}", val )?; // FIELD_MDENTRYDATE
-    }
-    if flds.mdentry_time.is_some() {
-        let val = flds.mdentry_time.as_ref().unwrap();
-
-        write!(output, "273={}\u{01}", val )?; // FIELD_MDENTRYTIME
-    }
-    if flds.tick_direction.is_some() {
-        let val = flds.tick_direction.as_ref().unwrap();
-
-        write!(output, "274={}\u{01}", val )?; // FIELD_TICKDIRECTION
-    }
-    if flds.mdmkt.is_some() {
-        let val = flds.mdmkt.as_ref().unwrap();
-
-        write!(output, "275={}\u{01}", val )?; // FIELD_MDMKT
-    }
-    if flds.trading_session_id.is_some() {
-        let val = flds.trading_session_id.as_ref().unwrap();
-
-        write!(output, "336={}\u{01}", val )?; // FIELD_TRADINGSESSIONID
-    }
-    if flds.quote_condition.is_some() {
-        let val = flds.quote_condition.as_ref().unwrap();
-
-        write!(output, "276={}\u{01}", val )?; // FIELD_QUOTECONDITION
-    }
-    if flds.trade_condition.is_some() {
-        let val = flds.trade_condition.as_ref().unwrap();
-
-        write!(output, "277={}\u{01}", val )?; // FIELD_TRADECONDITION
-    }
-    if flds.mdentry_originator.is_some() {
-        let val = flds.mdentry_originator.as_ref().unwrap();
-
-        write!(output, "282={}\u{01}", val )?; // FIELD_MDENTRYORIGINATOR
-    }
-    if flds.location_id.is_some() {
-        let val = flds.location_id.as_ref().unwrap();
-
-        write!(output, "283={}\u{01}", val )?; // FIELD_LOCATIONID
-    }
-    if flds.desk_id.is_some() {
-        let val = flds.desk_id.as_ref().unwrap();
-
-        write!(output, "284={}\u{01}", val )?; // FIELD_DESKID
-    }
-    if flds.open_close_settle_flag.is_some() {
-        let val = flds.open_close_settle_flag.as_ref().unwrap();
-
-        write!(output, "286={}\u{01}", val )?; // FIELD_OPENCLOSESETTLEFLAG
-    }
-    if flds.time_in_force.is_some() {
-        let val = flds.time_in_force.as_ref().unwrap();
-
-        write!(output, "59={}\u{01}", val )?; // FIELD_TIMEINFORCE
-    }
-    if flds.expire_date.is_some() {
-        let val = flds.expire_date.as_ref().unwrap();
-
-        write!(output, "432={}\u{01}", val )?; // FIELD_EXPIREDATE
-    }
-    if flds.expire_time.is_some() {
-        let val = flds.expire_time.as_ref().unwrap();
-
-        write!(output, "126={}\u{01}", val )?; // FIELD_EXPIRETIME
-    }
-    if flds.min_qty.is_some() {
-        let val = flds.min_qty.as_ref().unwrap();
-
-        write!(output, "110={}\u{01}", val )?; // FIELD_MINQTY
-    }
-    if flds.exec_inst.is_some() {
-        let val = flds.exec_inst.as_ref().unwrap();
-
-        write!(output, "18={}\u{01}", val )?; // FIELD_EXECINST
-    }
-    if flds.seller_days.is_some() {
-        let val = flds.seller_days.as_ref().unwrap();
-
-        write!(output, "287={}\u{01}", val )?; // FIELD_SELLERDAYS
-    }
-    if flds.order_id.is_some() {
-        let val = flds.order_id.as_ref().unwrap();
-
-        write!(output, "37={}\u{01}", val )?; // FIELD_ORDERID
-    }
-    if flds.quote_entry_id.is_some() {
-        let val = flds.quote_entry_id.as_ref().unwrap();
-
-        write!(output, "299={}\u{01}", val )?; // FIELD_QUOTEENTRYID
-    }
-    if flds.mdentry_buyer.is_some() {
-        let val = flds.mdentry_buyer.as_ref().unwrap();
-
-        write!(output, "288={}\u{01}", val )?; // FIELD_MDENTRYBUYER
-    }
-    if flds.mdentry_seller.is_some() {
-        let val = flds.mdentry_seller.as_ref().unwrap();
-
-        write!(output, "289={}\u{01}", val )?; // FIELD_MDENTRYSELLER
-    }
-    if flds.number_of_orders.is_some() {
-        let val = flds.number_of_orders.as_ref().unwrap();
-
-        write!(output, "346={}\u{01}", val )?; // FIELD_NUMBEROFORDERS
-    }
-    if flds.mdentry_position_no.is_some() {
-        let val = flds.mdentry_position_no.as_ref().unwrap();
-
-        write!(output, "290={}\u{01}", val )?; // FIELD_MDENTRYPOSITIONNO
-    }
-    if flds.total_volume_traded.is_some() {
-        let val = flds.total_volume_traded.as_ref().unwrap();
-
-        write!(output, "387={}\u{01}", val )?; // FIELD_TOTALVOLUMETRADED
-    }
-    if flds.text.is_some() {
-        let val = flds.text.as_ref().unwrap();
-
-        write!(output, "58={}\u{01}", val )?; // FIELD_TEXT
-    }
-    if flds.encoded_text_len.is_some() {
-        let val = flds.encoded_text_len.as_ref().unwrap();
-
-        write!(output, "354={}\u{01}", val )?; // FIELD_ENCODEDTEXTLEN
-    }
-    if flds.encoded_text.is_some() {
-        let val = flds.encoded_text.as_ref().unwrap();
-
-        write!(output, "355={}\u{01}", val )?; // FIELD_ENCODEDTEXT
-    }
-
-    Ok( () )
-}
-
-
-
-fn write_group_no_bid_components5_fields( group: &Vec<NoBidComponents5Fields>, output: &mut Write ) -> Result<(), io::Error> {
-    let len = group.len();
-    write!(output, "{}={}\u{01}", FIELD_NOBIDCOMPONENTS, len )?;
-
-    for g in group {
-        write_group_no_bid_components5_fields_line( g, output )?;
-    }
-
-    Ok( () )
-}
-
-fn write_group_no_bid_components5_fields_line( flds: &NoBidComponents5Fields, output: &mut Write) -> Result<(), io::Error> {
-
-    if flds.list_id.is_some() {
-        let val = flds.list_id.as_ref().unwrap();
-
-        write!(output, "66={}\u{01}", val )?; // FIELD_LISTID
-    }
-    if flds.side.is_some() {
-        let val = flds.side.as_ref().unwrap();
-
-        write!(output, "54={}\u{01}", val )?; // FIELD_SIDE
-    }
-    if flds.trading_session_id.is_some() {
-        let val = flds.trading_session_id.as_ref().unwrap();
-
-        write!(output, "336={}\u{01}", val )?; // FIELD_TRADINGSESSIONID
-    }
-    if flds.net_gross_ind.is_some() {
-        let val = flds.net_gross_ind.as_ref().unwrap();
-
-        write!(output, "430={}\u{01}", val )?; // FIELD_NETGROSSIND
-    }
-    if flds.settlmnt_typ.is_some() {
-        let val = flds.settlmnt_typ.as_ref().unwrap();
-
-        write!(output, "63={}\u{01}", val )?; // FIELD_SETTLMNTTYP
-    }
-    if flds.fut_sett_date.is_some() {
-        let val = flds.fut_sett_date.as_ref().unwrap();
-
-        write!(output, "64={}\u{01}", val )?; // FIELD_FUTSETTDATE
-    }
-    if flds.account.is_some() {
-        let val = flds.account.as_ref().unwrap();
-
-        write!(output, "1={}\u{01}", val )?; // FIELD_ACCOUNT
-    }
-
-    Ok( () )
-}
-
-
-
-fn write_group_no_routing_ids27_fields( group: &Vec<NoRoutingIDs27Fields>, output: &mut Write ) -> Result<(), io::Error> {
-    let len = group.len();
-    write!(output, "{}={}\u{01}", FIELD_NOROUTINGIDS, len )?;
-
-    for g in group {
-        write_group_no_routing_ids27_fields_line( g, output )?;
-    }
-
-    Ok( () )
-}
-
-fn write_group_no_routing_ids27_fields_line( flds: &NoRoutingIDs27Fields, output: &mut Write) -> Result<(), io::Error> {
-
-    if flds.routing_type.is_some() {
-        let val = flds.routing_type.as_ref().unwrap();
-
-        write!(output, "216={}\u{01}", val )?; // FIELD_ROUTINGTYPE
-    }
-    if flds.routing_id.is_some() {
-        let val = flds.routing_id.as_ref().unwrap();
-
-        write!(output, "217={}\u{01}", val )?; // FIELD_ROUTINGID
-    }
-
-    Ok( () )
-}
-
-
-
-fn write_group_lines_of_text1_fields( group: &Vec<LinesOfText1Fields>, output: &mut Write ) -> Result<(), io::Error> {
-    let len = group.len();
-    write!(output, "{}={}\u{01}", FIELD_LINESOFTEXT, len )?;
-
-    for g in group {
-        write_group_lines_of_text1_fields_line( g, output )?;
-    }
-
-    Ok( () )
-}
-
-fn write_group_lines_of_text1_fields_line( flds: &LinesOfText1Fields, output: &mut Write) -> Result<(), io::Error> {
-
-    {
-        let val = &flds.text;
-
-        write!(output, "58={}\u{01}", val )?; // FIELD_TEXT
-    }
-    if flds.encoded_text_len.is_some() {
-        let val = flds.encoded_text_len.as_ref().unwrap();
-
-        write!(output, "354={}\u{01}", val )?; // FIELD_ENCODEDTEXTLEN
-    }
-    if flds.encoded_text.is_some() {
-        let val = flds.encoded_text.as_ref().unwrap();
-
-        write!(output, "355={}\u{01}", val )?; // FIELD_ENCODEDTEXT
-    }
-
-    Ok( () )
-}
-
-
-
-fn write_group_no_orders15_fields( group: &Vec<NoOrders15Fields>, output: &mut Write ) -> Result<(), io::Error> {
-    let len = group.len();
-    write!(output, "{}={}\u{01}", FIELD_NOORDERS, len )?;
-
-    for g in group {
-        write_group_no_orders15_fields_line( g, output )?;
-    }
-
-    Ok( () )
-}
-
-fn write_group_no_orders15_fields_line( flds: &NoOrders15Fields, output: &mut Write) -> Result<(), io::Error> {
-
-    {
-        let val = &flds.cl_ord_id;
-
-        write!(output, "11={}\u{01}", val )?; // FIELD_CLORDID
-    }
-    {
-        let val = &flds.cum_qty;
-
-        write!(output, "14={}\u{01}", val )?; // FIELD_CUMQTY
-    }
-    {
-        let val = &flds.ord_status;
-
-        write!(output, "39={}\u{01}", val )?; // FIELD_ORDSTATUS
-    }
-    {
-        let val = &flds.leaves_qty;
-
-        write!(output, "151={}\u{01}", val )?; // FIELD_LEAVESQTY
-    }
-    {
-        let val = &flds.cxl_qty;
-
-        write!(output, "84={}\u{01}", val )?; // FIELD_CXLQTY
-    }
-    {
-        let val = &flds.avg_px;
-
-        write!(output, "6={}\u{01}", val )?; // FIELD_AVGPX
-    }
-    if flds.ord_rej_reason.is_some() {
-        let val = flds.ord_rej_reason.as_ref().unwrap();
-
-        write!(output, "103={}\u{01}", val )?; // FIELD_ORDREJREASON
-    }
-    if flds.text.is_some() {
-        let val = flds.text.as_ref().unwrap();
-
-        write!(output, "58={}\u{01}", val )?; // FIELD_TEXT
-    }
-    if flds.encoded_text_len.is_some() {
-        let val = flds.encoded_text_len.as_ref().unwrap();
-
-        write!(output, "354={}\u{01}", val )?; // FIELD_ENCODEDTEXTLEN
-    }
-    if flds.encoded_text.is_some() {
-        let val = flds.encoded_text.as_ref().unwrap();
-
-        write!(output, "355={}\u{01}", val )?; // FIELD_ENCODEDTEXT
-    }
-
-    Ok( () )
-}
-
-
-
-fn write_group_no_misc_fees13_fields( group: &Vec<NoMiscFees13Fields>, output: &mut Write ) -> Result<(), io::Error> {
-    let len = group.len();
-    write!(output, "{}={}\u{01}", FIELD_NOMISCFEES, len )?;
-
-    for g in group {
-        write_group_no_misc_fees13_fields_line( g, output )?;
-    }
-
-    Ok( () )
-}
-
-fn write_group_no_misc_fees13_fields_line( flds: &NoMiscFees13Fields, output: &mut Write) -> Result<(), io::Error> {
-
-    if flds.misc_fee_amt.is_some() {
-        let val = flds.misc_fee_amt.as_ref().unwrap();
-
-        write!(output, "137={}\u{01}", val )?; // FIELD_MISCFEEAMT
-    }
-    if flds.misc_fee_curr.is_some() {
-        let val = flds.misc_fee_curr.as_ref().unwrap();
-
-        write!(output, "138={}\u{01}", val )?; // FIELD_MISCFEECURR
-    }
-    if flds.misc_fee_type.is_some() {
-        let val = flds.misc_fee_type.as_ref().unwrap();
-
-        write!(output, "139={}\u{01}", val )?; // FIELD_MISCFEETYPE
-    }
-
-    Ok( () )
-}
-
-
-
-fn write_group_no_mdentry_types12_fields( group: &Vec<NoMDEntryTypes12Fields>, output: &mut Write ) -> Result<(), io::Error> {
-    let len = group.len();
-    write!(output, "{}={}\u{01}", FIELD_NOMDENTRYTYPES, len )?;
-
-    for g in group {
-        write_group_no_mdentry_types12_fields_line( g, output )?;
-    }
-
-    Ok( () )
-}
-
-fn write_group_no_mdentry_types12_fields_line( flds: &NoMDEntryTypes12Fields, output: &mut Write) -> Result<(), io::Error> {
-
-    {
-        let val = &flds.mdentry_type;
-
-        write!(output, "269={}\u{01}", val )?; // FIELD_MDENTRYTYPE
-    }
-
-    Ok( () )
-}
-
-
-
-fn write_group_no_related_sym23_fields( group: &Vec<NoRelatedSym23Fields>, output: &mut Write ) -> Result<(), io::Error> {
-    let len = group.len();
-    write!(output, "{}={}\u{01}", FIELD_NORELATEDSYM, len )?;
-
-    for g in group {
-        write_group_no_related_sym23_fields_line( g, output )?;
-    }
-
-    Ok( () )
-}
-
-fn write_group_no_related_sym23_fields_line( flds: &NoRelatedSym23Fields, output: &mut Write) -> Result<(), io::Error> {
-
-    {
-        let val = &flds.symbol;
-
-        write!(output, "55={}\u{01}", val )?; // FIELD_SYMBOL
-    }
-    if flds.symbol_sfx.is_some() {
-        let val = flds.symbol_sfx.as_ref().unwrap();
-
-        write!(output, "65={}\u{01}", val )?; // FIELD_SYMBOLSFX
-    }
-    if flds.security_id.is_some() {
-        let val = flds.security_id.as_ref().unwrap();
-
-        write!(output, "48={}\u{01}", val )?; // FIELD_SECURITYID
-    }
-    if flds.idsource.is_some() {
-        let val = flds.idsource.as_ref().unwrap();
-
-        write!(output, "22={}\u{01}", val )?; // FIELD_IDSOURCE
-    }
-    if flds.security_type.is_some() {
-        let val = flds.security_type.as_ref().unwrap();
-
-        write!(output, "167={}\u{01}", val )?; // FIELD_SECURITYTYPE
-    }
-    if flds.maturity_month_year.is_some() {
-        let val = flds.maturity_month_year.as_ref().unwrap();
-
-        write!(output, "200={}\u{01}", val )?; // FIELD_MATURITYMONTHYEAR
-    }
-    if flds.maturity_day.is_some() {
-        let val = flds.maturity_day.as_ref().unwrap();
-
-        write!(output, "205={}\u{01}", val )?; // FIELD_MATURITYDAY
-    }
-    if flds.put_or_call.is_some() {
-        let val = flds.put_or_call.as_ref().unwrap();
-
-        write!(output, "201={}\u{01}", val )?; // FIELD_PUTORCALL
-    }
-    if flds.strike_price.is_some() {
-        let val = flds.strike_price.as_ref().unwrap();
-
-        write!(output, "202={}\u{01}", val )?; // FIELD_STRIKEPRICE
-    }
-    if flds.opt_attribute.is_some() {
-        let val = flds.opt_attribute.as_ref().unwrap();
-
-        write!(output, "206={}\u{01}", val )?; // FIELD_OPTATTRIBUTE
-    }
-    if flds.contract_multiplier.is_some() {
-        let val = flds.contract_multiplier.as_ref().unwrap();
-
-        write!(output, "231={}\u{01}", val )?; // FIELD_CONTRACTMULTIPLIER
-    }
-    if flds.coupon_rate.is_some() {
-        let val = flds.coupon_rate.as_ref().unwrap();
-
-        write!(output, "223={}\u{01}", val )?; // FIELD_COUPONRATE
-    }
-    if flds.security_exchange.is_some() {
-        let val = flds.security_exchange.as_ref().unwrap();
-
-        write!(output, "207={}\u{01}", val )?; // FIELD_SECURITYEXCHANGE
-    }
-    if flds.issuer.is_some() {
-        let val = flds.issuer.as_ref().unwrap();
-
-        write!(output, "106={}\u{01}", val )?; // FIELD_ISSUER
-    }
-    if flds.encoded_issuer_len.is_some() {
-        let val = flds.encoded_issuer_len.as_ref().unwrap();
-
-        write!(output, "348={}\u{01}", val )?; // FIELD_ENCODEDISSUERLEN
-    }
-    if flds.encoded_issuer.is_some() {
-        let val = flds.encoded_issuer.as_ref().unwrap();
-
-        write!(output, "349={}\u{01}", val )?; // FIELD_ENCODEDISSUER
-    }
-    if flds.security_desc.is_some() {
-        let val = flds.security_desc.as_ref().unwrap();
-
-        write!(output, "107={}\u{01}", val )?; // FIELD_SECURITYDESC
-    }
-    if flds.encoded_security_desc_len.is_some() {
-        let val = flds.encoded_security_desc_len.as_ref().unwrap();
-
-        write!(output, "350={}\u{01}", val )?; // FIELD_ENCODEDSECURITYDESCLEN
-    }
-    if flds.encoded_security_desc.is_some() {
-        let val = flds.encoded_security_desc.as_ref().unwrap();
-
-        write!(output, "351={}\u{01}", val )?; // FIELD_ENCODEDSECURITYDESC
-    }
-    if flds.trading_session_id.is_some() {
-        let val = flds.trading_session_id.as_ref().unwrap();
-
-        write!(output, "336={}\u{01}", val )?; // FIELD_TRADINGSESSIONID
-    }
-
-    Ok( () )
-}
-
-
-
-fn write_group_no_allocs2_fields( group: &Vec<NoAllocs2Fields>, output: &mut Write ) -> Result<(), io::Error> {
+fn write_group_no_allocs1_fields( group: &Vec<NoAllocs1Fields>, output: &mut Write ) -> Result<(), io::Error> {
     let len = group.len();
     write!(output, "{}={}\u{01}", FIELD_NOALLOCS, len )?;
 
     for g in group {
-        write_group_no_allocs2_fields_line( g, output )?;
+        write_group_no_allocs1_fields_line( g, output )?;
     }
 
     Ok( () )
 }
 
-fn write_group_no_allocs2_fields_line( flds: &NoAllocs2Fields, output: &mut Write) -> Result<(), io::Error> {
+fn write_group_no_allocs1_fields_line( flds: &NoAllocs1Fields, output: &mut Write) -> Result<(), io::Error> {
 
     if flds.alloc_account.is_some() {
         let val = flds.alloc_account.as_ref().unwrap();
@@ -27157,18 +14092,71 @@ fn write_group_no_allocs2_fields_line( flds: &NoAllocs2Fields, output: &mut Writ
 
 
 
-fn write_group_no_orders16_fields( group: &Vec<NoOrders16Fields>, output: &mut Write ) -> Result<(), io::Error> {
+fn write_group_no_msg_types3_fields( group: &Vec<NoMsgTypes3Fields>, output: &mut Write ) -> Result<(), io::Error> {
     let len = group.len();
-    write!(output, "{}={}\u{01}", FIELD_NOORDERS, len )?;
+    write!(output, "{}={}\u{01}", FIELD_NOMSGTYPES, len )?;
 
     for g in group {
-        write_group_no_orders16_fields_line( g, output )?;
+        write_group_no_msg_types3_fields_line( g, output )?;
     }
 
     Ok( () )
 }
 
-fn write_group_no_orders16_fields_line( flds: &NoOrders16Fields, output: &mut Write) -> Result<(), io::Error> {
+fn write_group_no_msg_types3_fields_line( flds: &NoMsgTypes3Fields, output: &mut Write) -> Result<(), io::Error> {
+
+    if flds.ref_msg_type.is_some() {
+        let val = flds.ref_msg_type.as_ref().unwrap();
+
+        write!(output, "372={}\u{01}", val )?; // FIELD_REFMSGTYPE
+    }
+    if flds.msg_direction.is_some() {
+        let val = flds.msg_direction.as_ref().unwrap();
+
+        write!(output, "385={}\u{01}", val )?; // FIELD_MSGDIRECTION
+    }
+
+    Ok( () )
+}
+
+
+
+fn write_group_no_trading_sessions5_fields( group: &Vec<NoTradingSessions5Fields>, output: &mut Write ) -> Result<(), io::Error> {
+    let len = group.len();
+    write!(output, "{}={}\u{01}", FIELD_NOTRADINGSESSIONS, len )?;
+
+    for g in group {
+        write_group_no_trading_sessions5_fields_line( g, output )?;
+    }
+
+    Ok( () )
+}
+
+fn write_group_no_trading_sessions5_fields_line( flds: &NoTradingSessions5Fields, output: &mut Write) -> Result<(), io::Error> {
+
+    if flds.trading_session_id.is_some() {
+        let val = flds.trading_session_id.as_ref().unwrap();
+
+        write!(output, "336={}\u{01}", val )?; // FIELD_TRADINGSESSIONID
+    }
+
+    Ok( () )
+}
+
+
+
+fn write_group_no_orders4_fields( group: &Vec<NoOrders4Fields>, output: &mut Write ) -> Result<(), io::Error> {
+    let len = group.len();
+    write!(output, "{}={}\u{01}", FIELD_NOORDERS, len )?;
+
+    for g in group {
+        write_group_no_orders4_fields_line( g, output )?;
+    }
+
+    Ok( () )
+}
+
+fn write_group_no_orders4_fields_line( flds: &NoOrders4Fields, output: &mut Write) -> Result<(), io::Error> {
 
     {
         let val = &flds.cl_ord_id;
@@ -27203,7 +14191,7 @@ fn write_group_no_orders16_fields_line( flds: &NoOrders16Fields, output: &mut Wr
     if flds.no_allocs.is_some() {
         let val = flds.no_allocs.as_ref().unwrap();
 
-        write_group_no_allocs2_fields( val, output )?;
+        write_group_no_allocs1_fields( val, output )?;
     }
     if flds.settlmnt_typ.is_some() {
         let val = flds.settlmnt_typ.as_ref().unwrap();
@@ -27243,7 +14231,7 @@ fn write_group_no_orders16_fields_line( flds: &NoOrders16Fields, output: &mut Wr
     if flds.no_trading_sessions.is_some() {
         let val = flds.no_trading_sessions.as_ref().unwrap();
 
-        write_group_no_trading_sessions29_fields( val, output )?;
+        write_group_no_trading_sessions5_fields( val, output )?;
     }
     if flds.process_code.is_some() {
         let val = flds.process_code.as_ref().unwrap();
@@ -27543,1589 +14531,6 @@ fn write_group_no_orders16_fields_line( flds: &NoOrders16Fields, output: &mut Wr
 
     Ok( () )
 }
-
-
-
-fn write_group_no_orders17_fields( group: &Vec<NoOrders17Fields>, output: &mut Write ) -> Result<(), io::Error> {
-    let len = group.len();
-    write!(output, "{}={}\u{01}", FIELD_NOORDERS, len )?;
-
-    for g in group {
-        write_group_no_orders17_fields_line( g, output )?;
-    }
-
-    Ok( () )
-}
-
-fn write_group_no_orders17_fields_line( flds: &NoOrders17Fields, output: &mut Write) -> Result<(), io::Error> {
-
-    if flds.cl_ord_id.is_some() {
-        let val = flds.cl_ord_id.as_ref().unwrap();
-
-        write!(output, "11={}\u{01}", val )?; // FIELD_CLORDID
-    }
-    if flds.order_id.is_some() {
-        let val = flds.order_id.as_ref().unwrap();
-
-        write!(output, "37={}\u{01}", val )?; // FIELD_ORDERID
-    }
-    if flds.secondary_order_id.is_some() {
-        let val = flds.secondary_order_id.as_ref().unwrap();
-
-        write!(output, "198={}\u{01}", val )?; // FIELD_SECONDARYORDERID
-    }
-    if flds.list_id.is_some() {
-        let val = flds.list_id.as_ref().unwrap();
-
-        write!(output, "66={}\u{01}", val )?; // FIELD_LISTID
-    }
-    if flds.wave_no.is_some() {
-        let val = flds.wave_no.as_ref().unwrap();
-
-        write!(output, "105={}\u{01}", val )?; // FIELD_WAVENO
-    }
-
-    Ok( () )
-}
-
-
-
-fn write_group_no_execs8_fields( group: &Vec<NoExecs8Fields>, output: &mut Write ) -> Result<(), io::Error> {
-    let len = group.len();
-    write!(output, "{}={}\u{01}", FIELD_NOEXECS, len )?;
-
-    for g in group {
-        write_group_no_execs8_fields_line( g, output )?;
-    }
-
-    Ok( () )
-}
-
-fn write_group_no_execs8_fields_line( flds: &NoExecs8Fields, output: &mut Write) -> Result<(), io::Error> {
-
-    if flds.last_shares.is_some() {
-        let val = flds.last_shares.as_ref().unwrap();
-
-        write!(output, "32={}\u{01}", val )?; // FIELD_LASTSHARES
-    }
-    if flds.exec_id.is_some() {
-        let val = flds.exec_id.as_ref().unwrap();
-
-        write!(output, "17={}\u{01}", val )?; // FIELD_EXECID
-    }
-    if flds.last_px.is_some() {
-        let val = flds.last_px.as_ref().unwrap();
-
-        write!(output, "31={}\u{01}", val )?; // FIELD_LASTPX
-    }
-    if flds.last_capacity.is_some() {
-        let val = flds.last_capacity.as_ref().unwrap();
-
-        write!(output, "29={}\u{01}", val )?; // FIELD_LASTCAPACITY
-    }
-
-    Ok( () )
-}
-
-
-
-fn write_group_no_trading_sessions29_fields( group: &Vec<NoTradingSessions29Fields>, output: &mut Write ) -> Result<(), io::Error> {
-    let len = group.len();
-    write!(output, "{}={}\u{01}", FIELD_NOTRADINGSESSIONS, len )?;
-
-    for g in group {
-        write_group_no_trading_sessions29_fields_line( g, output )?;
-    }
-
-    Ok( () )
-}
-
-fn write_group_no_trading_sessions29_fields_line( flds: &NoTradingSessions29Fields, output: &mut Write) -> Result<(), io::Error> {
-
-    if flds.trading_session_id.is_some() {
-        let val = flds.trading_session_id.as_ref().unwrap();
-
-        write!(output, "336={}\u{01}", val )?; // FIELD_TRADINGSESSIONID
-    }
-
-    Ok( () )
-}
-
-
-
-fn write_group_no_contra_brokers7_fields( group: &Vec<NoContraBrokers7Fields>, output: &mut Write ) -> Result<(), io::Error> {
-    let len = group.len();
-    write!(output, "{}={}\u{01}", FIELD_NOCONTRABROKERS, len )?;
-
-    for g in group {
-        write_group_no_contra_brokers7_fields_line( g, output )?;
-    }
-
-    Ok( () )
-}
-
-fn write_group_no_contra_brokers7_fields_line( flds: &NoContraBrokers7Fields, output: &mut Write) -> Result<(), io::Error> {
-
-    if flds.contra_broker.is_some() {
-        let val = flds.contra_broker.as_ref().unwrap();
-
-        write!(output, "375={}\u{01}", val )?; // FIELD_CONTRABROKER
-    }
-    if flds.contra_trader.is_some() {
-        let val = flds.contra_trader.as_ref().unwrap();
-
-        write!(output, "337={}\u{01}", val )?; // FIELD_CONTRATRADER
-    }
-    if flds.contra_trade_qty.is_some() {
-        let val = flds.contra_trade_qty.as_ref().unwrap();
-
-        write!(output, "437={}\u{01}", val )?; // FIELD_CONTRATRADEQTY
-    }
-    if flds.contra_trade_time.is_some() {
-        let val = flds.contra_trade_time.as_ref().unwrap();
-
-        write!(output, "438={}\u{01}", val )?; // FIELD_CONTRATRADETIME
-    }
-
-    Ok( () )
-}
-
-
-
-fn write_group_no_quote_entries19_fields( group: &Vec<NoQuoteEntries19Fields>, output: &mut Write ) -> Result<(), io::Error> {
-    let len = group.len();
-    write!(output, "{}={}\u{01}", FIELD_NOQUOTEENTRIES, len )?;
-
-    for g in group {
-        write_group_no_quote_entries19_fields_line( g, output )?;
-    }
-
-    Ok( () )
-}
-
-fn write_group_no_quote_entries19_fields_line( flds: &NoQuoteEntries19Fields, output: &mut Write) -> Result<(), io::Error> {
-
-    {
-        let val = &flds.quote_entry_id;
-
-        write!(output, "299={}\u{01}", val )?; // FIELD_QUOTEENTRYID
-    }
-    if flds.symbol.is_some() {
-        let val = flds.symbol.as_ref().unwrap();
-
-        write!(output, "55={}\u{01}", val )?; // FIELD_SYMBOL
-    }
-    if flds.symbol_sfx.is_some() {
-        let val = flds.symbol_sfx.as_ref().unwrap();
-
-        write!(output, "65={}\u{01}", val )?; // FIELD_SYMBOLSFX
-    }
-    if flds.security_id.is_some() {
-        let val = flds.security_id.as_ref().unwrap();
-
-        write!(output, "48={}\u{01}", val )?; // FIELD_SECURITYID
-    }
-    if flds.idsource.is_some() {
-        let val = flds.idsource.as_ref().unwrap();
-
-        write!(output, "22={}\u{01}", val )?; // FIELD_IDSOURCE
-    }
-    if flds.security_type.is_some() {
-        let val = flds.security_type.as_ref().unwrap();
-
-        write!(output, "167={}\u{01}", val )?; // FIELD_SECURITYTYPE
-    }
-    if flds.maturity_month_year.is_some() {
-        let val = flds.maturity_month_year.as_ref().unwrap();
-
-        write!(output, "200={}\u{01}", val )?; // FIELD_MATURITYMONTHYEAR
-    }
-    if flds.maturity_day.is_some() {
-        let val = flds.maturity_day.as_ref().unwrap();
-
-        write!(output, "205={}\u{01}", val )?; // FIELD_MATURITYDAY
-    }
-    if flds.put_or_call.is_some() {
-        let val = flds.put_or_call.as_ref().unwrap();
-
-        write!(output, "201={}\u{01}", val )?; // FIELD_PUTORCALL
-    }
-    if flds.strike_price.is_some() {
-        let val = flds.strike_price.as_ref().unwrap();
-
-        write!(output, "202={}\u{01}", val )?; // FIELD_STRIKEPRICE
-    }
-    if flds.opt_attribute.is_some() {
-        let val = flds.opt_attribute.as_ref().unwrap();
-
-        write!(output, "206={}\u{01}", val )?; // FIELD_OPTATTRIBUTE
-    }
-    if flds.contract_multiplier.is_some() {
-        let val = flds.contract_multiplier.as_ref().unwrap();
-
-        write!(output, "231={}\u{01}", val )?; // FIELD_CONTRACTMULTIPLIER
-    }
-    if flds.coupon_rate.is_some() {
-        let val = flds.coupon_rate.as_ref().unwrap();
-
-        write!(output, "223={}\u{01}", val )?; // FIELD_COUPONRATE
-    }
-    if flds.security_exchange.is_some() {
-        let val = flds.security_exchange.as_ref().unwrap();
-
-        write!(output, "207={}\u{01}", val )?; // FIELD_SECURITYEXCHANGE
-    }
-    if flds.issuer.is_some() {
-        let val = flds.issuer.as_ref().unwrap();
-
-        write!(output, "106={}\u{01}", val )?; // FIELD_ISSUER
-    }
-    if flds.encoded_issuer_len.is_some() {
-        let val = flds.encoded_issuer_len.as_ref().unwrap();
-
-        write!(output, "348={}\u{01}", val )?; // FIELD_ENCODEDISSUERLEN
-    }
-    if flds.encoded_issuer.is_some() {
-        let val = flds.encoded_issuer.as_ref().unwrap();
-
-        write!(output, "349={}\u{01}", val )?; // FIELD_ENCODEDISSUER
-    }
-    if flds.security_desc.is_some() {
-        let val = flds.security_desc.as_ref().unwrap();
-
-        write!(output, "107={}\u{01}", val )?; // FIELD_SECURITYDESC
-    }
-    if flds.encoded_security_desc_len.is_some() {
-        let val = flds.encoded_security_desc_len.as_ref().unwrap();
-
-        write!(output, "350={}\u{01}", val )?; // FIELD_ENCODEDSECURITYDESCLEN
-    }
-    if flds.encoded_security_desc.is_some() {
-        let val = flds.encoded_security_desc.as_ref().unwrap();
-
-        write!(output, "351={}\u{01}", val )?; // FIELD_ENCODEDSECURITYDESC
-    }
-    if flds.bid_px.is_some() {
-        let val = flds.bid_px.as_ref().unwrap();
-
-        write!(output, "132={}\u{01}", val )?; // FIELD_BIDPX
-    }
-    if flds.offer_px.is_some() {
-        let val = flds.offer_px.as_ref().unwrap();
-
-        write!(output, "133={}\u{01}", val )?; // FIELD_OFFERPX
-    }
-    if flds.bid_size.is_some() {
-        let val = flds.bid_size.as_ref().unwrap();
-
-        write!(output, "134={}\u{01}", val )?; // FIELD_BIDSIZE
-    }
-    if flds.offer_size.is_some() {
-        let val = flds.offer_size.as_ref().unwrap();
-
-        write!(output, "135={}\u{01}", val )?; // FIELD_OFFERSIZE
-    }
-    if flds.valid_until_time.is_some() {
-        let val = flds.valid_until_time.as_ref().unwrap();
-
-        write!(output, "62={}\u{01}", val )?; // FIELD_VALIDUNTILTIME
-    }
-    if flds.bid_spot_rate.is_some() {
-        let val = flds.bid_spot_rate.as_ref().unwrap();
-
-        write!(output, "188={}\u{01}", val )?; // FIELD_BIDSPOTRATE
-    }
-    if flds.offer_spot_rate.is_some() {
-        let val = flds.offer_spot_rate.as_ref().unwrap();
-
-        write!(output, "190={}\u{01}", val )?; // FIELD_OFFERSPOTRATE
-    }
-    if flds.bid_forward_points.is_some() {
-        let val = flds.bid_forward_points.as_ref().unwrap();
-
-        write!(output, "189={}\u{01}", val )?; // FIELD_BIDFORWARDPOINTS
-    }
-    if flds.offer_forward_points.is_some() {
-        let val = flds.offer_forward_points.as_ref().unwrap();
-
-        write!(output, "191={}\u{01}", val )?; // FIELD_OFFERFORWARDPOINTS
-    }
-    if flds.transact_time.is_some() {
-        let val = flds.transact_time.as_ref().unwrap();
-
-        write!(output, "60={}\u{01}", val )?; // FIELD_TRANSACTTIME
-    }
-    if flds.trading_session_id.is_some() {
-        let val = flds.trading_session_id.as_ref().unwrap();
-
-        write!(output, "336={}\u{01}", val )?; // FIELD_TRADINGSESSIONID
-    }
-    if flds.fut_sett_date.is_some() {
-        let val = flds.fut_sett_date.as_ref().unwrap();
-
-        write!(output, "64={}\u{01}", val )?; // FIELD_FUTSETTDATE
-    }
-    if flds.ord_type.is_some() {
-        let val = flds.ord_type.as_ref().unwrap();
-
-        write!(output, "40={}\u{01}", val )?; // FIELD_ORDTYPE
-    }
-    if flds.fut_sett_date2.is_some() {
-        let val = flds.fut_sett_date2.as_ref().unwrap();
-
-        write!(output, "193={}\u{01}", val )?; // FIELD_FUTSETTDATE2
-    }
-    if flds.order_qty2.is_some() {
-        let val = flds.order_qty2.as_ref().unwrap();
-
-        write!(output, "192={}\u{01}", val )?; // FIELD_ORDERQTY2
-    }
-    if flds.currency.is_some() {
-        let val = flds.currency.as_ref().unwrap();
-
-        write!(output, "15={}\u{01}", val )?; // FIELD_CURRENCY
-    }
-
-    Ok( () )
-}
-
-
-
-fn write_group_no_quote_entries20_fields( group: &Vec<NoQuoteEntries20Fields>, output: &mut Write ) -> Result<(), io::Error> {
-    let len = group.len();
-    write!(output, "{}={}\u{01}", FIELD_NOQUOTEENTRIES, len )?;
-
-    for g in group {
-        write_group_no_quote_entries20_fields_line( g, output )?;
-    }
-
-    Ok( () )
-}
-
-fn write_group_no_quote_entries20_fields_line( flds: &NoQuoteEntries20Fields, output: &mut Write) -> Result<(), io::Error> {
-
-    {
-        let val = &flds.symbol;
-
-        write!(output, "55={}\u{01}", val )?; // FIELD_SYMBOL
-    }
-    if flds.symbol_sfx.is_some() {
-        let val = flds.symbol_sfx.as_ref().unwrap();
-
-        write!(output, "65={}\u{01}", val )?; // FIELD_SYMBOLSFX
-    }
-    if flds.security_id.is_some() {
-        let val = flds.security_id.as_ref().unwrap();
-
-        write!(output, "48={}\u{01}", val )?; // FIELD_SECURITYID
-    }
-    if flds.idsource.is_some() {
-        let val = flds.idsource.as_ref().unwrap();
-
-        write!(output, "22={}\u{01}", val )?; // FIELD_IDSOURCE
-    }
-    if flds.security_type.is_some() {
-        let val = flds.security_type.as_ref().unwrap();
-
-        write!(output, "167={}\u{01}", val )?; // FIELD_SECURITYTYPE
-    }
-    if flds.maturity_month_year.is_some() {
-        let val = flds.maturity_month_year.as_ref().unwrap();
-
-        write!(output, "200={}\u{01}", val )?; // FIELD_MATURITYMONTHYEAR
-    }
-    if flds.maturity_day.is_some() {
-        let val = flds.maturity_day.as_ref().unwrap();
-
-        write!(output, "205={}\u{01}", val )?; // FIELD_MATURITYDAY
-    }
-    if flds.put_or_call.is_some() {
-        let val = flds.put_or_call.as_ref().unwrap();
-
-        write!(output, "201={}\u{01}", val )?; // FIELD_PUTORCALL
-    }
-    if flds.strike_price.is_some() {
-        let val = flds.strike_price.as_ref().unwrap();
-
-        write!(output, "202={}\u{01}", val )?; // FIELD_STRIKEPRICE
-    }
-    if flds.opt_attribute.is_some() {
-        let val = flds.opt_attribute.as_ref().unwrap();
-
-        write!(output, "206={}\u{01}", val )?; // FIELD_OPTATTRIBUTE
-    }
-    if flds.contract_multiplier.is_some() {
-        let val = flds.contract_multiplier.as_ref().unwrap();
-
-        write!(output, "231={}\u{01}", val )?; // FIELD_CONTRACTMULTIPLIER
-    }
-    if flds.coupon_rate.is_some() {
-        let val = flds.coupon_rate.as_ref().unwrap();
-
-        write!(output, "223={}\u{01}", val )?; // FIELD_COUPONRATE
-    }
-    if flds.security_exchange.is_some() {
-        let val = flds.security_exchange.as_ref().unwrap();
-
-        write!(output, "207={}\u{01}", val )?; // FIELD_SECURITYEXCHANGE
-    }
-    if flds.issuer.is_some() {
-        let val = flds.issuer.as_ref().unwrap();
-
-        write!(output, "106={}\u{01}", val )?; // FIELD_ISSUER
-    }
-    if flds.encoded_issuer_len.is_some() {
-        let val = flds.encoded_issuer_len.as_ref().unwrap();
-
-        write!(output, "348={}\u{01}", val )?; // FIELD_ENCODEDISSUERLEN
-    }
-    if flds.encoded_issuer.is_some() {
-        let val = flds.encoded_issuer.as_ref().unwrap();
-
-        write!(output, "349={}\u{01}", val )?; // FIELD_ENCODEDISSUER
-    }
-    if flds.security_desc.is_some() {
-        let val = flds.security_desc.as_ref().unwrap();
-
-        write!(output, "107={}\u{01}", val )?; // FIELD_SECURITYDESC
-    }
-    if flds.encoded_security_desc_len.is_some() {
-        let val = flds.encoded_security_desc_len.as_ref().unwrap();
-
-        write!(output, "350={}\u{01}", val )?; // FIELD_ENCODEDSECURITYDESCLEN
-    }
-    if flds.encoded_security_desc.is_some() {
-        let val = flds.encoded_security_desc.as_ref().unwrap();
-
-        write!(output, "351={}\u{01}", val )?; // FIELD_ENCODEDSECURITYDESC
-    }
-    if flds.underlying_symbol.is_some() {
-        let val = flds.underlying_symbol.as_ref().unwrap();
-
-        write!(output, "311={}\u{01}", val )?; // FIELD_UNDERLYINGSYMBOL
-    }
-
-    Ok( () )
-}
-
-
-
-fn write_group_no_related_sym25_fields( group: &Vec<NoRelatedSym25Fields>, output: &mut Write ) -> Result<(), io::Error> {
-    let len = group.len();
-    write!(output, "{}={}\u{01}", FIELD_NORELATEDSYM, len )?;
-
-    for g in group {
-        write_group_no_related_sym25_fields_line( g, output )?;
-    }
-
-    Ok( () )
-}
-
-fn write_group_no_related_sym25_fields_line( flds: &NoRelatedSym25Fields, output: &mut Write) -> Result<(), io::Error> {
-
-    if flds.relatd_sym.is_some() {
-        let val = flds.relatd_sym.as_ref().unwrap();
-
-        write!(output, "46={}\u{01}", val )?; // FIELD_RELATDSYM
-    }
-    if flds.symbol_sfx.is_some() {
-        let val = flds.symbol_sfx.as_ref().unwrap();
-
-        write!(output, "65={}\u{01}", val )?; // FIELD_SYMBOLSFX
-    }
-    if flds.security_id.is_some() {
-        let val = flds.security_id.as_ref().unwrap();
-
-        write!(output, "48={}\u{01}", val )?; // FIELD_SECURITYID
-    }
-    if flds.idsource.is_some() {
-        let val = flds.idsource.as_ref().unwrap();
-
-        write!(output, "22={}\u{01}", val )?; // FIELD_IDSOURCE
-    }
-    if flds.security_type.is_some() {
-        let val = flds.security_type.as_ref().unwrap();
-
-        write!(output, "167={}\u{01}", val )?; // FIELD_SECURITYTYPE
-    }
-    if flds.maturity_month_year.is_some() {
-        let val = flds.maturity_month_year.as_ref().unwrap();
-
-        write!(output, "200={}\u{01}", val )?; // FIELD_MATURITYMONTHYEAR
-    }
-    if flds.maturity_day.is_some() {
-        let val = flds.maturity_day.as_ref().unwrap();
-
-        write!(output, "205={}\u{01}", val )?; // FIELD_MATURITYDAY
-    }
-    if flds.put_or_call.is_some() {
-        let val = flds.put_or_call.as_ref().unwrap();
-
-        write!(output, "201={}\u{01}", val )?; // FIELD_PUTORCALL
-    }
-    if flds.strike_price.is_some() {
-        let val = flds.strike_price.as_ref().unwrap();
-
-        write!(output, "202={}\u{01}", val )?; // FIELD_STRIKEPRICE
-    }
-    if flds.opt_attribute.is_some() {
-        let val = flds.opt_attribute.as_ref().unwrap();
-
-        write!(output, "206={}\u{01}", val )?; // FIELD_OPTATTRIBUTE
-    }
-    if flds.contract_multiplier.is_some() {
-        let val = flds.contract_multiplier.as_ref().unwrap();
-
-        write!(output, "231={}\u{01}", val )?; // FIELD_CONTRACTMULTIPLIER
-    }
-    if flds.coupon_rate.is_some() {
-        let val = flds.coupon_rate.as_ref().unwrap();
-
-        write!(output, "223={}\u{01}", val )?; // FIELD_COUPONRATE
-    }
-    if flds.security_exchange.is_some() {
-        let val = flds.security_exchange.as_ref().unwrap();
-
-        write!(output, "207={}\u{01}", val )?; // FIELD_SECURITYEXCHANGE
-    }
-    if flds.issuer.is_some() {
-        let val = flds.issuer.as_ref().unwrap();
-
-        write!(output, "106={}\u{01}", val )?; // FIELD_ISSUER
-    }
-    if flds.encoded_issuer_len.is_some() {
-        let val = flds.encoded_issuer_len.as_ref().unwrap();
-
-        write!(output, "348={}\u{01}", val )?; // FIELD_ENCODEDISSUERLEN
-    }
-    if flds.encoded_issuer.is_some() {
-        let val = flds.encoded_issuer.as_ref().unwrap();
-
-        write!(output, "349={}\u{01}", val )?; // FIELD_ENCODEDISSUER
-    }
-    if flds.security_desc.is_some() {
-        let val = flds.security_desc.as_ref().unwrap();
-
-        write!(output, "107={}\u{01}", val )?; // FIELD_SECURITYDESC
-    }
-    if flds.encoded_security_desc_len.is_some() {
-        let val = flds.encoded_security_desc_len.as_ref().unwrap();
-
-        write!(output, "350={}\u{01}", val )?; // FIELD_ENCODEDSECURITYDESCLEN
-    }
-    if flds.encoded_security_desc.is_some() {
-        let val = flds.encoded_security_desc.as_ref().unwrap();
-
-        write!(output, "351={}\u{01}", val )?; // FIELD_ENCODEDSECURITYDESC
-    }
-
-    Ok( () )
-}
-
-
-
-fn write_group_no_quote_sets22_fields( group: &Vec<NoQuoteSets22Fields>, output: &mut Write ) -> Result<(), io::Error> {
-    let len = group.len();
-    write!(output, "{}={}\u{01}", FIELD_NOQUOTESETS, len )?;
-
-    for g in group {
-        write_group_no_quote_sets22_fields_line( g, output )?;
-    }
-
-    Ok( () )
-}
-
-fn write_group_no_quote_sets22_fields_line( flds: &NoQuoteSets22Fields, output: &mut Write) -> Result<(), io::Error> {
-
-    if flds.quote_set_id.is_some() {
-        let val = flds.quote_set_id.as_ref().unwrap();
-
-        write!(output, "302={}\u{01}", val )?; // FIELD_QUOTESETID
-    }
-    if flds.underlying_symbol.is_some() {
-        let val = flds.underlying_symbol.as_ref().unwrap();
-
-        write!(output, "311={}\u{01}", val )?; // FIELD_UNDERLYINGSYMBOL
-    }
-    if flds.underlying_symbol_sfx.is_some() {
-        let val = flds.underlying_symbol_sfx.as_ref().unwrap();
-
-        write!(output, "312={}\u{01}", val )?; // FIELD_UNDERLYINGSYMBOLSFX
-    }
-    if flds.underlying_security_id.is_some() {
-        let val = flds.underlying_security_id.as_ref().unwrap();
-
-        write!(output, "309={}\u{01}", val )?; // FIELD_UNDERLYINGSECURITYID
-    }
-    if flds.underlying_idsource.is_some() {
-        let val = flds.underlying_idsource.as_ref().unwrap();
-
-        write!(output, "305={}\u{01}", val )?; // FIELD_UNDERLYINGIDSOURCE
-    }
-    if flds.underlying_security_type.is_some() {
-        let val = flds.underlying_security_type.as_ref().unwrap();
-
-        write!(output, "310={}\u{01}", val )?; // FIELD_UNDERLYINGSECURITYTYPE
-    }
-    if flds.underlying_maturity_month_year.is_some() {
-        let val = flds.underlying_maturity_month_year.as_ref().unwrap();
-
-        write!(output, "313={}\u{01}", val )?; // FIELD_UNDERLYINGMATURITYMONTHYEAR
-    }
-    if flds.underlying_maturity_day.is_some() {
-        let val = flds.underlying_maturity_day.as_ref().unwrap();
-
-        write!(output, "314={}\u{01}", val )?; // FIELD_UNDERLYINGMATURITYDAY
-    }
-    if flds.underlying_put_or_call.is_some() {
-        let val = flds.underlying_put_or_call.as_ref().unwrap();
-
-        write!(output, "315={}\u{01}", val )?; // FIELD_UNDERLYINGPUTORCALL
-    }
-    if flds.underlying_strike_price.is_some() {
-        let val = flds.underlying_strike_price.as_ref().unwrap();
-
-        write!(output, "316={}\u{01}", val )?; // FIELD_UNDERLYINGSTRIKEPRICE
-    }
-    if flds.underlying_opt_attribute.is_some() {
-        let val = flds.underlying_opt_attribute.as_ref().unwrap();
-
-        write!(output, "317={}\u{01}", val )?; // FIELD_UNDERLYINGOPTATTRIBUTE
-    }
-    if flds.underlying_contract_multiplier.is_some() {
-        let val = flds.underlying_contract_multiplier.as_ref().unwrap();
-
-        write!(output, "436={}\u{01}", val )?; // FIELD_UNDERLYINGCONTRACTMULTIPLIER
-    }
-    if flds.underlying_coupon_rate.is_some() {
-        let val = flds.underlying_coupon_rate.as_ref().unwrap();
-
-        write!(output, "435={}\u{01}", val )?; // FIELD_UNDERLYINGCOUPONRATE
-    }
-    if flds.underlying_security_exchange.is_some() {
-        let val = flds.underlying_security_exchange.as_ref().unwrap();
-
-        write!(output, "308={}\u{01}", val )?; // FIELD_UNDERLYINGSECURITYEXCHANGE
-    }
-    if flds.underlying_issuer.is_some() {
-        let val = flds.underlying_issuer.as_ref().unwrap();
-
-        write!(output, "306={}\u{01}", val )?; // FIELD_UNDERLYINGISSUER
-    }
-    if flds.encoded_underlying_issuer_len.is_some() {
-        let val = flds.encoded_underlying_issuer_len.as_ref().unwrap();
-
-        write!(output, "362={}\u{01}", val )?; // FIELD_ENCODEDUNDERLYINGISSUERLEN
-    }
-    if flds.encoded_underlying_issuer.is_some() {
-        let val = flds.encoded_underlying_issuer.as_ref().unwrap();
-
-        write!(output, "363={}\u{01}", val )?; // FIELD_ENCODEDUNDERLYINGISSUER
-    }
-    if flds.underlying_security_desc.is_some() {
-        let val = flds.underlying_security_desc.as_ref().unwrap();
-
-        write!(output, "307={}\u{01}", val )?; // FIELD_UNDERLYINGSECURITYDESC
-    }
-    if flds.encoded_underlying_security_desc_len.is_some() {
-        let val = flds.encoded_underlying_security_desc_len.as_ref().unwrap();
-
-        write!(output, "364={}\u{01}", val )?; // FIELD_ENCODEDUNDERLYINGSECURITYDESCLEN
-    }
-    if flds.encoded_underlying_security_desc.is_some() {
-        let val = flds.encoded_underlying_security_desc.as_ref().unwrap();
-
-        write!(output, "365={}\u{01}", val )?; // FIELD_ENCODEDUNDERLYINGSECURITYDESC
-    }
-    if flds.tot_quote_entries.is_some() {
-        let val = flds.tot_quote_entries.as_ref().unwrap();
-
-        write!(output, "304={}\u{01}", val )?; // FIELD_TOTQUOTEENTRIES
-    }
-    if flds.no_quote_entries.is_some() {
-        let val = flds.no_quote_entries.as_ref().unwrap();
-
-        write_group_no_quote_entries18_fields( val, output )?;
-    }
-
-    Ok( () )
-}
-
-
-
-fn write_group_no_msg_types14_fields( group: &Vec<NoMsgTypes14Fields>, output: &mut Write ) -> Result<(), io::Error> {
-    let len = group.len();
-    write!(output, "{}={}\u{01}", FIELD_NOMSGTYPES, len )?;
-
-    for g in group {
-        write_group_no_msg_types14_fields_line( g, output )?;
-    }
-
-    Ok( () )
-}
-
-fn write_group_no_msg_types14_fields_line( flds: &NoMsgTypes14Fields, output: &mut Write) -> Result<(), io::Error> {
-
-    if flds.ref_msg_type.is_some() {
-        let val = flds.ref_msg_type.as_ref().unwrap();
-
-        write!(output, "372={}\u{01}", val )?; // FIELD_REFMSGTYPE
-    }
-    if flds.msg_direction.is_some() {
-        let val = flds.msg_direction.as_ref().unwrap();
-
-        write!(output, "385={}\u{01}", val )?; // FIELD_MSGDIRECTION
-    }
-
-    Ok( () )
-}
-
-
-
-fn write_group_no_related_sym26_fields( group: &Vec<NoRelatedSym26Fields>, output: &mut Write ) -> Result<(), io::Error> {
-    let len = group.len();
-    write!(output, "{}={}\u{01}", FIELD_NORELATEDSYM, len )?;
-
-    for g in group {
-        write_group_no_related_sym26_fields_line( g, output )?;
-    }
-
-    Ok( () )
-}
-
-fn write_group_no_related_sym26_fields_line( flds: &NoRelatedSym26Fields, output: &mut Write) -> Result<(), io::Error> {
-
-    if flds.underlying_symbol.is_some() {
-        let val = flds.underlying_symbol.as_ref().unwrap();
-
-        write!(output, "311={}\u{01}", val )?; // FIELD_UNDERLYINGSYMBOL
-    }
-    if flds.underlying_symbol_sfx.is_some() {
-        let val = flds.underlying_symbol_sfx.as_ref().unwrap();
-
-        write!(output, "312={}\u{01}", val )?; // FIELD_UNDERLYINGSYMBOLSFX
-    }
-    if flds.underlying_security_id.is_some() {
-        let val = flds.underlying_security_id.as_ref().unwrap();
-
-        write!(output, "309={}\u{01}", val )?; // FIELD_UNDERLYINGSECURITYID
-    }
-    if flds.underlying_idsource.is_some() {
-        let val = flds.underlying_idsource.as_ref().unwrap();
-
-        write!(output, "305={}\u{01}", val )?; // FIELD_UNDERLYINGIDSOURCE
-    }
-    if flds.underlying_security_type.is_some() {
-        let val = flds.underlying_security_type.as_ref().unwrap();
-
-        write!(output, "310={}\u{01}", val )?; // FIELD_UNDERLYINGSECURITYTYPE
-    }
-    if flds.underlying_maturity_month_year.is_some() {
-        let val = flds.underlying_maturity_month_year.as_ref().unwrap();
-
-        write!(output, "313={}\u{01}", val )?; // FIELD_UNDERLYINGMATURITYMONTHYEAR
-    }
-    if flds.underlying_maturity_day.is_some() {
-        let val = flds.underlying_maturity_day.as_ref().unwrap();
-
-        write!(output, "314={}\u{01}", val )?; // FIELD_UNDERLYINGMATURITYDAY
-    }
-    if flds.underlying_put_or_call.is_some() {
-        let val = flds.underlying_put_or_call.as_ref().unwrap();
-
-        write!(output, "315={}\u{01}", val )?; // FIELD_UNDERLYINGPUTORCALL
-    }
-    if flds.underlying_strike_price.is_some() {
-        let val = flds.underlying_strike_price.as_ref().unwrap();
-
-        write!(output, "316={}\u{01}", val )?; // FIELD_UNDERLYINGSTRIKEPRICE
-    }
-    if flds.underlying_opt_attribute.is_some() {
-        let val = flds.underlying_opt_attribute.as_ref().unwrap();
-
-        write!(output, "317={}\u{01}", val )?; // FIELD_UNDERLYINGOPTATTRIBUTE
-    }
-    if flds.underlying_contract_multiplier.is_some() {
-        let val = flds.underlying_contract_multiplier.as_ref().unwrap();
-
-        write!(output, "436={}\u{01}", val )?; // FIELD_UNDERLYINGCONTRACTMULTIPLIER
-    }
-    if flds.underlying_coupon_rate.is_some() {
-        let val = flds.underlying_coupon_rate.as_ref().unwrap();
-
-        write!(output, "435={}\u{01}", val )?; // FIELD_UNDERLYINGCOUPONRATE
-    }
-    if flds.underlying_security_exchange.is_some() {
-        let val = flds.underlying_security_exchange.as_ref().unwrap();
-
-        write!(output, "308={}\u{01}", val )?; // FIELD_UNDERLYINGSECURITYEXCHANGE
-    }
-    if flds.underlying_issuer.is_some() {
-        let val = flds.underlying_issuer.as_ref().unwrap();
-
-        write!(output, "306={}\u{01}", val )?; // FIELD_UNDERLYINGISSUER
-    }
-    if flds.encoded_underlying_issuer_len.is_some() {
-        let val = flds.encoded_underlying_issuer_len.as_ref().unwrap();
-
-        write!(output, "362={}\u{01}", val )?; // FIELD_ENCODEDUNDERLYINGISSUERLEN
-    }
-    if flds.encoded_underlying_issuer.is_some() {
-        let val = flds.encoded_underlying_issuer.as_ref().unwrap();
-
-        write!(output, "363={}\u{01}", val )?; // FIELD_ENCODEDUNDERLYINGISSUER
-    }
-    if flds.underlying_security_desc.is_some() {
-        let val = flds.underlying_security_desc.as_ref().unwrap();
-
-        write!(output, "307={}\u{01}", val )?; // FIELD_UNDERLYINGSECURITYDESC
-    }
-    if flds.encoded_underlying_security_desc_len.is_some() {
-        let val = flds.encoded_underlying_security_desc_len.as_ref().unwrap();
-
-        write!(output, "364={}\u{01}", val )?; // FIELD_ENCODEDUNDERLYINGSECURITYDESCLEN
-    }
-    if flds.encoded_underlying_security_desc.is_some() {
-        let val = flds.encoded_underlying_security_desc.as_ref().unwrap();
-
-        write!(output, "365={}\u{01}", val )?; // FIELD_ENCODEDUNDERLYINGSECURITYDESC
-    }
-    if flds.ratio_qty.is_some() {
-        let val = flds.ratio_qty.as_ref().unwrap();
-
-        write!(output, "319={}\u{01}", val )?; // FIELD_RATIOQTY
-    }
-    if flds.side.is_some() {
-        let val = flds.side.as_ref().unwrap();
-
-        write!(output, "54={}\u{01}", val )?; // FIELD_SIDE
-    }
-    if flds.underlying_currency.is_some() {
-        let val = flds.underlying_currency.as_ref().unwrap();
-
-        write!(output, "318={}\u{01}", val )?; // FIELD_UNDERLYINGCURRENCY
-    }
-
-    Ok( () )
-}
-
-
-
-fn write_group_no_quote_entries18_fields( group: &Vec<NoQuoteEntries18Fields>, output: &mut Write ) -> Result<(), io::Error> {
-    let len = group.len();
-    write!(output, "{}={}\u{01}", FIELD_NOQUOTEENTRIES, len )?;
-
-    for g in group {
-        write_group_no_quote_entries18_fields_line( g, output )?;
-    }
-
-    Ok( () )
-}
-
-fn write_group_no_quote_entries18_fields_line( flds: &NoQuoteEntries18Fields, output: &mut Write) -> Result<(), io::Error> {
-
-    if flds.quote_entry_id.is_some() {
-        let val = flds.quote_entry_id.as_ref().unwrap();
-
-        write!(output, "299={}\u{01}", val )?; // FIELD_QUOTEENTRYID
-    }
-    if flds.symbol.is_some() {
-        let val = flds.symbol.as_ref().unwrap();
-
-        write!(output, "55={}\u{01}", val )?; // FIELD_SYMBOL
-    }
-    if flds.symbol_sfx.is_some() {
-        let val = flds.symbol_sfx.as_ref().unwrap();
-
-        write!(output, "65={}\u{01}", val )?; // FIELD_SYMBOLSFX
-    }
-    if flds.security_id.is_some() {
-        let val = flds.security_id.as_ref().unwrap();
-
-        write!(output, "48={}\u{01}", val )?; // FIELD_SECURITYID
-    }
-    if flds.idsource.is_some() {
-        let val = flds.idsource.as_ref().unwrap();
-
-        write!(output, "22={}\u{01}", val )?; // FIELD_IDSOURCE
-    }
-    if flds.security_type.is_some() {
-        let val = flds.security_type.as_ref().unwrap();
-
-        write!(output, "167={}\u{01}", val )?; // FIELD_SECURITYTYPE
-    }
-    if flds.maturity_month_year.is_some() {
-        let val = flds.maturity_month_year.as_ref().unwrap();
-
-        write!(output, "200={}\u{01}", val )?; // FIELD_MATURITYMONTHYEAR
-    }
-    if flds.maturity_day.is_some() {
-        let val = flds.maturity_day.as_ref().unwrap();
-
-        write!(output, "205={}\u{01}", val )?; // FIELD_MATURITYDAY
-    }
-    if flds.put_or_call.is_some() {
-        let val = flds.put_or_call.as_ref().unwrap();
-
-        write!(output, "201={}\u{01}", val )?; // FIELD_PUTORCALL
-    }
-    if flds.strike_price.is_some() {
-        let val = flds.strike_price.as_ref().unwrap();
-
-        write!(output, "202={}\u{01}", val )?; // FIELD_STRIKEPRICE
-    }
-    if flds.opt_attribute.is_some() {
-        let val = flds.opt_attribute.as_ref().unwrap();
-
-        write!(output, "206={}\u{01}", val )?; // FIELD_OPTATTRIBUTE
-    }
-    if flds.contract_multiplier.is_some() {
-        let val = flds.contract_multiplier.as_ref().unwrap();
-
-        write!(output, "231={}\u{01}", val )?; // FIELD_CONTRACTMULTIPLIER
-    }
-    if flds.coupon_rate.is_some() {
-        let val = flds.coupon_rate.as_ref().unwrap();
-
-        write!(output, "223={}\u{01}", val )?; // FIELD_COUPONRATE
-    }
-    if flds.security_exchange.is_some() {
-        let val = flds.security_exchange.as_ref().unwrap();
-
-        write!(output, "207={}\u{01}", val )?; // FIELD_SECURITYEXCHANGE
-    }
-    if flds.issuer.is_some() {
-        let val = flds.issuer.as_ref().unwrap();
-
-        write!(output, "106={}\u{01}", val )?; // FIELD_ISSUER
-    }
-    if flds.encoded_issuer_len.is_some() {
-        let val = flds.encoded_issuer_len.as_ref().unwrap();
-
-        write!(output, "348={}\u{01}", val )?; // FIELD_ENCODEDISSUERLEN
-    }
-    if flds.encoded_issuer.is_some() {
-        let val = flds.encoded_issuer.as_ref().unwrap();
-
-        write!(output, "349={}\u{01}", val )?; // FIELD_ENCODEDISSUER
-    }
-    if flds.security_desc.is_some() {
-        let val = flds.security_desc.as_ref().unwrap();
-
-        write!(output, "107={}\u{01}", val )?; // FIELD_SECURITYDESC
-    }
-    if flds.encoded_security_desc_len.is_some() {
-        let val = flds.encoded_security_desc_len.as_ref().unwrap();
-
-        write!(output, "350={}\u{01}", val )?; // FIELD_ENCODEDSECURITYDESCLEN
-    }
-    if flds.encoded_security_desc.is_some() {
-        let val = flds.encoded_security_desc.as_ref().unwrap();
-
-        write!(output, "351={}\u{01}", val )?; // FIELD_ENCODEDSECURITYDESC
-    }
-    if flds.quote_entry_reject_reason.is_some() {
-        let val = flds.quote_entry_reject_reason.as_ref().unwrap();
-
-        write!(output, "368={}\u{01}", val )?; // FIELD_QUOTEENTRYREJECTREASON
-    }
-
-    Ok( () )
-}
-
-
-
-fn write_group_no_strikes28_fields( group: &Vec<NoStrikes28Fields>, output: &mut Write ) -> Result<(), io::Error> {
-    let len = group.len();
-    write!(output, "{}={}\u{01}", FIELD_NOSTRIKES, len )?;
-
-    for g in group {
-        write_group_no_strikes28_fields_line( g, output )?;
-    }
-
-    Ok( () )
-}
-
-fn write_group_no_strikes28_fields_line( flds: &NoStrikes28Fields, output: &mut Write) -> Result<(), io::Error> {
-
-    {
-        let val = &flds.symbol;
-
-        write!(output, "55={}\u{01}", val )?; // FIELD_SYMBOL
-    }
-    if flds.symbol_sfx.is_some() {
-        let val = flds.symbol_sfx.as_ref().unwrap();
-
-        write!(output, "65={}\u{01}", val )?; // FIELD_SYMBOLSFX
-    }
-    if flds.security_id.is_some() {
-        let val = flds.security_id.as_ref().unwrap();
-
-        write!(output, "48={}\u{01}", val )?; // FIELD_SECURITYID
-    }
-    if flds.idsource.is_some() {
-        let val = flds.idsource.as_ref().unwrap();
-
-        write!(output, "22={}\u{01}", val )?; // FIELD_IDSOURCE
-    }
-    if flds.security_type.is_some() {
-        let val = flds.security_type.as_ref().unwrap();
-
-        write!(output, "167={}\u{01}", val )?; // FIELD_SECURITYTYPE
-    }
-    if flds.maturity_month_year.is_some() {
-        let val = flds.maturity_month_year.as_ref().unwrap();
-
-        write!(output, "200={}\u{01}", val )?; // FIELD_MATURITYMONTHYEAR
-    }
-    if flds.maturity_day.is_some() {
-        let val = flds.maturity_day.as_ref().unwrap();
-
-        write!(output, "205={}\u{01}", val )?; // FIELD_MATURITYDAY
-    }
-    if flds.put_or_call.is_some() {
-        let val = flds.put_or_call.as_ref().unwrap();
-
-        write!(output, "201={}\u{01}", val )?; // FIELD_PUTORCALL
-    }
-    if flds.strike_price.is_some() {
-        let val = flds.strike_price.as_ref().unwrap();
-
-        write!(output, "202={}\u{01}", val )?; // FIELD_STRIKEPRICE
-    }
-    if flds.opt_attribute.is_some() {
-        let val = flds.opt_attribute.as_ref().unwrap();
-
-        write!(output, "206={}\u{01}", val )?; // FIELD_OPTATTRIBUTE
-    }
-    if flds.contract_multiplier.is_some() {
-        let val = flds.contract_multiplier.as_ref().unwrap();
-
-        write!(output, "231={}\u{01}", val )?; // FIELD_CONTRACTMULTIPLIER
-    }
-    if flds.coupon_rate.is_some() {
-        let val = flds.coupon_rate.as_ref().unwrap();
-
-        write!(output, "223={}\u{01}", val )?; // FIELD_COUPONRATE
-    }
-    if flds.security_exchange.is_some() {
-        let val = flds.security_exchange.as_ref().unwrap();
-
-        write!(output, "207={}\u{01}", val )?; // FIELD_SECURITYEXCHANGE
-    }
-    if flds.issuer.is_some() {
-        let val = flds.issuer.as_ref().unwrap();
-
-        write!(output, "106={}\u{01}", val )?; // FIELD_ISSUER
-    }
-    if flds.encoded_issuer_len.is_some() {
-        let val = flds.encoded_issuer_len.as_ref().unwrap();
-
-        write!(output, "348={}\u{01}", val )?; // FIELD_ENCODEDISSUERLEN
-    }
-    if flds.encoded_issuer.is_some() {
-        let val = flds.encoded_issuer.as_ref().unwrap();
-
-        write!(output, "349={}\u{01}", val )?; // FIELD_ENCODEDISSUER
-    }
-    if flds.security_desc.is_some() {
-        let val = flds.security_desc.as_ref().unwrap();
-
-        write!(output, "107={}\u{01}", val )?; // FIELD_SECURITYDESC
-    }
-    if flds.encoded_security_desc_len.is_some() {
-        let val = flds.encoded_security_desc_len.as_ref().unwrap();
-
-        write!(output, "350={}\u{01}", val )?; // FIELD_ENCODEDSECURITYDESCLEN
-    }
-    if flds.encoded_security_desc.is_some() {
-        let val = flds.encoded_security_desc.as_ref().unwrap();
-
-        write!(output, "351={}\u{01}", val )?; // FIELD_ENCODEDSECURITYDESC
-    }
-    if flds.prev_close_px.is_some() {
-        let val = flds.prev_close_px.as_ref().unwrap();
-
-        write!(output, "140={}\u{01}", val )?; // FIELD_PREVCLOSEPX
-    }
-    if flds.cl_ord_id.is_some() {
-        let val = flds.cl_ord_id.as_ref().unwrap();
-
-        write!(output, "11={}\u{01}", val )?; // FIELD_CLORDID
-    }
-    if flds.side.is_some() {
-        let val = flds.side.as_ref().unwrap();
-
-        write!(output, "54={}\u{01}", val )?; // FIELD_SIDE
-    }
-    {
-        let val = &flds.price;
-
-        write!(output, "44={}\u{01}", val )?; // FIELD_PRICE
-    }
-    if flds.currency.is_some() {
-        let val = flds.currency.as_ref().unwrap();
-
-        write!(output, "15={}\u{01}", val )?; // FIELD_CURRENCY
-    }
-    if flds.text.is_some() {
-        let val = flds.text.as_ref().unwrap();
-
-        write!(output, "58={}\u{01}", val )?; // FIELD_TEXT
-    }
-    if flds.encoded_text_len.is_some() {
-        let val = flds.encoded_text_len.as_ref().unwrap();
-
-        write!(output, "354={}\u{01}", val )?; // FIELD_ENCODEDTEXTLEN
-    }
-    if flds.encoded_text.is_some() {
-        let val = flds.encoded_text.as_ref().unwrap();
-
-        write!(output, "355={}\u{01}", val )?; // FIELD_ENCODEDTEXT
-    }
-
-    Ok( () )
-}
-
-
-
-fn write_group_no_mdentries10_fields( group: &Vec<NoMDEntries10Fields>, output: &mut Write ) -> Result<(), io::Error> {
-    let len = group.len();
-    write!(output, "{}={}\u{01}", FIELD_NOMDENTRIES, len )?;
-
-    for g in group {
-        write_group_no_mdentries10_fields_line( g, output )?;
-    }
-
-    Ok( () )
-}
-
-fn write_group_no_mdentries10_fields_line( flds: &NoMDEntries10Fields, output: &mut Write) -> Result<(), io::Error> {
-
-    {
-        let val = &flds.mdentry_type;
-
-        write!(output, "269={}\u{01}", val )?; // FIELD_MDENTRYTYPE
-    }
-    {
-        let val = &flds.mdentry_px;
-
-        write!(output, "270={}\u{01}", val )?; // FIELD_MDENTRYPX
-    }
-    if flds.currency.is_some() {
-        let val = flds.currency.as_ref().unwrap();
-
-        write!(output, "15={}\u{01}", val )?; // FIELD_CURRENCY
-    }
-    if flds.mdentry_size.is_some() {
-        let val = flds.mdentry_size.as_ref().unwrap();
-
-        write!(output, "271={}\u{01}", val )?; // FIELD_MDENTRYSIZE
-    }
-    if flds.mdentry_date.is_some() {
-        let val = flds.mdentry_date.as_ref().unwrap();
-
-        write!(output, "272={}\u{01}", val )?; // FIELD_MDENTRYDATE
-    }
-    if flds.mdentry_time.is_some() {
-        let val = flds.mdentry_time.as_ref().unwrap();
-
-        write!(output, "273={}\u{01}", val )?; // FIELD_MDENTRYTIME
-    }
-    if flds.tick_direction.is_some() {
-        let val = flds.tick_direction.as_ref().unwrap();
-
-        write!(output, "274={}\u{01}", val )?; // FIELD_TICKDIRECTION
-    }
-    if flds.mdmkt.is_some() {
-        let val = flds.mdmkt.as_ref().unwrap();
-
-        write!(output, "275={}\u{01}", val )?; // FIELD_MDMKT
-    }
-    if flds.trading_session_id.is_some() {
-        let val = flds.trading_session_id.as_ref().unwrap();
-
-        write!(output, "336={}\u{01}", val )?; // FIELD_TRADINGSESSIONID
-    }
-    if flds.quote_condition.is_some() {
-        let val = flds.quote_condition.as_ref().unwrap();
-
-        write!(output, "276={}\u{01}", val )?; // FIELD_QUOTECONDITION
-    }
-    if flds.trade_condition.is_some() {
-        let val = flds.trade_condition.as_ref().unwrap();
-
-        write!(output, "277={}\u{01}", val )?; // FIELD_TRADECONDITION
-    }
-    if flds.mdentry_originator.is_some() {
-        let val = flds.mdentry_originator.as_ref().unwrap();
-
-        write!(output, "282={}\u{01}", val )?; // FIELD_MDENTRYORIGINATOR
-    }
-    if flds.location_id.is_some() {
-        let val = flds.location_id.as_ref().unwrap();
-
-        write!(output, "283={}\u{01}", val )?; // FIELD_LOCATIONID
-    }
-    if flds.desk_id.is_some() {
-        let val = flds.desk_id.as_ref().unwrap();
-
-        write!(output, "284={}\u{01}", val )?; // FIELD_DESKID
-    }
-    if flds.open_close_settle_flag.is_some() {
-        let val = flds.open_close_settle_flag.as_ref().unwrap();
-
-        write!(output, "286={}\u{01}", val )?; // FIELD_OPENCLOSESETTLEFLAG
-    }
-    if flds.time_in_force.is_some() {
-        let val = flds.time_in_force.as_ref().unwrap();
-
-        write!(output, "59={}\u{01}", val )?; // FIELD_TIMEINFORCE
-    }
-    if flds.expire_date.is_some() {
-        let val = flds.expire_date.as_ref().unwrap();
-
-        write!(output, "432={}\u{01}", val )?; // FIELD_EXPIREDATE
-    }
-    if flds.expire_time.is_some() {
-        let val = flds.expire_time.as_ref().unwrap();
-
-        write!(output, "126={}\u{01}", val )?; // FIELD_EXPIRETIME
-    }
-    if flds.min_qty.is_some() {
-        let val = flds.min_qty.as_ref().unwrap();
-
-        write!(output, "110={}\u{01}", val )?; // FIELD_MINQTY
-    }
-    if flds.exec_inst.is_some() {
-        let val = flds.exec_inst.as_ref().unwrap();
-
-        write!(output, "18={}\u{01}", val )?; // FIELD_EXECINST
-    }
-    if flds.seller_days.is_some() {
-        let val = flds.seller_days.as_ref().unwrap();
-
-        write!(output, "287={}\u{01}", val )?; // FIELD_SELLERDAYS
-    }
-    if flds.order_id.is_some() {
-        let val = flds.order_id.as_ref().unwrap();
-
-        write!(output, "37={}\u{01}", val )?; // FIELD_ORDERID
-    }
-    if flds.quote_entry_id.is_some() {
-        let val = flds.quote_entry_id.as_ref().unwrap();
-
-        write!(output, "299={}\u{01}", val )?; // FIELD_QUOTEENTRYID
-    }
-    if flds.mdentry_buyer.is_some() {
-        let val = flds.mdentry_buyer.as_ref().unwrap();
-
-        write!(output, "288={}\u{01}", val )?; // FIELD_MDENTRYBUYER
-    }
-    if flds.mdentry_seller.is_some() {
-        let val = flds.mdentry_seller.as_ref().unwrap();
-
-        write!(output, "289={}\u{01}", val )?; // FIELD_MDENTRYSELLER
-    }
-    if flds.number_of_orders.is_some() {
-        let val = flds.number_of_orders.as_ref().unwrap();
-
-        write!(output, "346={}\u{01}", val )?; // FIELD_NUMBEROFORDERS
-    }
-    if flds.mdentry_position_no.is_some() {
-        let val = flds.mdentry_position_no.as_ref().unwrap();
-
-        write!(output, "290={}\u{01}", val )?; // FIELD_MDENTRYPOSITIONNO
-    }
-    if flds.text.is_some() {
-        let val = flds.text.as_ref().unwrap();
-
-        write!(output, "58={}\u{01}", val )?; // FIELD_TEXT
-    }
-    if flds.encoded_text_len.is_some() {
-        let val = flds.encoded_text_len.as_ref().unwrap();
-
-        write!(output, "354={}\u{01}", val )?; // FIELD_ENCODEDTEXTLEN
-    }
-    if flds.encoded_text.is_some() {
-        let val = flds.encoded_text.as_ref().unwrap();
-
-        write!(output, "355={}\u{01}", val )?; // FIELD_ENCODEDTEXT
-    }
-
-    Ok( () )
-}
-
-
-
-fn write_group_no_quote_sets21_fields( group: &Vec<NoQuoteSets21Fields>, output: &mut Write ) -> Result<(), io::Error> {
-    let len = group.len();
-    write!(output, "{}={}\u{01}", FIELD_NOQUOTESETS, len )?;
-
-    for g in group {
-        write_group_no_quote_sets21_fields_line( g, output )?;
-    }
-
-    Ok( () )
-}
-
-fn write_group_no_quote_sets21_fields_line( flds: &NoQuoteSets21Fields, output: &mut Write) -> Result<(), io::Error> {
-
-    {
-        let val = &flds.quote_set_id;
-
-        write!(output, "302={}\u{01}", val )?; // FIELD_QUOTESETID
-    }
-    {
-        let val = &flds.underlying_symbol;
-
-        write!(output, "311={}\u{01}", val )?; // FIELD_UNDERLYINGSYMBOL
-    }
-    if flds.underlying_symbol_sfx.is_some() {
-        let val = flds.underlying_symbol_sfx.as_ref().unwrap();
-
-        write!(output, "312={}\u{01}", val )?; // FIELD_UNDERLYINGSYMBOLSFX
-    }
-    if flds.underlying_security_id.is_some() {
-        let val = flds.underlying_security_id.as_ref().unwrap();
-
-        write!(output, "309={}\u{01}", val )?; // FIELD_UNDERLYINGSECURITYID
-    }
-    if flds.underlying_idsource.is_some() {
-        let val = flds.underlying_idsource.as_ref().unwrap();
-
-        write!(output, "305={}\u{01}", val )?; // FIELD_UNDERLYINGIDSOURCE
-    }
-    if flds.underlying_security_type.is_some() {
-        let val = flds.underlying_security_type.as_ref().unwrap();
-
-        write!(output, "310={}\u{01}", val )?; // FIELD_UNDERLYINGSECURITYTYPE
-    }
-    if flds.underlying_maturity_month_year.is_some() {
-        let val = flds.underlying_maturity_month_year.as_ref().unwrap();
-
-        write!(output, "313={}\u{01}", val )?; // FIELD_UNDERLYINGMATURITYMONTHYEAR
-    }
-    if flds.underlying_maturity_day.is_some() {
-        let val = flds.underlying_maturity_day.as_ref().unwrap();
-
-        write!(output, "314={}\u{01}", val )?; // FIELD_UNDERLYINGMATURITYDAY
-    }
-    if flds.underlying_put_or_call.is_some() {
-        let val = flds.underlying_put_or_call.as_ref().unwrap();
-
-        write!(output, "315={}\u{01}", val )?; // FIELD_UNDERLYINGPUTORCALL
-    }
-    if flds.underlying_strike_price.is_some() {
-        let val = flds.underlying_strike_price.as_ref().unwrap();
-
-        write!(output, "316={}\u{01}", val )?; // FIELD_UNDERLYINGSTRIKEPRICE
-    }
-    if flds.underlying_opt_attribute.is_some() {
-        let val = flds.underlying_opt_attribute.as_ref().unwrap();
-
-        write!(output, "317={}\u{01}", val )?; // FIELD_UNDERLYINGOPTATTRIBUTE
-    }
-    if flds.underlying_contract_multiplier.is_some() {
-        let val = flds.underlying_contract_multiplier.as_ref().unwrap();
-
-        write!(output, "436={}\u{01}", val )?; // FIELD_UNDERLYINGCONTRACTMULTIPLIER
-    }
-    if flds.underlying_coupon_rate.is_some() {
-        let val = flds.underlying_coupon_rate.as_ref().unwrap();
-
-        write!(output, "435={}\u{01}", val )?; // FIELD_UNDERLYINGCOUPONRATE
-    }
-    if flds.underlying_security_exchange.is_some() {
-        let val = flds.underlying_security_exchange.as_ref().unwrap();
-
-        write!(output, "308={}\u{01}", val )?; // FIELD_UNDERLYINGSECURITYEXCHANGE
-    }
-    if flds.underlying_issuer.is_some() {
-        let val = flds.underlying_issuer.as_ref().unwrap();
-
-        write!(output, "306={}\u{01}", val )?; // FIELD_UNDERLYINGISSUER
-    }
-    if flds.encoded_underlying_issuer_len.is_some() {
-        let val = flds.encoded_underlying_issuer_len.as_ref().unwrap();
-
-        write!(output, "362={}\u{01}", val )?; // FIELD_ENCODEDUNDERLYINGISSUERLEN
-    }
-    if flds.encoded_underlying_issuer.is_some() {
-        let val = flds.encoded_underlying_issuer.as_ref().unwrap();
-
-        write!(output, "363={}\u{01}", val )?; // FIELD_ENCODEDUNDERLYINGISSUER
-    }
-    if flds.underlying_security_desc.is_some() {
-        let val = flds.underlying_security_desc.as_ref().unwrap();
-
-        write!(output, "307={}\u{01}", val )?; // FIELD_UNDERLYINGSECURITYDESC
-    }
-    if flds.encoded_underlying_security_desc_len.is_some() {
-        let val = flds.encoded_underlying_security_desc_len.as_ref().unwrap();
-
-        write!(output, "364={}\u{01}", val )?; // FIELD_ENCODEDUNDERLYINGSECURITYDESCLEN
-    }
-    if flds.encoded_underlying_security_desc.is_some() {
-        let val = flds.encoded_underlying_security_desc.as_ref().unwrap();
-
-        write!(output, "365={}\u{01}", val )?; // FIELD_ENCODEDUNDERLYINGSECURITYDESC
-    }
-    if flds.quote_set_valid_until_time.is_some() {
-        let val = flds.quote_set_valid_until_time.as_ref().unwrap();
-
-        write!(output, "367={}\u{01}", val )?; // FIELD_QUOTESETVALIDUNTILTIME
-    }
-    {
-        let val = &flds.tot_quote_entries;
-
-        write!(output, "304={}\u{01}", val )?; // FIELD_TOTQUOTEENTRIES
-    }
-    {
-        let val = &flds.no_quote_entries;
-
-        write_group_no_quote_entries19_fields( val, output )?;
-    }
-
-    Ok( () )
-}
-
-
-
-fn write_group_no_allocs3_fields( group: &Vec<NoAllocs3Fields>, output: &mut Write ) -> Result<(), io::Error> {
-    let len = group.len();
-    write!(output, "{}={}\u{01}", FIELD_NOALLOCS, len )?;
-
-    for g in group {
-        write_group_no_allocs3_fields_line( g, output )?;
-    }
-
-    Ok( () )
-}
-
-fn write_group_no_allocs3_fields_line( flds: &NoAllocs3Fields, output: &mut Write) -> Result<(), io::Error> {
-
-    if flds.alloc_account.is_some() {
-        let val = flds.alloc_account.as_ref().unwrap();
-
-        write!(output, "79={}\u{01}", val )?; // FIELD_ALLOCACCOUNT
-    }
-    if flds.alloc_price.is_some() {
-        let val = flds.alloc_price.as_ref().unwrap();
-
-        write!(output, "366={}\u{01}", val )?; // FIELD_ALLOCPRICE
-    }
-    {
-        let val = &flds.alloc_shares;
-
-        write!(output, "80={}\u{01}", val )?; // FIELD_ALLOCSHARES
-    }
-    if flds.process_code.is_some() {
-        let val = flds.process_code.as_ref().unwrap();
-
-        write!(output, "81={}\u{01}", val )?; // FIELD_PROCESSCODE
-    }
-    if flds.broker_of_credit.is_some() {
-        let val = flds.broker_of_credit.as_ref().unwrap();
-
-        write!(output, "92={}\u{01}", val )?; // FIELD_BROKEROFCREDIT
-    }
-    if flds.notify_broker_of_credit.is_some() {
-        let val = flds.notify_broker_of_credit.as_ref().unwrap();
-
-        write!(output, "208={}\u{01}", to_boolconv(val) )?; // FIELD_NOTIFYBROKEROFCREDIT
-    }
-    if flds.alloc_handl_inst.is_some() {
-        let val = flds.alloc_handl_inst.as_ref().unwrap();
-
-        write!(output, "209={}\u{01}", val )?; // FIELD_ALLOCHANDLINST
-    }
-    if flds.alloc_text.is_some() {
-        let val = flds.alloc_text.as_ref().unwrap();
-
-        write!(output, "161={}\u{01}", val )?; // FIELD_ALLOCTEXT
-    }
-    if flds.encoded_alloc_text_len.is_some() {
-        let val = flds.encoded_alloc_text_len.as_ref().unwrap();
-
-        write!(output, "360={}\u{01}", val )?; // FIELD_ENCODEDALLOCTEXTLEN
-    }
-    if flds.encoded_alloc_text.is_some() {
-        let val = flds.encoded_alloc_text.as_ref().unwrap();
-
-        write!(output, "361={}\u{01}", val )?; // FIELD_ENCODEDALLOCTEXT
-    }
-    if flds.exec_broker.is_some() {
-        let val = flds.exec_broker.as_ref().unwrap();
-
-        write!(output, "76={}\u{01}", val )?; // FIELD_EXECBROKER
-    }
-    if flds.client_id.is_some() {
-        let val = flds.client_id.as_ref().unwrap();
-
-        write!(output, "109={}\u{01}", val )?; // FIELD_CLIENTID
-    }
-    if flds.commission.is_some() {
-        let val = flds.commission.as_ref().unwrap();
-
-        write!(output, "12={}\u{01}", val )?; // FIELD_COMMISSION
-    }
-    if flds.comm_type.is_some() {
-        let val = flds.comm_type.as_ref().unwrap();
-
-        write!(output, "13={}\u{01}", val )?; // FIELD_COMMTYPE
-    }
-    if flds.alloc_avg_px.is_some() {
-        let val = flds.alloc_avg_px.as_ref().unwrap();
-
-        write!(output, "153={}\u{01}", val )?; // FIELD_ALLOCAVGPX
-    }
-    if flds.alloc_net_money.is_some() {
-        let val = flds.alloc_net_money.as_ref().unwrap();
-
-        write!(output, "154={}\u{01}", val )?; // FIELD_ALLOCNETMONEY
-    }
-    if flds.settl_curr_amt.is_some() {
-        let val = flds.settl_curr_amt.as_ref().unwrap();
-
-        write!(output, "119={}\u{01}", val )?; // FIELD_SETTLCURRAMT
-    }
-    if flds.settl_currency.is_some() {
-        let val = flds.settl_currency.as_ref().unwrap();
-
-        write!(output, "120={}\u{01}", val )?; // FIELD_SETTLCURRENCY
-    }
-    if flds.settl_curr_fx_rate.is_some() {
-        let val = flds.settl_curr_fx_rate.as_ref().unwrap();
-
-        write!(output, "155={}\u{01}", val )?; // FIELD_SETTLCURRFXRATE
-    }
-    if flds.settl_curr_fx_rate_calc.is_some() {
-        let val = flds.settl_curr_fx_rate_calc.as_ref().unwrap();
-
-        write!(output, "156={}\u{01}", val )?; // FIELD_SETTLCURRFXRATECALC
-    }
-    if flds.accrued_interest_amt.is_some() {
-        let val = flds.accrued_interest_amt.as_ref().unwrap();
-
-        write!(output, "159={}\u{01}", val )?; // FIELD_ACCRUEDINTERESTAMT
-    }
-    if flds.settl_inst_mode.is_some() {
-        let val = flds.settl_inst_mode.as_ref().unwrap();
-
-        write!(output, "160={}\u{01}", val )?; // FIELD_SETTLINSTMODE
-    }
-    if flds.no_misc_fees.is_some() {
-        let val = flds.no_misc_fees.as_ref().unwrap();
-
-        write_group_no_misc_fees13_fields( val, output )?;
-    }
-
-    Ok( () )
-}
-
-
-
 
 
 

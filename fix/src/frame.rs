@@ -46,6 +46,7 @@ impl FixFrame {
                 msg_seq_num: seq as i32,
                 sender_comp_id: sender.to_owned(), // TODO: Consider making these 2 Cow too
                 target_comp_id: target.to_owned(),
+                msg_type: message.msg_type(),
                 .. Default::default()
             },
             message,
@@ -75,12 +76,21 @@ impl FixFrame {
 
         // trailler
         let checksum = FixFrame::checksum( &body[..] );
-        let trailer = format!("10={:03}{}", checksum, FIX_MESSAGE_DELIMITER);
+        let trailer = format!("10={:03}\u{1}", checksum);
         buf.extend_from_slice( &trailer.as_str().as_bytes()[..] ); // ugly!
 
         // debug!("raw generated {:?}", buf);
 
         Ok( () )
+    }
+
+    /// Just to make unit testing simpler
+    pub fn write_to_str(&self) -> Result<String, io::Error> {
+        let mut buffer = BytesMut::new();
+        self.write( &mut buffer )?;
+        unsafe {
+            Ok(  String::from_utf8_unchecked(buffer.freeze().to_vec()) )
+        }
     }
 
     // https://github.com/antklim/fix_checksum/blob/master/src/lib.rs
@@ -146,8 +156,7 @@ named!(fld_value_usize<usize>, do_parse!(
 ));
 named!(pub begin_string<&'static str>, do_parse!(
     // eg: 8=FIX.4.4
-    tag!(b"8=") >>
-    bstr : fieldval >>
+    bstr : alt!( tag!(b"FIX.4.4") | tag!(b"FIX.4.2") ) >>
     ( to_fix_version(bstr) )
 ));
 
@@ -157,6 +166,7 @@ named!(pub begin_string<&'static str>, do_parse!(
 const CHECKSUM_SIZE : usize = 7; // 10=012\u{1}
 named!(raw_frame<RawFixFrame>,
   do_parse!(
+              tag!(b"8=") >>
       bstr  : begin_string >>
               tag!("\x019=") >>
               // tag!(b"8=FIX.4.2\x019=") >>

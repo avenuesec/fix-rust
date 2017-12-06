@@ -1,4 +1,3 @@
-
 extern crate fix;
 extern crate chrono;
 extern crate bytes;
@@ -15,74 +14,97 @@ use fix::fixmessagegen::*;
 
 
 #[test]
+#[cfg(feature="fix42")]
 fn test_build_heartbeat() {
     let frame = FixFrame {
-        begin_string: Cow::from("FIX.4.2"),
-        sending: Utc.ymd(2017, 08, 09).and_hms_milli(11, 48, 59, 413),
-        seq: 479,
-        sender_comp_id: "XPOMS".to_string(),
-        target_comp_id: "CLEAR".to_string(),
-        orig_sending: None,
-        poss_duplicate: None,
-        poss_resend: None,
-        message: FixMessage::Heartbeat(Box::new(HeartbeatFields { 
+        header : FixHeader {
+            begin_string: Cow::from("FIX.4.2"),
+            sending_time: UtcDateTime::new(Utc.ymd(2017, 08, 09).and_hms_milli(11, 48, 59, 413)),
+            msg_seq_num: 479,
+            sender_comp_id: "OMS".to_string(),
+            target_comp_id: "SING".to_string(),
+            msg_type: FieldMsgTypeEnum::Heartbeat,
+            .. Default::default()
+        },
+        message: FixMessage::Heartbeat(Box::new(HeartbeatFields {
             // test_req_id: Some("req".to_string())
             test_req_id: None
         }))
     };
-    let mut buffer = BytesMut::new();
-    let _ = frame.write( &mut buffer );
-    let message = unsafe {
-        String::from_utf8_unchecked(buffer.freeze().to_vec())
-    };
-    // original:  8=FIX.4.4|9=55|35=0|34=479|49=XPOMS|52=20170809-11:48:59.413|56=CLEAR|10=086| 
-    // generated: 8=FIX.4.4|9=55|35=0|34=479|49=XPOMS|52=20170809-11:48:59.413|56=CLEAR|10=086|
-    assert_eq!("8=FIX.4.2|9=55|35=0|34=479|49=XPOMS|52=20170809-11:48:59.413|56=CLEAR|10=084|",
-        message.replace("\u{1}", "|"));
+    let message = frame.write_to_str().expect("expecting write to succeed");
+    assert_eq!("8=FIX.4.2|9=52|35=0|34=479|49=OMS|52=20170809-11:48:59.413|56=SING|10=115|",
+               message.replace("\u{1}", "|"));
 }
 
 #[test]
-#[cfg(fix42)]
+#[cfg(feature="fix42")]
 fn test_build_logon() {
     let frame = FixFrame {
-        begin_string: Cow::from("FIX.4.2"),
-        sending: Utc.ymd(2017, 08, 09).and_hms_milli(11, 48, 59, 413),
-        seq: 100321,
-        sender_comp_id: "XPOMS".to_string(),
-        target_comp_id: "CLEAR".to_string(),
-        orig_sending: None,
-        poss_duplicate: None,
-        poss_resend: None,
+        header : FixHeader {
+            begin_string: Cow::from("FIX.4.2"),
+            sending_time: UtcDateTime::new(Utc.ymd(2017, 08, 09).and_hms_milli(11, 48, 59, 413)),
+            msg_seq_num: 100321,
+            sender_comp_id: "OMS".to_string(),
+            target_comp_id: "SING".to_string(),
+            msg_type: FieldMsgTypeEnum::Logon,
+            .. Default::default()
+        },
         message: FixMessage::Logon(Box::new(LogonFields {
-            encrypt_method: Field_EncryptMethod_Enum::NONEOTHER,
+            encrypt_method: FieldEncryptMethodEnum::None,
             heart_bt_int: 60,
             reset_seq_num_flag: Some(true),
             .. Default::default()
         }))
     };
-    let mut buffer = BytesMut::new();
-    let _ = frame.write( &mut buffer );
-    let message = unsafe {
-        String::from_utf8_unchecked(buffer.freeze().to_vec())
-    };
-
-    assert_eq!("8=FIX.4.2|9=99|35=A|34=100321|49=XPOMS|52=20170809-11:48:59.413|56=CLEAR|98=0|108=60|141=Y|464=Y|553=Hey|554=John|10=220|",
+    let message = frame.write_to_str().expect("expecting write to succeed");
+    assert_eq!("8=FIX.4.2|9=73|35=A|34=100321|49=OMS|52=20170809-11:48:59.413|56=SING|98=0|108=60|141=Y|10=083|",
                message.replace("\u{1}", "|"));
 }
 
 #[test]
-#[cfg(fix44)]
+#[cfg(feature="fix42")]
+fn test_build_new_order_single() {
+    let frame = FixFrame {
+        header : FixHeader {
+            begin_string: Cow::from("FIX.4.2"),
+            sending_time: UtcDateTime::new(Utc.ymd(2017, 08, 09).and_hms_milli(11, 48, 59, 413)),
+            msg_seq_num: 479,
+            sender_comp_id: "OMS".to_string(),
+            target_comp_id: "SING".to_string(),
+            msg_type: FieldMsgTypeEnum::OrderSingle,
+            .. Default::default()
+        },
+        message: FixMessage::NewOrderSingle(Box::new(NewOrderSingleFields {
+            cl_ord_id: "1234567".to_owned(),
+            account: Some("1".to_owned()),
+            symbol: "GOOGL".to_owned(),
+            side: FieldSideEnum::Buy,
+            ord_type: FieldOrdTypeEnum::Limit,
+            handl_inst: FieldHandlInstEnum::AutomatedExecutionOrderPublicBrokerInterventionOk,
+            order_qty: Some(100.0),
+            transact_time: UtcDateTime::new(Utc.ymd(2017, 08, 09).and_hms_milli(11, 48, 59, 413)),
+            .. Default::default()
+        }))
+    };
+    let message = frame.write_to_str().expect("expecting write to succeed");
+    assert_eq!("8=FIX.4.2|9=123|35=D|34=479|49=OMS|52=20170809-11:48:59.413|56=SING|11=1234567|1=1|21=2|55=GOOGL|54=1|60=20170809-11:48:59.413|38=100|40=2|10=029|",
+               message.replace("\u{1}", "|"));
+}
+
+#[test]
+#[cfg(feature="fix44")]
 fn test_build_logon() {
     let frame = FixFrame {
-        begin_string: Cow::from("FIX.4.4"),
-        sending: Utc.ymd(2017, 08, 09).and_hms_milli(11, 48, 59, 413),
-        seq: 100321,
-        sender_comp_id: "XPOMS".to_string(),
-        target_comp_id: "CLEAR".to_string(),
-        orig_sending: None,
-        poss_duplicate: None,
-        poss_resend: None,
-        message: FixMessage::Logon(Box::new(LogonFields { 
+        header : FixHeader {
+            begin_string: Cow::from("FIX.4.4"),
+            sending_time: UtcDateTime::new(Utc.ymd(2017, 08, 09).and_hms_milli(11, 48, 59, 413)),
+            msg_seq_num: 100321,
+            sender_comp_id: "OMS".to_string(),
+            target_comp_id: "SING".to_string(),
+            msg_type: FieldMsgTypeEnum::Logon,
+            .. Default::default()
+        },
+        message: FixMessage::Logon(Box::new(LogonFields {
             encrypt_method: Field_EncryptMethod_Enum::NONEOTHER,
             heart_bt_int: 60,
             reset_seq_num_flag: Some(true),
@@ -92,29 +114,25 @@ fn test_build_logon() {
             .. Default::default()
         }))
     };
-    let mut buffer = BytesMut::new();
-    let _ = frame.write( &mut buffer );
-    let message = unsafe {
-        String::from_utf8_unchecked(buffer.freeze().to_vec())
-    };
-
-    assert_eq!("8=FIX.4.4|9=99|35=A|34=100321|49=XPOMS|52=20170809-11:48:59.413|56=CLEAR|98=0|108=60|141=Y|464=Y|553=Hey|554=John|10=220|", 
-        message.replace("\u{1}", "|"));
+    let message = frame.write_to_str().expect("expecting write to succeed");
+    assert_eq!("8=FIX.4.4|9=99|35=A|34=100321|49=OMS|52=20170809-11:48:59.413|56=SING|98=0|108=60|141=Y|464=Y|553=Hey|554=John|10=220|",
+               message.replace("\u{1}", "|"));
 }
 
 #[test]
-#[cfg(fix44)]
+#[cfg(feature="fix44")]
 fn test_build_new_order_single() {
     let frame = FixFrame {
-        begin_string: Cow::from("FIX.4.4"),
-        sending: Utc.ymd(2017, 08, 09).and_hms_milli(13, 44, 16, 182),
-        seq: 70827,
-        sender_comp_id: "CLEAR".to_string(),
-        target_comp_id: "XPOMS".to_string(),
-        orig_sending: None,
-        poss_duplicate: None,
-        poss_resend: None,
-        message: FixMessage::NewOrderSingle(Box::new(NewOrderSingleFields { 
+        header : FixHeader {
+            begin_string: Cow::from("FIX.4.4"),
+            sending_time: UtcDateTime::new(Utc.ymd(2017, 08, 09).and_hms_milli(13, 44, 16, 182)),
+            msg_seq_num: 70827,
+            sender_comp_id: "SING".to_string(),
+            target_comp_id: "OMS".to_string(),
+            msg_type: FieldMsgTypeEnum::OrderSingle,
+            .. Default::default()
+        },
+        message: FixMessage::NewOrderSingle(Box::new(NewOrderSingleFields {
             cl_ord_id: "53887733_0".to_string(),
             account: Some("31334".to_string()),
             handl_inst: Some(Field_HandlInst_Enum::AUTOEXECPRIV),
@@ -136,12 +154,7 @@ fn test_build_new_order_single() {
             .. Default::default()
         }))
     };
-    let mut buffer = BytesMut::new();
-    let _ = frame.write( &mut buffer );
-    let message = unsafe {
-        String::from_utf8_unchecked(buffer.freeze().to_vec())
-    };
-    // 20170809-13:44:16.182 : 8=FIX.4.4|9=154|35=D|34=70827|49=CLEAR|52=20170809-13:44:16.182|56=XPOMS|1=31334|11=53887733_0|21=1|38=5|40=2|44=3160.5|54=1|55=WDOU17|59=0|60=20170809-13:44:16|207=XBMF|10=177|
-    assert_eq!("8=FIX.4.4|9=171|35=D|34=70827|49=CLEAR|52=20170809-13:44:16.182|56=XPOMS|11=53887733_0|1=31334|21=1|55=WDOU17|200=20170809|207=XBMF|54=1|60=20170809-13:44:16.000|38=5|40=2|44=3160.5|59=0|10=217|", 
-        message.replace("\u{1}", "|"));
+    let message = frame.write_to_str().expect("expecting write to succeed");
+    assert_eq!("8=FIX.4.4|9=171|35=D|34=70827|49=SING|52=20170809-13:44:16.182|56=OMS|11=53887733_0|1=31334|21=1|55=WDOU17|200=20170809|207=XBMF|54=1|60=20170809-13:44:16.000|38=5|40=2|44=3160.5|59=0|10=217|",
+               message.replace("\u{1}", "|"));
 }
