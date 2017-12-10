@@ -225,6 +225,11 @@ impl<T : FixHandler> Conn<T> {
 
     }
 
+    pub fn consume_with_error(self) {
+        let h = self.handler;
+        h.on_network_error();
+    }
+
     fn adjust_socket_events(&mut self) {
         self.events.remove( Ready::writable() );
 

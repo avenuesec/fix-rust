@@ -16,6 +16,7 @@ pub mod handler;
 pub mod session;
 pub mod fsstore;
 pub mod memstore;
+pub mod statemachine;
 
 
 #[derive(Clone)]
@@ -101,9 +102,19 @@ pub trait MessageStore {
 
     fn incr_sender_seq_num(&mut self) -> io::Result<i32>;
     fn incr_target_seq_num(&mut self) -> io::Result<i32>;
+
     fn reset_seqs(&mut self) -> io::Result<()>;
 
     fn get_state(&self) -> &MessageStoreState;
+
+    fn close(self) -> io::Result<()>;
+
+    fn next_sender_seq_num(&self) -> i32 {
+        self.get_state().sender_seq
+    }
+    fn next_target_seq_num(&self) -> i32 {
+        self.get_state().target_seq
+    }
 }
 
 pub trait SessionState {
@@ -112,6 +123,8 @@ pub trait SessionState {
 
     fn build(&mut self, message: FixMessage) -> io::Result<FixFrame>;
 
+    fn build_for_resend(&mut self, message: FixFrame) -> io::Result<FixFrame>;
+
     fn sent(&mut self, frame: &FixFrame) -> io::Result<()>;
 
     fn received(&mut self, frame: &FixFrame) -> io::Result<()>;
@@ -119,6 +132,8 @@ pub trait SessionState {
     fn new_timeout(&mut self, timeout: &timer::Timeout, event_kind: Token);
 
     fn on_timeout(&mut self, event_kind: Token);
+
+    fn close(self) -> io::Result<()>;
 }
 
 

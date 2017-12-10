@@ -1,6 +1,5 @@
 
 extern crate fixclient;
-extern crate env_logger;
 extern crate fix;
 
 use std::default::Default;

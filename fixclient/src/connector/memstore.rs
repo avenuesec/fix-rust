@@ -55,4 +55,8 @@ impl MessageStore for MemoryMessageStore {
     fn get_state(&self) -> &MessageStoreState {
         &self.state
     }
+
+    fn close(self) -> io::Result<()> {
+        Ok( () )
+    }
 }

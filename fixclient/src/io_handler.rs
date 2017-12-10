@@ -93,7 +93,8 @@ impl<F> IoHandler <F>
         {
             // self.token_2conn.get_mut(token.0).as_mut().unwrap().handler.on_network_error();
             // remove token/conn from token_2conn
-            self.token_2conn.remove(token.0).unwrap().handler.on_network_error();
+            let conn = self.token_2conn.remove(token.0).unwrap(); // conn taken over with remove is called
+            conn.consume_with_error(); // consume self, so everything is dropped
         }
 
         // save for later
@@ -300,22 +301,7 @@ impl<F> IoHandler <F>
 
             CommandAction::SendBackToHandler(message) => {
 
-                let token_to_use = match cmd.token {
-                    TOKEN_RESOLVE => {
-                        // the caller doesn't know which connection,
-                        // so for now we get the first available.
-                        // TODO: caller needs to give a hint on which fix session she wants to use
-                        let mut tk = Token(0);
-                        for t in 0..100 { // 0 to 99 is totally arbitrary
-                            tk = Token(t);
-                            if self.token_2conn.contains( tk.0 ) {
-                                break;
-                            }
-                        }
-                        tk // assumes it was found - bad!
-                    },
-                    token => token
-                };
+                let token_to_use = self.resolve_connection_token(cmd.token);
 
                 if let Some(opt) = self.token_2conn.get_mut(token_to_use.0) {
                     if let Some(conn) = opt.as_mut() {
@@ -327,7 +313,23 @@ impl<F> IoHandler <F>
                 }
 
                 return;
-            }
+            },
+
+            CommandAction::SendFrameBackToHandler(frame) => {
+
+                let token_to_use = self.resolve_connection_token(cmd.token);
+
+                if let Some(opt) = self.token_2conn.get_mut(token_to_use.0) {
+                    if let Some(conn) = opt.as_mut() {
+                        // sends back to handler
+                        conn.handler.before_resend( frame );
+                    } else {
+                        warn!("Conn not found to send SendFrameBackToHandler. token {:?}", token_to_use);
+                    }
+                }
+
+                return;
+            },
 
             // _ => unreachable!()
         };
@@ -336,6 +338,25 @@ impl<F> IoHandler <F>
             if let Err(err) = self.schedule( self.token_2conn[cmd.token.0].as_ref().unwrap() ) {
                 self.token_2conn[cmd.token.0].as_mut().unwrap().error(err);
             }
+        }
+    }
+
+    fn resolve_connection_token(&self, token: Token) -> Token {
+        match token {
+            TOKEN_RESOLVE => {
+                // the caller doesn't know which connection,
+                // so for now we get the first available.
+                // TODO: caller needs to give a hint on which fix session she wants to use
+                let mut tk = Token(0);
+                for t in 0..100 { // 0 to 99 is totally arbitrary
+                    tk = Token(t);
+                    if self.token_2conn.contains( tk.0 ) {
+                        break;
+                    }
+                }
+                tk // assumes it was found - bad!
+            },
+            token => token
         }
     }
 
@@ -390,6 +411,8 @@ impl Command {
 pub enum CommandAction {
     Message(frame::FixFrame),
     SendBackToHandler(fixmessagegen::FixMessage),
+    /// Required for re-sending scenarios
+    SendFrameBackToHandler(frame::FixFrame),
     SetTimeout {
         timeout_in_ms: u32,
         event_kind: Token,

@@ -300,6 +300,13 @@ impl MessageStore for FSMessageStore {
     fn get_state(&self) -> &MessageStoreState {
         &self.state
     }
+
+    fn close(self) -> io::Result<()> {
+
+        // TODO: flush all files and close
+
+        Ok( () )
+    }
 }
 
 

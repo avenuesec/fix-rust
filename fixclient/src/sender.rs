@@ -90,4 +90,15 @@ impl Sender {
         }
         Ok( () )
     }
+
+    /// Should only be used when re-sending a message (when responding to a resendrequest)
+    pub fn send_self_frame(&self, frame: frame::FixFrame) -> io::Result<()> {
+        debug!("sender {:?} - send_self_frame ", self.token);
+
+        let cmd = Command::new( self.token, CommandAction::SendFrameBackToHandler( frame ) );
+        if let Err(err) = self.queue_tx.send( cmd ) {
+            return Err(io::Error::new( io::ErrorKind::Other, err) )
+        }
+        Ok( () )
+    }
 }

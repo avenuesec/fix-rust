@@ -134,11 +134,15 @@ pub trait FixHandler {
     }
 
     /// Indicates a comm error, the handler should clean up as it will be destroyed
-    fn on_network_error(&mut self); // <- add error info
+    fn on_network_error(self); // <- add error info
 
     /// Back channel to allow extensions to send messages
     /// This is trigged when a message is send through [Sender::send_self]
     fn before_send(&mut self, message: fix::fixmessagegen::FixMessage);
+
+    /// Back channel to allow extensions to re-send messages
+    /// This is trigged when a message is send through [Sender::send_self_frame]
+    fn before_resend(&mut self, message: fix::frame::FixFrame);
 }
 
 // Super cool way of adapting a Fn to a trait

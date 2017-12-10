@@ -26,13 +26,10 @@ pub struct FixFrame {
     pub message : FixMessage,
 }
 
-const FIX_BEGIN_42   : &str= "FIX.4.2";
-const FIX_BEGIN_44   : &str= "FIX.4.4";
-
-const FIX_BEGIN_42_B : &[u8]= b"FIX.4.2";
-const FIX_BEGIN_44_B : &[u8]= b"FIX.4.4";
-
-const FIX_MESSAGE_DELIMITER: char = '\u{1}';
+const FIX_BEGIN_42   : &str  = "FIX.4.2";
+const FIX_BEGIN_44   : &str  = "FIX.4.4";
+const FIX_BEGIN_42_B : &[u8] = b"FIX.4.2";
+const FIX_BEGIN_44_B : &[u8] = b"FIX.4.4";
 
 
 impl FixFrame {
@@ -161,12 +158,6 @@ named!(raw_frame<RawFixFrame>,
     })
   )
 );
-
-const MSG_SEQ:        u32 = 34;
-const MSG_TYPE:       u32 = 35;
-const SENDER_COMP_ID: u32 = 49;
-const TARGET_COMP_ID: u32 = 56;
-const SEND_TIME:      u32 = 52;
 
 /// Assemble FixFrame containinig proper message
 pub fn parse(buffer: &[u8]) -> IResult<&[u8], FixFrame> {

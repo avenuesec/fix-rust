@@ -67,6 +67,19 @@ impl <State,UserF> DefaultHandler <State,UserF>
 
         Ok( () )
     }
+
+    fn resend(&mut self, frame: FixFrame) -> io::Result<()> {
+        info!("DefaultHandler resend");
+
+        let frame = self.state.build_for_resend(frame)?;
+
+        // should we persist resends?
+        // self.state.sent(&frame)?;
+
+        self.sender.send(frame)?;
+
+        Ok( () )
+    }
 }
 
 impl <State,UserF> FixHandler for DefaultHandler <State,UserF>
@@ -100,18 +113,31 @@ impl <State,UserF> FixHandler for DefaultHandler <State,UserF>
         Ok( () )
     }
 
-    fn on_network_error(&mut self) {
+    fn on_network_error(self) {
         info!("DefaultHandler handler on_network_error");
 
         // indicates the handler is about to be destroyed, so we should close everything
+
+        self.state.close();
     }
 
-    // invoked when someone calls Sender2.send(fixmessage)
-    // this allow us to build the frame, store, validate, etc
+    /// invoked when someone calls Sender.send(fixmessage)
+    /// this allow us to build the frame, store, validate, etc
     fn before_send(&mut self, message: FixMessage) {
         info!("DefaultHandler handler before_send");
 
-        self.send(message);
+        if let Err(e) = self.send(message) {
+            error!("before_send error  {:?}", e);
+        }
+    }
+
+    /// Used when re-sending a message, hence we need the original frame
+    fn before_resend(&mut self, message: FixFrame) {
+        info!("DefaultHandler handler before_resend");
+
+        if let Err(e) = self.resend(message) {
+            error!("before_resend error  {:?}", e);
+        }
     }
 }
 
