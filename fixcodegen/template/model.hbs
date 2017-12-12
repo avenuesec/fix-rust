@@ -20,9 +20,9 @@ use frame::{FieldVal};
 use fixmessage::*;
 
 
-use std::fmt::{Debug, Formatter, Display, Error};
+use std::fmt::{self, Debug, Formatter, Display, Error};
 
-#[derive(PartialEq,Debug,Serialize,Deserialize,Default)]
+#[derive(PartialEq,Debug,Serialize,Deserialize,Default,Clone)]
 pub struct FixHeader {
     pub begin_string : Cow<'static, str>,
     {{#each header.fields as |f| }}
@@ -30,12 +30,37 @@ pub struct FixHeader {
 {{~/each }}
 }
 
+// TODO: generate this too, maybe for all custom struct/fields?
+impl Debug for FixHeader {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut d = f.debug_struct("FixHeader");
+
+        d.field("sender", &self.sender_comp_id);
+        d.field("target", &self.target_comp_id);
+        d.field("seq", &self.msg_seq_num);
+        d.field("orig_sending_time", &self.orig_sending_time);
+
+        if self.on_behalf_of_comp_id.is_some() {
+            d.field("on_behalf_of_comp_id", &self.on_behalf_of_comp_id);
+        }
+        if self.poss_dup_flag.is_some() {
+            d.field("poss_dup_flag", &self.poss_dup_flag);
+        }
+        if self.sending_time.is_some() {
+            d.field("sending_time", &self.sending_time);
+        }
+
+        d.finish();
+        Ok( () )
+    }
+}
+
 // size of enum = tag + size of largest message, so we box the fields
-#[derive(PartialEq,Debug,Serialize,Deserialize)]
+#[derive(PartialEq,Debug,Serialize,Deserialize,Clone)]
 pub enum FixMessage { 
     {{~#each flatmessages as |msg|}}
     // type: {{msg.msg_type}}
-    &{{msg.name}}(Box<{{msg.rust_type}}>),
+    {{msg.name}}(Box<{{msg.rust_type}}>),
     {{~/each}}
     // fixed, for when the parser can't figure out the message type
     UndefinedMessage,
@@ -45,7 +70,7 @@ impl FixMessage {
     pub fn msg_type(&self) -> FieldMsgTypeEnum {
         match self {
             {{~#each msg_type as |m| }}
-            FixMessage::{{ m.message_name }}(_) => FieldMsgTypeEnum::{{capitalize m.enum_name }},      // {{m.msg_type}}
+            &FixMessage::{{ m.message_name }}(_) => FieldMsgTypeEnum::{{capitalize m.enum_name }},      // {{m.msg_type}}
             {{~/each }}
             _ => unreachable!()
         }
@@ -56,7 +81,7 @@ impl FixMessage {
 
 {{~#each flatmessages as |msg|}}
 
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
+#[derive(PartialEq,Debug,Default,Serialize,Deserialize,Clone)]
 pub struct {{msg.rust_type}} {
     {{#each msg.fields as |f| ~}}
     {{#if f.is_top_level ~}}
@@ -72,7 +97,7 @@ pub struct {{msg.rust_type}} {
 
 {{#each components as |c|}}
 
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
+#[derive(PartialEq,Debug,Default,Serialize,Deserialize,Clone)]
 pub struct {{c.rust_type}} {
     {{#each c.fields as |f| ~}}
     {{#if f.is_top_level ~}}
@@ -89,7 +114,7 @@ pub struct {{c.rust_type}} {
 
 {{#each flatgroups as |c|}}
 
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
+#[derive(PartialEq,Debug,Default,Serialize,Deserialize,Clone)]
 pub struct {{c.rust_type}} {
     {{#each c.fields as |f| ~}}
     {{#if f.is_top_level ~}}
@@ -154,7 +179,7 @@ impl Default for Field{{f.name }}Enum {
 
 // TODO: If type=Mulstring needs to impl trait BitOr as well
 
-#[derive(Serialize,Deserialize)]
+#[derive(Serialize,Deserialize,Clone)]
 pub struct UtcDateTime(DateTime<Utc>);
 
 impl UtcDateTime {
@@ -193,7 +218,7 @@ impl Display for UtcDateTime {
   }
 }
 
-#[derive(Serialize,Deserialize)]
+#[derive(Serialize,Deserialize,Clone)]
 pub struct UtcDate(DateTime<Utc>);
 
 impl UtcDate {
@@ -231,7 +256,7 @@ impl Display for UtcDate {
   }
 }
 
-#[derive(Serialize,Deserialize)]
+#[derive(Serialize,Deserialize,Clone)]
 pub struct UtcTime(DateTime<Utc>);
 
 impl Default for UtcTime {
