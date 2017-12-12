@@ -395,8 +395,8 @@ impl<F> IoHandler <F>
 
 #[derive(Debug)]
 pub struct Command {
-    token: Token,
-    action: CommandAction,
+    pub token: Token,
+    pub action: CommandAction,
 }
 impl Command {
     pub fn new( token: Token, cmd: CommandAction ) -> Command {
