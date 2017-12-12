@@ -20,9 +20,9 @@ use frame::{FieldVal};
 use fixmessage::*;
 
 
-use std::fmt::{Debug, Formatter, Display, Error};
+use std::fmt::{self, Debug, Formatter, Display, Error};
 
-#[derive(PartialEq,Debug,Serialize,Deserialize,Default)]
+#[derive(PartialEq,Serialize,Deserialize,Default,Clone)]
 pub struct FixHeader {
     pub begin_string : Cow<'static, str>,
 
@@ -53,8 +53,33 @@ pub struct FixHeader {
     pub on_behalf_of_sending_time : Option<UtcDateTime>, // FIELD_ONBEHALFOFSENDINGTIME 370
 }
 
+impl Debug for FixHeader {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut d = f.debug_struct("FixHeader");
+
+        d.field("seq", &self.msg_seq_num);
+        d.field("msg_type", &self.msg_type);
+        d.field("sender", &self.sender_comp_id);
+        d.field("target", &self.target_comp_id);
+        d.field("sending_time", &self.sending_time);
+
+        if self.orig_sending_time.is_some() {
+            d.field("orig_sending_time", &self.orig_sending_time);
+        }
+        if self.on_behalf_of_comp_id.is_some() {
+            d.field("on_behalf_of_comp_id", &self.on_behalf_of_comp_id);
+        }
+        if self.poss_dup_flag.is_some() {
+            d.field("poss_dup_flag", &self.poss_dup_flag);
+        }
+
+        d.finish();
+        Ok( () )
+    }
+}
+
 // size of enum = tag + size of largest message, so we box the fields
-#[derive(PartialEq,Debug,Serialize,Deserialize)]
+#[derive(PartialEq,Debug,Serialize,Deserialize,Clone)]
 pub enum FixMessage {
     // type: 0
     Heartbeat(Box<HeartbeatFields>),
@@ -115,26 +140,26 @@ impl FixMessage {
 
 // message struct Fields
 
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
+#[derive(PartialEq,Debug,Default,Serialize,Deserialize,Clone)]
 pub struct HeartbeatFields {
     pub test_req_id : Option<String>, // FIELD_TESTREQID 112
 
 }
 
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
+#[derive(PartialEq,Debug,Default,Serialize,Deserialize,Clone)]
 pub struct TestRequestFields {
     pub test_req_id : String, // FIELD_TESTREQID 112
 
 }
 
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
+#[derive(PartialEq,Debug,Default,Serialize,Deserialize,Clone)]
 pub struct ResendRequestFields {
     pub begin_seq_no : i32, // FIELD_BEGINSEQNO 7
     pub end_seq_no : i32, // FIELD_ENDSEQNO 16
 
 }
 
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
+#[derive(PartialEq,Debug,Default,Serialize,Deserialize,Clone)]
 pub struct RejectFields {
     pub ref_seq_num : i32, // FIELD_REFSEQNUM 45
     pub ref_tag_id : Option<i32>, // FIELD_REFTAGID 371
@@ -146,14 +171,14 @@ pub struct RejectFields {
 
 }
 
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
+#[derive(PartialEq,Debug,Default,Serialize,Deserialize,Clone)]
 pub struct SequenceResetFields {
     pub gap_fill_flag : Option<bool>, // FIELD_GAPFILLFLAG 123
     pub new_seq_no : i32, // FIELD_NEWSEQNO 36
 
 }
 
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
+#[derive(PartialEq,Debug,Default,Serialize,Deserialize,Clone)]
 pub struct LogoutFields {
     pub text : Option<String>, // FIELD_TEXT 58
     pub encoded_text_len : Option<usize>, // FIELD_ENCODEDTEXTLEN 354
@@ -161,7 +186,7 @@ pub struct LogoutFields {
 
 }
 
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
+#[derive(PartialEq,Debug,Default,Serialize,Deserialize,Clone)]
 pub struct AdvertisementFields {
     pub adv_id : String, // FIELD_ADVID 2
     pub adv_trans_type : FieldAdvTransTypeEnum, // FIELD_ADVTRANSTYPE 5
@@ -200,7 +225,7 @@ pub struct AdvertisementFields {
 
 }
 
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
+#[derive(PartialEq,Debug,Default,Serialize,Deserialize,Clone)]
 pub struct ExecutionReportFields {
     pub order_id : String, // FIELD_ORDERID 37
     pub secondary_order_id : Option<String>, // FIELD_SECONDARYORDERID 198
@@ -297,7 +322,7 @@ pub struct ExecutionReportFields {
 
 }
 
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
+#[derive(PartialEq,Debug,Default,Serialize,Deserialize,Clone)]
 pub struct OrderCancelRejectFields {
     pub order_id : String, // FIELD_ORDERID 37
     pub secondary_order_id : Option<String>, // FIELD_SECONDARYORDERID 198
@@ -317,7 +342,7 @@ pub struct OrderCancelRejectFields {
 
 }
 
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
+#[derive(PartialEq,Debug,Default,Serialize,Deserialize,Clone)]
 pub struct LogonFields {
     pub encrypt_method : FieldEncryptMethodEnum, // FIELD_ENCRYPTMETHOD 98
     pub heart_bt_int : i32, // FIELD_HEARTBTINT 108
@@ -329,7 +354,7 @@ pub struct LogonFields {
 
 }
 
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
+#[derive(PartialEq,Debug,Default,Serialize,Deserialize,Clone)]
 pub struct NewOrderSingleFields {
     pub cl_ord_id : String, // FIELD_CLORDID 11
     pub client_id : Option<String>, // FIELD_CLIENTID 109
@@ -405,7 +430,7 @@ pub struct NewOrderSingleFields {
 
 }
 
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
+#[derive(PartialEq,Debug,Default,Serialize,Deserialize,Clone)]
 pub struct NewOrderListFields {
     pub list_id : String, // FIELD_LISTID 66
     pub bid_id : Option<String>, // FIELD_BIDID 390
@@ -422,7 +447,7 @@ pub struct NewOrderListFields {
 
 }
 
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
+#[derive(PartialEq,Debug,Default,Serialize,Deserialize,Clone)]
 pub struct OrderCancelRequestFields {
     pub orig_cl_ord_id : String, // FIELD_ORIGCLORDID 41
     pub order_id : Option<String>, // FIELD_ORDERID 37
@@ -462,7 +487,7 @@ pub struct OrderCancelRequestFields {
 
 }
 
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
+#[derive(PartialEq,Debug,Default,Serialize,Deserialize,Clone)]
 pub struct OrderCancelReplaceRequestFields {
     pub order_id : Option<String>, // FIELD_ORDERID 37
     pub client_id : Option<String>, // FIELD_CLIENTID 109
@@ -537,7 +562,7 @@ pub struct OrderCancelReplaceRequestFields {
 
 }
 
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
+#[derive(PartialEq,Debug,Default,Serialize,Deserialize,Clone)]
 pub struct OrderStatusRequestFields {
     pub order_id : Option<String>, // FIELD_ORDERID 37
     pub cl_ord_id : String, // FIELD_CLORDID 11
@@ -578,7 +603,7 @@ pub struct OrderStatusRequestFields {
 
 
 
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
+#[derive(PartialEq,Debug,Default,Serialize,Deserialize,Clone)]
 pub struct NoContraBrokers2Fields {
     pub contra_broker : Option<String>, // FIELD_CONTRABROKER 375
     pub contra_trader : Option<String>, // FIELD_CONTRATRADER 337
@@ -589,33 +614,7 @@ pub struct NoContraBrokers2Fields {
 
 
 
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
-pub struct NoAllocs1Fields {
-    pub alloc_account : Option<String>, // FIELD_ALLOCACCOUNT 79
-    pub alloc_shares : Option<f32>, // FIELD_ALLOCSHARES 80
-
-}
-
-
-
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
-pub struct NoMsgTypes3Fields {
-    pub ref_msg_type : Option<String>, // FIELD_REFMSGTYPE 372
-    pub msg_direction : Option<FieldMsgDirectionEnum>, // FIELD_MSGDIRECTION 385
-
-}
-
-
-
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
-pub struct NoTradingSessions5Fields {
-    pub trading_session_id : Option<String>, // FIELD_TRADINGSESSIONID 336
-
-}
-
-
-
-#[derive(PartialEq,Debug,Default,Serialize,Deserialize)]
+#[derive(PartialEq,Debug,Default,Serialize,Deserialize,Clone)]
 pub struct NoOrders4Fields {
     pub cl_ord_id : String, // FIELD_CLORDID 11
     pub list_seq_no : i32, // FIELD_LISTSEQNO 67
@@ -691,6 +690,32 @@ pub struct NoOrders4Fields {
     pub discretion_offset : Option<f32>, // FIELD_DISCRETIONOFFSET 389
     pub clearing_firm : Option<String>, // FIELD_CLEARINGFIRM 439
     pub clearing_account : Option<String>, // FIELD_CLEARINGACCOUNT 440
+
+}
+
+
+
+#[derive(PartialEq,Debug,Default,Serialize,Deserialize,Clone)]
+pub struct NoMsgTypes3Fields {
+    pub ref_msg_type : Option<String>, // FIELD_REFMSGTYPE 372
+    pub msg_direction : Option<FieldMsgDirectionEnum>, // FIELD_MSGDIRECTION 385
+
+}
+
+
+
+#[derive(PartialEq,Debug,Default,Serialize,Deserialize,Clone)]
+pub struct NoTradingSessions5Fields {
+    pub trading_session_id : Option<String>, // FIELD_TRADINGSESSIONID 336
+
+}
+
+
+
+#[derive(PartialEq,Debug,Default,Serialize,Deserialize,Clone)]
+pub struct NoAllocs1Fields {
+    pub alloc_account : Option<String>, // FIELD_ALLOCACCOUNT 79
+    pub alloc_shares : Option<f32>, // FIELD_ALLOCSHARES 80
 
 }
 
@@ -7983,7 +8008,7 @@ const FIELD_ENCODEDLISTSTATUSTEXT : u32 = 446; // DATA
 
 // TODO: If type=Mulstring needs to impl trait BitOr as well
 
-#[derive(Serialize,Deserialize)]
+#[derive(Serialize,Deserialize,Clone)]
 pub struct UtcDateTime(DateTime<Utc>);
 
 impl UtcDateTime {
@@ -8022,7 +8047,7 @@ impl Display for UtcDateTime {
     }
 }
 
-#[derive(Serialize,Deserialize)]
+#[derive(Serialize,Deserialize,Clone)]
 pub struct UtcDate(DateTime<Utc>);
 
 impl UtcDate {
@@ -8060,7 +8085,7 @@ impl Display for UtcDate {
     }
 }
 
-#[derive(Serialize,Deserialize)]
+#[derive(Serialize,Deserialize,Clone)]
 pub struct UtcTime(DateTime<Utc>);
 
 impl Default for UtcTime {
@@ -10994,141 +11019,6 @@ fn build_group_no_contra_brokers2_fields_line(consumer: &mut FixConsumer) -> NoC
 }
 
 
-fn build_group_no_allocs1_fields(consumer: &mut FixConsumer, size: usize) -> Vec<NoAllocs1Fields> {
-    let mut items : Vec<NoAllocs1Fields> = Vec::with_capacity(size);
-
-    for _ in 0..size {
-        let party = build_group_no_allocs1_fields_line( consumer );
-        items.push(party);
-    }
-
-    items
-}
-
-fn build_group_no_allocs1_fields_line(consumer: &mut FixConsumer) -> NoAllocs1Fields {
-    // fields
-    let mut alloc_account : Option<String> = None;
-    let mut alloc_shares : Option<f32> = None;
-
-    // loop
-    while let Some(fld) = consumer.peek() {
-        match fld {
-            &FieldVal { id: FIELD_ALLOCACCOUNT, val: v } => {
-
-                if alloc_account.is_some() { break; }
-
-                alloc_account = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_ALLOCSHARES, val: v } => {
-
-                if alloc_shares.is_some() { break; }
-
-                alloc_shares = Some( f32::from_str(v).unwrap() );
-            },
-
-
-            _ => { break; }
-        };
-        // consume only if recognized
-        consumer.next();
-    }
-
-    // construction
-    NoAllocs1Fields {
-        alloc_account: alloc_account,
-        alloc_shares: alloc_shares,
-    }
-}
-
-
-fn build_group_no_msg_types3_fields(consumer: &mut FixConsumer, size: usize) -> Vec<NoMsgTypes3Fields> {
-    let mut items : Vec<NoMsgTypes3Fields> = Vec::with_capacity(size);
-
-    for _ in 0..size {
-        let party = build_group_no_msg_types3_fields_line( consumer );
-        items.push(party);
-    }
-
-    items
-}
-
-fn build_group_no_msg_types3_fields_line(consumer: &mut FixConsumer) -> NoMsgTypes3Fields {
-    // fields
-    let mut ref_msg_type : Option<String> = None;
-    let mut msg_direction : Option<FieldMsgDirectionEnum> = None;
-
-    // loop
-    while let Some(fld) = consumer.peek() {
-        match fld {
-            &FieldVal { id: FIELD_REFMSGTYPE, val: v } => {
-
-                if ref_msg_type.is_some() { break; }
-
-                ref_msg_type = Some( v.to_string() );
-            },
-
-            &FieldVal { id: FIELD_MSGDIRECTION, val: v } => {
-
-                if msg_direction.is_some() { break; }
-
-                msg_direction = Some( FieldMsgDirectionEnum::from_str(v).unwrap() );
-            },
-
-
-            _ => { break; }
-        };
-        // consume only if recognized
-        consumer.next();
-    }
-
-    // construction
-    NoMsgTypes3Fields {
-        ref_msg_type: ref_msg_type,
-        msg_direction: msg_direction,
-    }
-}
-
-
-fn build_group_no_trading_sessions5_fields(consumer: &mut FixConsumer, size: usize) -> Vec<NoTradingSessions5Fields> {
-    let mut items : Vec<NoTradingSessions5Fields> = Vec::with_capacity(size);
-
-    for _ in 0..size {
-        let party = build_group_no_trading_sessions5_fields_line( consumer );
-        items.push(party);
-    }
-
-    items
-}
-
-fn build_group_no_trading_sessions5_fields_line(consumer: &mut FixConsumer) -> NoTradingSessions5Fields {
-    // fields
-    let mut trading_session_id : Option<String> = None;
-
-    // loop
-    while let Some(fld) = consumer.peek() {
-        match fld {
-            &FieldVal { id: FIELD_TRADINGSESSIONID, val: v } => {
-
-                if trading_session_id.is_some() { break; }
-
-                trading_session_id = Some( v.to_string() );
-            },
-
-
-            _ => { break; }
-        };
-        // consume only if recognized
-        consumer.next();
-    }
-
-    // construction
-    NoTradingSessions5Fields {
-        trading_session_id: trading_session_id,
-    }
-}
-
-
 fn build_group_no_orders4_fields(consumer: &mut FixConsumer, size: usize) -> Vec<NoOrders4Fields> {
     let mut items : Vec<NoOrders4Fields> = Vec::with_capacity(size);
 
@@ -11827,6 +11717,141 @@ fn build_group_no_orders4_fields_line(consumer: &mut FixConsumer) -> NoOrders4Fi
         discretion_offset: discretion_offset,
         clearing_firm: clearing_firm,
         clearing_account: clearing_account,
+    }
+}
+
+
+fn build_group_no_msg_types3_fields(consumer: &mut FixConsumer, size: usize) -> Vec<NoMsgTypes3Fields> {
+    let mut items : Vec<NoMsgTypes3Fields> = Vec::with_capacity(size);
+
+    for _ in 0..size {
+        let party = build_group_no_msg_types3_fields_line( consumer );
+        items.push(party);
+    }
+
+    items
+}
+
+fn build_group_no_msg_types3_fields_line(consumer: &mut FixConsumer) -> NoMsgTypes3Fields {
+    // fields
+    let mut ref_msg_type : Option<String> = None;
+    let mut msg_direction : Option<FieldMsgDirectionEnum> = None;
+
+    // loop
+    while let Some(fld) = consumer.peek() {
+        match fld {
+            &FieldVal { id: FIELD_REFMSGTYPE, val: v } => {
+
+                if ref_msg_type.is_some() { break; }
+
+                ref_msg_type = Some( v.to_string() );
+            },
+
+            &FieldVal { id: FIELD_MSGDIRECTION, val: v } => {
+
+                if msg_direction.is_some() { break; }
+
+                msg_direction = Some( FieldMsgDirectionEnum::from_str(v).unwrap() );
+            },
+
+
+            _ => { break; }
+        };
+        // consume only if recognized
+        consumer.next();
+    }
+
+    // construction
+    NoMsgTypes3Fields {
+        ref_msg_type: ref_msg_type,
+        msg_direction: msg_direction,
+    }
+}
+
+
+fn build_group_no_trading_sessions5_fields(consumer: &mut FixConsumer, size: usize) -> Vec<NoTradingSessions5Fields> {
+    let mut items : Vec<NoTradingSessions5Fields> = Vec::with_capacity(size);
+
+    for _ in 0..size {
+        let party = build_group_no_trading_sessions5_fields_line( consumer );
+        items.push(party);
+    }
+
+    items
+}
+
+fn build_group_no_trading_sessions5_fields_line(consumer: &mut FixConsumer) -> NoTradingSessions5Fields {
+    // fields
+    let mut trading_session_id : Option<String> = None;
+
+    // loop
+    while let Some(fld) = consumer.peek() {
+        match fld {
+            &FieldVal { id: FIELD_TRADINGSESSIONID, val: v } => {
+
+                if trading_session_id.is_some() { break; }
+
+                trading_session_id = Some( v.to_string() );
+            },
+
+
+            _ => { break; }
+        };
+        // consume only if recognized
+        consumer.next();
+    }
+
+    // construction
+    NoTradingSessions5Fields {
+        trading_session_id: trading_session_id,
+    }
+}
+
+
+fn build_group_no_allocs1_fields(consumer: &mut FixConsumer, size: usize) -> Vec<NoAllocs1Fields> {
+    let mut items : Vec<NoAllocs1Fields> = Vec::with_capacity(size);
+
+    for _ in 0..size {
+        let party = build_group_no_allocs1_fields_line( consumer );
+        items.push(party);
+    }
+
+    items
+}
+
+fn build_group_no_allocs1_fields_line(consumer: &mut FixConsumer) -> NoAllocs1Fields {
+    // fields
+    let mut alloc_account : Option<String> = None;
+    let mut alloc_shares : Option<f32> = None;
+
+    // loop
+    while let Some(fld) = consumer.peek() {
+        match fld {
+            &FieldVal { id: FIELD_ALLOCACCOUNT, val: v } => {
+
+                if alloc_account.is_some() { break; }
+
+                alloc_account = Some( v.to_string() );
+            },
+
+            &FieldVal { id: FIELD_ALLOCSHARES, val: v } => {
+
+                if alloc_shares.is_some() { break; }
+
+                alloc_shares = Some( f32::from_str(v).unwrap() );
+            },
+
+
+            _ => { break; }
+        };
+        // consume only if recognized
+        consumer.next();
+    }
+
+    // construction
+    NoAllocs1Fields {
+        alloc_account: alloc_account,
+        alloc_shares: alloc_shares,
     }
 }
 
@@ -14063,88 +14088,6 @@ fn write_group_no_contra_brokers2_fields_line( flds: &NoContraBrokers2Fields, ou
 
 
 
-fn write_group_no_allocs1_fields( group: &Vec<NoAllocs1Fields>, output: &mut Write ) -> Result<(), io::Error> {
-    let len = group.len();
-    write!(output, "{}={}\u{01}", FIELD_NOALLOCS, len )?;
-
-    for g in group {
-        write_group_no_allocs1_fields_line( g, output )?;
-    }
-
-    Ok( () )
-}
-
-fn write_group_no_allocs1_fields_line( flds: &NoAllocs1Fields, output: &mut Write) -> Result<(), io::Error> {
-
-    if flds.alloc_account.is_some() {
-        let val = flds.alloc_account.as_ref().unwrap();
-
-        write!(output, "79={}\u{01}", val )?; // FIELD_ALLOCACCOUNT
-    }
-    if flds.alloc_shares.is_some() {
-        let val = flds.alloc_shares.as_ref().unwrap();
-
-        write!(output, "80={}\u{01}", val )?; // FIELD_ALLOCSHARES
-    }
-
-    Ok( () )
-}
-
-
-
-fn write_group_no_msg_types3_fields( group: &Vec<NoMsgTypes3Fields>, output: &mut Write ) -> Result<(), io::Error> {
-    let len = group.len();
-    write!(output, "{}={}\u{01}", FIELD_NOMSGTYPES, len )?;
-
-    for g in group {
-        write_group_no_msg_types3_fields_line( g, output )?;
-    }
-
-    Ok( () )
-}
-
-fn write_group_no_msg_types3_fields_line( flds: &NoMsgTypes3Fields, output: &mut Write) -> Result<(), io::Error> {
-
-    if flds.ref_msg_type.is_some() {
-        let val = flds.ref_msg_type.as_ref().unwrap();
-
-        write!(output, "372={}\u{01}", val )?; // FIELD_REFMSGTYPE
-    }
-    if flds.msg_direction.is_some() {
-        let val = flds.msg_direction.as_ref().unwrap();
-
-        write!(output, "385={}\u{01}", val )?; // FIELD_MSGDIRECTION
-    }
-
-    Ok( () )
-}
-
-
-
-fn write_group_no_trading_sessions5_fields( group: &Vec<NoTradingSessions5Fields>, output: &mut Write ) -> Result<(), io::Error> {
-    let len = group.len();
-    write!(output, "{}={}\u{01}", FIELD_NOTRADINGSESSIONS, len )?;
-
-    for g in group {
-        write_group_no_trading_sessions5_fields_line( g, output )?;
-    }
-
-    Ok( () )
-}
-
-fn write_group_no_trading_sessions5_fields_line( flds: &NoTradingSessions5Fields, output: &mut Write) -> Result<(), io::Error> {
-
-    if flds.trading_session_id.is_some() {
-        let val = flds.trading_session_id.as_ref().unwrap();
-
-        write!(output, "336={}\u{01}", val )?; // FIELD_TRADINGSESSIONID
-    }
-
-    Ok( () )
-}
-
-
-
 fn write_group_no_orders4_fields( group: &Vec<NoOrders4Fields>, output: &mut Write ) -> Result<(), io::Error> {
     let len = group.len();
     write!(output, "{}={}\u{01}", FIELD_NOORDERS, len )?;
@@ -14531,6 +14474,89 @@ fn write_group_no_orders4_fields_line( flds: &NoOrders4Fields, output: &mut Writ
 
     Ok( () )
 }
+
+
+
+fn write_group_no_msg_types3_fields( group: &Vec<NoMsgTypes3Fields>, output: &mut Write ) -> Result<(), io::Error> {
+    let len = group.len();
+    write!(output, "{}={}\u{01}", FIELD_NOMSGTYPES, len )?;
+
+    for g in group {
+        write_group_no_msg_types3_fields_line( g, output )?;
+    }
+
+    Ok( () )
+}
+
+fn write_group_no_msg_types3_fields_line( flds: &NoMsgTypes3Fields, output: &mut Write) -> Result<(), io::Error> {
+
+    if flds.ref_msg_type.is_some() {
+        let val = flds.ref_msg_type.as_ref().unwrap();
+
+        write!(output, "372={}\u{01}", val )?; // FIELD_REFMSGTYPE
+    }
+    if flds.msg_direction.is_some() {
+        let val = flds.msg_direction.as_ref().unwrap();
+
+        write!(output, "385={}\u{01}", val )?; // FIELD_MSGDIRECTION
+    }
+
+    Ok( () )
+}
+
+
+
+fn write_group_no_trading_sessions5_fields( group: &Vec<NoTradingSessions5Fields>, output: &mut Write ) -> Result<(), io::Error> {
+    let len = group.len();
+    write!(output, "{}={}\u{01}", FIELD_NOTRADINGSESSIONS, len )?;
+
+    for g in group {
+        write_group_no_trading_sessions5_fields_line( g, output )?;
+    }
+
+    Ok( () )
+}
+
+fn write_group_no_trading_sessions5_fields_line( flds: &NoTradingSessions5Fields, output: &mut Write) -> Result<(), io::Error> {
+
+    if flds.trading_session_id.is_some() {
+        let val = flds.trading_session_id.as_ref().unwrap();
+
+        write!(output, "336={}\u{01}", val )?; // FIELD_TRADINGSESSIONID
+    }
+
+    Ok( () )
+}
+
+
+
+fn write_group_no_allocs1_fields( group: &Vec<NoAllocs1Fields>, output: &mut Write ) -> Result<(), io::Error> {
+    let len = group.len();
+    write!(output, "{}={}\u{01}", FIELD_NOALLOCS, len )?;
+
+    for g in group {
+        write_group_no_allocs1_fields_line( g, output )?;
+    }
+
+    Ok( () )
+}
+
+fn write_group_no_allocs1_fields_line( flds: &NoAllocs1Fields, output: &mut Write) -> Result<(), io::Error> {
+
+    if flds.alloc_account.is_some() {
+        let val = flds.alloc_account.as_ref().unwrap();
+
+        write!(output, "79={}\u{01}", val )?; // FIELD_ALLOCACCOUNT
+    }
+    if flds.alloc_shares.is_some() {
+        let val = flds.alloc_shares.as_ref().unwrap();
+
+        write!(output, "80={}\u{01}", val )?; // FIELD_ALLOCSHARES
+    }
+
+    Ok( () )
+}
+
 
 
 

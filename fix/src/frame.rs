@@ -20,7 +20,7 @@ pub struct RawFixFrame<'a> {
     flds: Vec<FieldVal<'a>>,
 }
 
-#[derive(PartialEq,Debug,Serialize,Deserialize)]
+#[derive(PartialEq,Debug,Serialize,Deserialize,Clone)]
 pub struct FixFrame {
     pub header  : FixHeader,
     pub message : FixMessage,
