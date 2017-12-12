@@ -117,7 +117,7 @@ impl FixStateTransition {
 //        self.us = FixState::Disconnected;
 //    }
 
-    fn is_operational(&self) -> bool {
+    pub fn is_operational(&self) -> bool {
         self.us == FixState::Operational && self.them == FixState::Operational
     }
 }

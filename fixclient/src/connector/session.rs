@@ -60,6 +60,10 @@ impl <Store> SessionStateImpl <Store>
         }
     }
 
+    pub fn is_operational(&self) -> bool {
+        self.state_machine.is_operational()
+    }
+
     fn update_last_sent(&mut self) {
         if !self.logon_sent || !self.logon_recv {
             return
@@ -139,7 +143,13 @@ impl <Store> SessionStateImpl <Store>
         self.sender.as_ref().map(move |s| s.send_self_frame(message) );
     }
 
-    fn resend(&mut self, message: FixFrame) -> io::Result<()> {
+    fn resend(&mut self, mut message: FixFrame) -> io::Result<()> {
+
+        message.header.poss_dup_flag = Some(true);
+        message.header.orig_sending_time = Some( message.header.sending_time.clone() );
+        message.header.sending_time = UtcDateTime::new( Utc::now() );
+
+        self.post_resend( message );
 
         Ok( () )
     }
