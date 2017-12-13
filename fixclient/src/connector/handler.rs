@@ -59,7 +59,7 @@ impl <State,UserF> DefaultHandler <State,UserF>
     fn send(&mut self, message: FixMessage) -> io::Result<()> {
         info!("DefaultHandler send");
 
-        let frame = self.state.build(message)?;
+        let frame = self.state.build(message, true)?;
 
         self.state.sent(&frame)?;
 
@@ -117,6 +117,12 @@ impl <State,UserF> FixHandler for DefaultHandler <State,UserF>
         info!("DefaultHandler handler on_network_error");
 
         // indicates the handler is about to be destroyed, so we should close everything
+
+        self.state.close();
+    }
+
+    fn on_disconnected(self) {
+        info!("DefaultHandler handler on_disconnected");
 
         self.state.close();
     }

@@ -1,7 +1,7 @@
 
 use std::io;
 use std::io::{Write};
-use std::net::{SocketAddr};
+use std::net::{SocketAddr, Shutdown};
 use mio::{Token, Ready};
 use mio::tcp::{TcpStream};
 use bytes::{BytesMut, BufMut};
@@ -23,6 +23,7 @@ pub struct Conn <T : FixHandler> {
 }
 
 impl<T : FixHandler> Conn<T> {
+
     pub fn new(token: Token, socket: TcpStream, handler: T, addr: SocketAddr) -> Conn<T> {
         Conn {
             addr,
@@ -164,6 +165,12 @@ impl<T : FixHandler> Conn<T> {
                 }
             }
         }
+    }
+
+    pub fn disconnect(self) {
+        let h = self.handler;
+        h.on_disconnected();
+        self.socket.shutdown(Shutdown::Both);
     }
 
     fn disconnected(&mut self) {

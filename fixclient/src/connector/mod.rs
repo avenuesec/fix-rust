@@ -121,9 +121,9 @@ pub trait SessionState {
 
     fn init(&mut self, sender: Sender);
 
-    fn build(&mut self, message: FixMessage) -> io::Result<FixFrame>;
+    fn build(&mut self, message: FixMessage, fill_seq: bool) -> io::Result<FixFrame>;
 
-    fn build_for_resend(&mut self, message: FixFrame) -> io::Result<FixFrame>;
+    fn build_for_resend(&mut self, original: FixFrame) -> io::Result<FixFrame>;
 
     fn sent(&mut self, frame: &FixFrame) -> io::Result<()>;
 

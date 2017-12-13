@@ -1,5 +1,5 @@
 
-# fixclient
+# fixclient (initiator in fix's parlance)
 
 Implementation of the network + protocol, using mio. Designed inspired by ws-rs (https://github.com/housleyjk/ws-rs)
 

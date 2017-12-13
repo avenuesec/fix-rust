@@ -272,6 +272,15 @@ impl<F> IoHandler <F>
                 }
             },
 
+            CommandAction::Disconnect => {
+
+                if self.token_2conn.contains(cmd.token.0) {
+                    if let Some(conn) = self.token_2conn.remove(cmd.token.0) {
+                        conn.disconnect();
+                    }
+                }
+            },
+
             CommandAction::SetTimeout { timeout_in_ms, event_kind } => {
                 if let Some(conn) = self.token_2conn.get_mut(cmd.token.0).unwrap().as_mut() {
                     let duration = Duration::from_millis(timeout_in_ms as u64);
@@ -418,4 +427,5 @@ pub enum CommandAction {
         event_kind: Token,
     },
     CancelTimeout (timer::Timeout),
+    Disconnect,
 }

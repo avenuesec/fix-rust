@@ -34,7 +34,7 @@ pub struct FixSessionConfig {
     pub target_comp   : String,
     pub hostname      : String,
     pub port          : u32,
-    pub heart_beat    : u32,
+    pub heart_beat    : i32,
     pub log_dir       : String,
     pub store_dir     : String,
     pub reset_seq_num : bool,
@@ -59,7 +59,7 @@ use self::sender::{Sender, AdvSender};
 impl FixSessionConfig {
 
     pub fn new ( qualifier: &str, sender: &str, target: &str, hostname: &str,
-                 port: u32, heart_beat: u32, log: &str, store: &str, dict:FixDictionary ) -> FixSessionConfig {
+                 port: u32, heart_beat: i32, log: &str, store: &str, dict:FixDictionary ) -> FixSessionConfig {
 
         FixSessionConfig {
             qualifier: qualifier.to_owned(),
@@ -136,6 +136,8 @@ pub trait FixHandler {
     /// Indicates a comm error, the handler should clean up as it will be destroyed
     fn on_network_error(self); // <- add error info
 
+    fn on_disconnected(self);
+
     /// Back channel to allow extensions to send messages
     /// This is trigged when a message is send through [Sender::send_self]
     fn before_send(&mut self, message: fix::fixmessagegen::FixMessage);
@@ -143,6 +145,11 @@ pub trait FixHandler {
     /// Back channel to allow extensions to re-send messages
     /// This is trigged when a message is send through [Sender::send_self_frame]
     fn before_resend(&mut self, message: fix::frame::FixFrame);
+
+    /// Hook to allow app code to confirm or deny resending messages
+    fn confirm_resend(&mut self, message: &fix::frame::FixFrame) -> bool {
+        true
+    }
 }
 
 // Super cool way of adapting a Fn to a trait

@@ -8015,6 +8015,10 @@ impl UtcDateTime {
     pub fn new(dt: DateTime<Utc>) -> UtcDateTime {
         UtcDateTime( dt )
     }
+
+    pub fn now() -> UtcDateTime {
+        UtcDateTime( Utc::now() )
+    }
 }
 
 impl Default for UtcDateTime {
