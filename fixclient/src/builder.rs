@@ -61,7 +61,7 @@ pub fn build_heartbeat( seq: i32, test_req_id: Option<&str> ) -> FixFrame {
     FixFrame::new(seq, "sender", "target", "FIX.4.2", msg)
 }
 
-pub fn build_new_order_single( seq: i32, cl_ord_id: &str, symbol: &str, qty: f32, price: f32,
+pub fn build_new_order_single( seq: i32, poss_dup: bool, cl_ord_id: &str, symbol: &str, qty: f32, price: f32,
                                side: FieldSideEnum, ord_type: FieldOrdTypeEnum ) -> FixFrame {
     let flds = NewOrderSingleFields {
         cl_ord_id: cl_ord_id.to_owned(),
@@ -74,7 +74,11 @@ pub fn build_new_order_single( seq: i32, cl_ord_id: &str, symbol: &str, qty: f32
         .. Default::default()
     };
     let msg = FixMessage::NewOrderSingle(Box::new(flds));
-    FixFrame::new(seq, "sender", "target", "FIX.4.2", msg)
+    let mut frame = FixFrame::new(seq, "sender", "target", "FIX.4.2", msg);
+    if poss_dup {
+        frame.header.poss_dup_flag = Some(true);
+    }
+    frame
 }
 
 pub fn build_exec_report( seq: i32, cl_ord_id: &str, order_id: &str, exec_id: &str, symbol: &str,
