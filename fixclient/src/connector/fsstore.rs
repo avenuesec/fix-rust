@@ -307,6 +307,12 @@ impl MessageStore for FSMessageStore {
 
         Ok( () )
     }
+
+    fn overwrite_target_seq(&mut self, new_seq: i32) -> io::Result<()> {
+        self.state.target_seq = new_seq;
+        self.persist_seqs()?;
+        Ok( () )
+    }
 }
 
 

@@ -33,7 +33,7 @@ pub struct SessionStateImpl <Store>
     hearbeat_in_ms: i32, // heartbeat in milliseconds
     begin_string: Cow<'static, str>,
 
-    state_machine : FixStateTransition <Store>,
+    state_machine : FixSyncState <Store>,
 }
 
 impl <Store> SessionStateImpl <Store>
@@ -53,7 +53,7 @@ impl <Store> SessionStateImpl <Store>
             recv_timeout: None,
             hearbeat_in_ms: (cfg.heart_beat as f32 * 1000.0 * 0.9) as i32, // converts it to ms and also lowers it a bit
             begin_string: Cow::from(cfg.begin_string.to_owned()),
-            state_machine : FixStateTransition::new( store.clone() ),
+            state_machine : FixSyncState::new( store.clone() ),
         }
     }
 
@@ -134,37 +134,6 @@ impl <Store> SessionStateImpl <Store>
         if self.send_timeout.is_none() {
             self.update_last_sent();
         }
-    }
-
-    /// confirm whether there's a gap, if not, transition to valid state,
-    /// otherwise, initiate resend_request
-    fn do_message_synchronization(&mut self, recv_target_seq_num : i32 ) -> io::Result<()> {
-
-        let expected_seq = self.store.next_target_seq_num();
-
-        if expected_seq > recv_target_seq_num {
-            warn!("do_message_synchronization: expecting seq {} but received {}.
-                   initiating resend request, holding recv/sending until synchronization is complete", expected_seq, recv_target_seq_num);
-
-            // request missing messages
-
-            self.send_resend_request( expected_seq );
-
-        } else if expected_seq < recv_target_seq_num {
-            // something very wrong. the spec tells us to disconnect and manual intervention is necessary
-            error!("do_message_synchronization: expecting seq {} but received {}.
-                    Too low detected, disconnecting.", expected_seq, recv_target_seq_num);
-
-            self.post_disconnect( "msg seq too low" )?;
-
-        } else {
-
-            // all good!
-
-            self.state_machine.incoming_sync_complete();
-        }
-
-        Ok( () )
     }
 
     fn post_send(&self, message: FixMessage) {
@@ -305,7 +274,6 @@ impl <Store> SessionState for SessionStateImpl <Store> where Store : MessageStor
         let reset_seq_num_flag = self.config.reset_seq_num;
 
         if reset_seq_num_flag {
-//            self.seq_reset_sent = true;
             Rc::get_mut(&mut self.store).unwrap().reset_seqs();
         }
 
@@ -355,101 +323,85 @@ impl <Store> SessionState for SessionStateImpl <Store> where Store : MessageStor
         Ok ( copy )
     }
 
-    fn sent(&mut self, frame: &FixFrame) -> io::Result<()> {
-
-        match &frame.message {
-
-            &FixMessage::Logon(_) => {
-//                self.logon_sent = true;
-
-                self.state_machine.outgoing_logon()?;
-            },
-
-            &FixMessage::Logout(_) => {
-
-                self.state_machine.outgoing_logout()?;
-            },
-
-            &FixMessage::ResendRequest(_) => {
-
-                // self.state_machine.outgoing_resend()?;
-            },
-
-            &FixMessage::SequenceReset(_) => {
-
-//                self.state_machine.outgoing_seqreset()?;
-            },
-
-            _ => {
-                // nothing to do
-            }
-        }
-
-        self.update_last_sent();
-
-        Rc::get_mut(&mut self.store).unwrap().sent( frame )?;
-
-        Ok( () )
-    }
-
     fn received(&mut self, frame: &FixFrame) -> io::Result<()> {
-
+        // record incoming
         Rc::get_mut(&mut self.store).unwrap().received( frame )?;
 
         self.update_last_recv();
 
-
-        match &frame.message {
-
-            // we have to process admin level messages, and pass thru app level messages
-
-            &FixMessage::Logon(ref flds) => {
-
-                self.state_machine.incoming_logon()?;
-
-                self.ack_logon_received( flds.as_ref() );
-
-                self.do_message_synchronization( frame.header.msg_seq_num )?
+        match self.state_machine.register_recv( &frame )? {
+            TransitionAction::RequestResendFrom( start ) => {
+                // self.send_resend_request( start )?;
+                return Ok( () )
             },
+            TransitionAction::ResendRange( range ) => {
+                // self.resend( range.0, range.1 )?;
+                return Ok( () )
+            },
+            TransitionAction::LogoutWith( reason ) => {
+                // self.post_disconnect( reason )?;
+                return Ok( () )
+            },
+            TransitionAction::None => {}
+        }
 
+        // we have to process admin level messages, and pass thru app level messages
+        match &frame.message {
+            &FixMessage::Logon(ref flds) => {
+                self.ack_logon_received( flds.as_ref() );
+            },
             &FixMessage::Logout(ref flds) => {
-
-                self.state_machine.incoming_logout()?;
-
                 self.ack_logout_received(flds.as_ref());
             },
-
             &FixMessage::ResendRequest(ref flds) => {
-
-//                self.state_machine.incoming_resend()?;
-
                 self.ack_resend_request(flds.begin_seq_no, flds.end_seq_no)?;
             },
-
             &FixMessage::SequenceReset(ref flds) => {
-
-//                self.state_machine.incoming_seqreset()?;
-
                 self.ack_sequence_reset( flds.new_seq_no, flds.gap_fill_flag )?;
             },
-
             &FixMessage::TestRequest(ref flds) => {
                 self.validate_incoming(&frame)?;
-
                 self.send_hearbeat_in_response(&flds.test_req_id)
             },
-
             &FixMessage::Heartbeat(ref flds) => {
-
                 self.validate_incoming(&frame)?;
-
                 self.ack_hearbeat_received(&flds.test_req_id);
             }
             _ => {
                 self.validate_incoming(&frame)?;
-
             }
         }
+
+        Ok( () )
+    }
+
+    fn sent(&mut self, frame: &FixFrame) -> io::Result<()> {
+
+        // record outgoing
+        self.state_machine.register_sent( &frame )?;
+
+//        match &frame.message {
+//
+//            &FixMessage::Logon(ref flds) => {
+//                // self.state_machine.outgoing_logon()?;
+//            },
+//            &FixMessage::Logout(_) => {
+//                // self.state_machine.outgoing_logout()?;
+//            },
+//            &FixMessage::ResendRequest(_) => {
+//                // self.state_machine.outgoing_resend()?;
+//            },
+//            &FixMessage::SequenceReset(_) => {
+//                // self.state_machine.outgoing_seqreset()?;
+//            },
+//            _ => {
+//                // nothing to do
+//            }
+//        }
+
+        self.update_last_sent();
+
+        Rc::get_mut(&mut self.store).unwrap().sent( frame )?;
 
         Ok( () )
     }

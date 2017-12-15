@@ -88,6 +88,11 @@ impl MessageStoreState {
         self.sender_seq = 1;
         self.target_seq = 1;
     }
+
+    fn overwrite_seqs(&mut self, sender: i32, target: i32) {
+        self.sender_seq = sender;
+        self.target_seq = target;
+    }
 }
 
 pub trait MessageStore {
@@ -115,6 +120,8 @@ pub trait MessageStore {
     fn next_target_seq_num(&self) -> i32 {
         self.get_state().target_seq
     }
+
+    fn overwrite_target_seq(&mut self, new_seq: i32) -> io::Result<()>;
 }
 
 pub trait SessionState {

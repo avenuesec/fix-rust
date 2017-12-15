@@ -52,6 +52,9 @@ pub mod conn;
 pub mod io_handler;
 pub mod sender;
 pub mod connector;
+// #[cfg(test)]
+pub mod builder;
+
 
 use self::io_handler::{IoHandler};
 use self::sender::{Sender, AdvSender};

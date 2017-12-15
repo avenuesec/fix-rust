@@ -24,12 +24,21 @@ impl MemoryMessageStore {
     pub fn add_to_store(&mut self, frame: FixFrame) {
         self.messages.push( frame );
     }
+
+    pub fn overwrite_seqs(&mut self, sender: i32, target: i32 ) {
+        self.state.overwrite_seqs( sender, target );
+    }
 }
 
 impl MessageStore for MemoryMessageStore {
 
     fn init(&mut self, sender: Sender) {
 
+    }
+
+    fn overwrite_target_seq(&mut self, new_seq: i32) -> io::Result<()> {
+        self.state.target_seq = new_seq;
+        Ok( () )
     }
 
     fn sent(&mut self, frame: &FixFrame) -> io::Result<()> {
