@@ -192,6 +192,7 @@ impl FSMessageStore {
 
         Ok ( (frame.header.msg_seq_num, pos, len) )
     }
+
     fn persist_message_offset(&mut self, offset: (i32, usize, usize)) -> io::Result<()> {
 
         let (seq, pos, len) = offset;

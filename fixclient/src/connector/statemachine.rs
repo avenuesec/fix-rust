@@ -1,14 +1,22 @@
-
 use std::string::ToString;
 use std::result::Result;
 use std::io;
 use std::fmt::{Display, Error, Formatter};
 use std::rc::Rc;
 
+// use chrono::{Utc, DateTime};
+
 use super::MessageStore;
 
 use fix::frame::FixFrame;
 use fix::fixmessagegen::*;
+
+
+pub struct MessageToReSend {
+    pub seq: i32,
+    pub orig_sending_time: UtcDateTime,
+    pub message: FixMessage,
+}
 
 /// Indicates the state of each party:
 /// (sender, target) or (innitator, acceptor)
@@ -45,18 +53,17 @@ pub struct FixSyncState <Store : MessageStore> {
 #[derive(Debug,Copy,Clone)]
 pub enum TransitionAction {
     None,
-    LogoutWith(&'static str),  // <- reason
-    RequestResendFrom(i32),    // <- start seq
-    ResendRange( (i32, i32) )  // <- start,end
-}
+    /// Instruct graceful disconnection
+    LogoutWith(&'static str),         // <- reason
 
-impl TransitionAction {
-    fn is_none(&self) -> bool {
-        match self {
-            &TransitionAction::None => true,
-            _ => false
-        }
-    }
+    /// Instruct a resend of messages to the other party
+    DoResendRange( (i32, i32) ),      // <- start,end,
+
+    /// Instruct requesting missing messages from the other party
+    RequestResendRange( (i32, i32) ), // <- start,end,
+
+    /// Both resends and requests range
+    DoResendAndRequestRange( ((i32,i32), (i32,i32)) )
 }
 
 impl <Store : MessageStore> FixSyncState <Store> {
@@ -71,34 +78,6 @@ impl <Store : MessageStore> FixSyncState <Store> {
             their_gap: None,
             our_gap:   None,
         }
-    }
-
-    fn incr_sent(&mut self) {
-        self.sent_count = self.sent_count + 1;
-    }
-    fn incr_recv(&mut self) {
-        self.recv_count = self.recv_count + 1;
-    }
-
-    fn update_our_gap(&mut self, new_begin : i32) -> bool {
-        if let Some( (b, e) ) = self.our_gap {
-            // is it fully filled?
-            if new_begin >= e {
-                // reset it
-                self.our_gap = None;
-                return true
-            } else {
-                self.our_gap = Some( (new_begin, e) );
-            }
-        } else {
-            // Shouldn't happen!
-            panic!("update_our_gap without a gap pre-established");
-        }
-        return false;
-    }
-
-    fn us_notify_resend_completed(&mut self) {
-        self.us = FixPartyState::Operational;
     }
 
     pub fn register_sent(&mut self, frame: &FixFrame) -> io::Result<()> {
@@ -190,19 +169,10 @@ impl <Store : MessageStore> FixSyncState <Store> {
             &FixMessage::ResendRequest(ref flds) => {
                 // The other party identified a message gap
 
-                // what's the gap range?
-                let end_seq_no =
-                    if flds.end_seq_no == 0 {
-                        self.store.next_sender_seq_num() - 1
-                    } else {
-                        flds.end_seq_no
-                    };
-                // Save our gap so we can tell when it's done
-                self.our_gap = Some( (flds.begin_seq_no, end_seq_no) );
-                self.us = FixPartyState::MessageSynchronization;
+                self.acknoledge_our_gap( flds.begin_seq_no, flds.end_seq_no );
 
                 // Instruct to resend
-                return Ok( TransitionAction::ResendRange( self.our_gap.unwrap() ) );
+                return Ok( TransitionAction::DoResendRange( self.our_gap.unwrap() ) );
             }
 
             &FixMessage::SequenceReset(ref flds) => {
@@ -211,7 +181,13 @@ impl <Store : MessageStore> FixSyncState <Store> {
 
                 if !gap_filling {
                     // Reset in no gap filling mode = disaster recovery
-                    warn!("Disaster recovery SequenceReset received. {} new seq: {}", gap_filling, new_seq)
+                    warn!("Disaster recovery SequenceReset received. {} new seq: {}", gap_filling, new_seq);
+                }
+
+                if new_seq < self.store.next_target_seq_num() {
+                    // Seq reset can only increase the seq, never go backwards
+                    error!("SequenceReset incorrectly instructed lower seq, which by the spec definition should not be allowed. \
+                            Current expected {} new seq: {}", self.store.next_target_seq_num(), new_seq);
                 }
 
                 Rc::get_mut(&mut self.store).unwrap().overwrite_target_seq(new_seq);
@@ -236,6 +212,127 @@ impl <Store : MessageStore> FixSyncState <Store> {
         Ok( TransitionAction::None )
     }
 
+    /// gathers the messages that need to be
+    pub fn build_resend_request_response(&mut self, start: i32, end: i32) -> io::Result<Vec<MessageToReSend>> {
+
+        let mut entries = Rc::get_mut(&mut self.store).unwrap().query(start, end)?;
+        let mut result = Vec::with_capacity( entries.len() );
+
+        let mut temp_gap_to_fill : Option<i32> = None;
+        let mut expected_seq = start;
+        let mut cur_seq = 0;
+
+        for frame in entries.drain(0..) {
+            cur_seq = frame.header.msg_seq_num;
+
+            if temp_gap_to_fill.is_none() && cur_seq != expected_seq  {
+                // is there a gap between the seq_num expected and the one we're dealing now?
+                temp_gap_to_fill = Some(cur_seq);
+            }
+
+            if is_admin_message( &frame.message ) && frame.message.msg_type() != FieldMsgTypeEnum::Reject {
+                // we cannot resend admin messages (with the exception of rejects)
+                // so we need to adjust the new start seq
+
+                if temp_gap_to_fill.is_none() {
+                    temp_gap_to_fill = Some(cur_seq);
+                }
+
+            } else {
+                // It's a valid message that can be re-send
+
+                // is there gap?
+                if temp_gap_to_fill.is_some() {
+                    let new_start_seq = temp_gap_to_fill.take().unwrap();
+                    result.push( FixSyncState::<Store>::build_gap_fill( cur_seq, new_start_seq ) );
+                }
+
+                result.push( FixSyncState::<Store>::build_resend( frame ) );
+            }
+
+            expected_seq = cur_seq + 1;
+        }
+
+        if temp_gap_to_fill.is_some() {
+//            let new_start_seq = temp_gap_to_fill.take().unwrap();
+//            result.push( FixSyncState::<Store>::build_gap_fill( cur_seq, new_start_seq ) );
+        }
+
+        if end > cur_seq {
+            // we didnt have all requested messages
+            let next_expected = self.store.next_sender_seq_num();
+            // self.send_sequence_reset( new_start_seq, next_expected )?;
+        }
+
+        Ok( result )
+    }
+
+    fn build_gap_fill( other_party_expected_seq: i32, new_seq_no: i32 ) -> MessageToReSend {
+        let flds = SequenceResetFields {
+            gap_fill_flag: Some(true),
+            new_seq_no,
+        };
+        MessageToReSend {
+            seq: other_party_expected_seq,
+            orig_sending_time: UtcDateTime::now(),
+            message: FixMessage::SequenceReset( Box::new(flds) ),
+        }
+    }
+
+    fn build_resend( frame : FixFrame ) -> MessageToReSend {
+        MessageToReSend {
+            seq: frame.header.msg_seq_num,
+            orig_sending_time: frame.header.sending_time.clone(),
+            message: frame.message,
+        }
+    }
+
+    fn incr_sent(&mut self) {
+        self.sent_count = self.sent_count + 1;
+    }
+    fn incr_recv(&mut self) {
+        self.recv_count = self.recv_count + 1;
+    }
+
+    fn update_our_gap(&mut self, new_begin : i32) -> bool {
+        if let Some( (b, e) ) = self.our_gap {
+            // is it fully filled?
+            if new_begin >= e {
+                // reset it
+                self.our_gap = None;
+                return true
+            } else {
+                self.our_gap = Some( (new_begin, e) );
+            }
+        } else {
+            // Shouldn't happen!
+            panic!("update_our_gap without a gap pre-established");
+        }
+        return false;
+    }
+
+    fn us_notify_resend_completed(&mut self) {
+        self.us = FixPartyState::Operational;
+    }
+
+    fn acknoledge_our_gap(&mut self, start: i32, end: i32) {
+        // what's the gap range?
+        let end =
+            if end == 0 {
+                self.store.next_sender_seq_num() - 1
+            } else {
+                end
+            };
+        // Save our gap so we can tell when it's done
+        self.our_gap = Some( (start, end) );
+        self.us = FixPartyState::MessageSynchronization;
+    }
+
+    fn acknoledge_their_gap(&mut self, start: i32, end: i32 ) {
+        self.them = FixPartyState::MessageSynchronization;
+        self.their_gap = Some( (start, end) );
+    }
+
     /// check if there's a gap in the incoming messages
     fn detect_gap_and_choose_action(&mut self, header: &FixHeader, message: &FixMessage) -> TransitionAction {
 
@@ -243,25 +340,29 @@ impl <Store : MessageStore> FixSyncState <Store> {
         assert_eq!(header.poss_dup_flag.map_or(false, |v| v), false);
 
         // incr_target_seq_num mutates the store
-        let expected_seq        = Rc::get_mut(&mut self.store)
-                                      .map(|s| s.incr_target_seq_num() ).unwrap().unwrap();
+        let expected_seq = Rc::get_mut(&mut self.store).map(|s| s.incr_target_seq_num() ).unwrap().unwrap();
         let recv_target_seq_num = header.msg_seq_num;
 
-        if expected_seq > recv_target_seq_num {
+        if recv_target_seq_num > expected_seq {
             warn!("detect_gap_and_choose_action: expecting seq {} but received {}. \
                    Initiating resend request, holding recv/sending until synchronization is complete", expected_seq, recv_target_seq_num);
 
-            self.them = FixPartyState::MessageSynchronization;
-            self.their_gap = Some( (expected_seq, recv_target_seq_num) );
+            self.acknoledge_their_gap( expected_seq, recv_target_seq_num );
 
-            // request missing messages
-            if message.msg_type() == FieldMsgTypeEnum::ResendRequest {
-                return TransitionAction::ResendRange( self.their_gap.unwrap() ) ;
+            match message {
+                // another special case:
+                // we're responding to a gap fill and we also noticed a gap in the other party
+                &FixMessage::ResendRequest(ref flds) => {
+                    self.acknoledge_our_gap( flds.begin_seq_no, flds.end_seq_no );
+                    return TransitionAction::DoResendAndRequestRange( (self.our_gap.unwrap(), self.their_gap.unwrap() ) );
+                },
+                _ => {}
             }
 
-            return TransitionAction::RequestResendFrom( expected_seq ) ;
+            // in this case, the gap lies only on our side
+            return TransitionAction::RequestResendRange( self.their_gap.unwrap() ) ;
 
-        } else if expected_seq < recv_target_seq_num {
+        } else if recv_target_seq_num < expected_seq {
             // something very wrong. the spec tells us to disconnect and manual intervention is necessary
             error!("detect_gap_and_choose_action: expecting seq {} but received {}. \
                     Too low detected, disconnecting.", expected_seq, recv_target_seq_num);
@@ -278,16 +379,6 @@ impl <Store : MessageStore> FixSyncState <Store> {
             TransitionAction::None
         }
     }
-
-    // Experimental
-//    pub fn can_send_app_messages(&self) -> bool {
-//        true
-//    }
-//
-//    pub fn can_receive_app_messages(&self) -> bool {
-//        true
-//    }
-    // End Experimental
 
     /// logon message sent
     fn outgoing_logon(&mut self ) -> io::Result<()> {
@@ -332,71 +423,6 @@ impl <Store : MessageStore> FixSyncState <Store> {
         Ok( () )
     }
 
-//    pub fn incoming_sync_complete(&mut self) {
-//        self.them = FixPartyState::Operational;
-//    }
-//
-//    pub fn outgoing_sync_complete(&mut self) {
-//        self.us = FixPartyState::Operational;
-//    }
-
-    /// other side requested resend of missing messages (gap fill)
-//    pub fn incoming_resend(&mut self) -> io::Result<()> {
-//        if self.is_operational() {
-//            self.them = FixPartyState::AwaitingResend;
-//            Ok( () )
-//        } else {
-//            Err( io::Error::new(io::ErrorKind::Other, format!("incoming_resend not valid at this point. current: {}", self).as_str() ) )
-//        }
-//    }
-
-    /// we requested resend of missing messages when a gap is detected
-//    pub fn outgoing_resend(&mut self) -> io::Result<()> {
-//        if self.is_operational() {
-//            self.us = FixPartyState::AwaitingResend;
-//            Ok( () )
-//        } else {
-//            Err( io::Error::new(io::ErrorKind::Other, format!("outgoing_resend not valid at this point. current: {}", self).as_str() ) )
-//        }
-//    }
-
-//    pub fn confirm_resent_sent(&mut self) -> io::Result<()>  {
-//        if self.them == FixPartyState::AwaitingResend {
-//            self.them = FixPartyState::Operational;
-//            Ok( () )
-//        } else {
-//            Err( io::Error::new(io::ErrorKind::Other, format!("confirm_resent_sent not valid at this point. current: {}", self).as_str() ) )
-//        }
-//    }
-
-//    pub fn confirm_resent_recv(&mut self) -> io::Result<()>  {
-//        if self.us == FixPartyState::AwaitingResend {
-//            self.us = FixPartyState::Operational;
-//            Ok( () )
-//        } else {
-//            Err( io::Error::new(io::ErrorKind::Other, format!("confirm_resent_recv not valid at this point. current: {}", self).as_str() ) )
-//        }
-//    }
-
-//    pub fn incoming_seqreset(&mut self) -> io::Result<()> {
-//        // since this can happen in many situations, it's always acceptable
-//        // Operational and AwaitingResend would be the most obvious
-//
-//        Ok( () )
-//    }
-//
-//    pub fn outgoing_seqreset(&mut self) -> io::Result<()> {
-//        // since this can happen in many situations, it's always acceptable
-//        // Operational and AwaitingResend would be the most obvious
-//
-//        Ok( () )
-//    }
-
-//    pub fn disconnect(&mut self) {
-//        self.them = FixPartyState::Disconnected;
-//        self.us = FixPartyState::Disconnected;
-//    }
-
     pub fn is_operational(&self) -> bool {
         self.us == FixPartyState::Operational && self.them == FixPartyState::Operational
     }
@@ -408,16 +434,24 @@ impl <Store : MessageStore> Display for FixSyncState <Store> {
     }
 }
 
+/// API sugar
+impl TransitionAction {
+    pub fn is_none(&self) -> bool {
+        match self {
+            &TransitionAction::None => true,
+            _ => false
+        }
+    }
+}
+
 impl ToString for FixPartyState {
     fn to_string(&self) -> String {
         match self {
             &FixPartyState::Connected               => "connected",
-            // &FixPartyState::Disconnected     => "disconnected",
             &FixPartyState::Logon                   => "logon",
             &FixPartyState::Logout                  => "logout",
             &FixPartyState::MessageSynchronization  => "resync",
             &FixPartyState::Operational             => "operational",
-            _ => unreachable!()
         }.to_owned()
     }
 }

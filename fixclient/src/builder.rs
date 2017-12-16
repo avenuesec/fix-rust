@@ -81,11 +81,11 @@ pub fn build_new_order_single( seq: i32, poss_dup: bool, cl_ord_id: &str, symbol
     frame
 }
 
-pub fn build_exec_report( seq: i32, cl_ord_id: &str, order_id: &str, exec_id: &str, symbol: &str,
-                      leaves_qty: f32, cum_qty: f32, avg_px: f32,
-                      side: FieldSideEnum,
-                      exec_type: FieldExecTypeEnum, trans_type: FieldExecTransTypeEnum,
-                      ord_status: FieldOrdStatusEnum ) -> FixFrame {
+pub fn build_exec_report( seq: i32, poss_dup: bool, cl_ord_id: &str, order_id: &str, exec_id: &str, symbol: &str,
+                          leaves_qty: f32, cum_qty: f32, avg_px: f32,
+                          side: FieldSideEnum,
+                          exec_type: FieldExecTypeEnum, trans_type: FieldExecTransTypeEnum,
+                          ord_status: FieldOrdStatusEnum ) -> FixFrame {
 
     let flds = ExecutionReportFields {
         order_id: order_id.to_owned(),
@@ -99,5 +99,9 @@ pub fn build_exec_report( seq: i32, cl_ord_id: &str, order_id: &str, exec_id: &s
         .. Default::default()
     };
     let msg = FixMessage::ExecutionReport(Box::new(flds));
-    FixFrame::new(seq, "sender", "target", "FIX.4.2", msg)
+    let mut frame = FixFrame::new(seq, "sender", "target", "FIX.4.2", msg);
+    if poss_dup {
+        frame.header.poss_dup_flag = Some(true);
+    }
+    frame
 }

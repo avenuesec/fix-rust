@@ -28,10 +28,12 @@ fn basic_init<F>( f : F ) -> (SessionStateImpl <MemoryMessageStore>, Receiver<Co
 {
     let cfg = FixSessionConfig::new("qualifier", "sender", "target", "host",
                                     5000, 60, "logfolder", "store", FixDictionary::Fix42);
-    let mut store = MemoryMessageStore::new(&cfg).expect("expecting store");
-    f( &mut store );
+    let mut session = {
+        let mut store = MemoryMessageStore::new(&cfg).expect("expecting store");
+        f( &mut store );
 
-    let mut session = SessionStateImpl::new( &cfg, store );
+        SessionStateImpl::new( &cfg, store )
+    };
     let (tx, rx) = channel::sync_channel(100);
     let sender = Sender::new( Token(1), tx );
     session.init( sender );
@@ -60,12 +62,12 @@ fn test_logon_handshake() {
 fn test_resend_req_from_server() {
     // Arrange
     let (mut session, rx) = basic_init( |store| {
-        store.add_to_store( builder::build_new_order_single( 2, "cl1", "AAPL",  100.0, 172.2,  FieldSideEnum::Buy, FieldOrdTypeEnum::Market) );
-        store.add_to_store( builder::build_new_order_single( 3, "cl2", "MSFT",  200.0, 81.4,   FieldSideEnum::Buy, FieldOrdTypeEnum::Market) );
-        store.add_to_store( builder::build_new_order_single( 4, "cl3", "GOOGL", 100.0, 1001.2, FieldSideEnum::Buy, FieldOrdTypeEnum::Market) );
+        store.add_to_store( builder::build_new_order_single( 2, false, "cl1", "AAPL",  100.0, 172.2,  FieldSideEnum::Buy, FieldOrdTypeEnum::Market) );
+        store.add_to_store( builder::build_new_order_single( 3, false, "cl2", "MSFT",  200.0, 81.4,   FieldSideEnum::Buy, FieldOrdTypeEnum::Market) );
+        store.add_to_store( builder::build_new_order_single( 4, false, "cl3", "GOOGL", 100.0, 1001.2, FieldSideEnum::Buy, FieldOrdTypeEnum::Market) );
         store.add_to_store( builder::build_heartbeat( 5, Some("test") ) );
         store.add_to_store( builder::build_heartbeat( 6, Some("test") ) );
-        store.add_to_store( builder::build_new_order_single( 7, "cl4", "YHOO",  100.0, 53.0,   FieldSideEnum::Buy, FieldOrdTypeEnum::Market) );
+        store.add_to_store( builder::build_new_order_single( 7, false, "cl4", "YHOO",  100.0, 53.0,   FieldSideEnum::Buy, FieldOrdTypeEnum::Market) );
         store.add_to_store( builder::build_heartbeat( 8, Some("test2") ) );
         // thread::sleep(time::Duration::from_millis(500));
     } );

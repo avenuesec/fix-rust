@@ -330,12 +330,17 @@ impl <Store> SessionState for SessionStateImpl <Store> where Store : MessageStor
         self.update_last_recv();
 
         match self.state_machine.register_recv( &frame )? {
-            TransitionAction::RequestResendFrom( start ) => {
+            TransitionAction::RequestResendRange( range ) => {
                 // self.send_resend_request( start )?;
                 return Ok( () )
             },
-            TransitionAction::ResendRange( range ) => {
+            TransitionAction::DoResendRange( range ) => {
                 // self.resend( range.0, range.1 )?;
+                return Ok( () )
+            },
+            TransitionAction::DoResendAndRequestRange( (send_range, req_range) ) => {
+                // self.resend( range.0, range.1 )?;
+                // self.send_resend_request( start )?;
                 return Ok( () )
             },
             TransitionAction::LogoutWith( reason ) => {
