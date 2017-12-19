@@ -2,6 +2,7 @@ extern crate fixclient;
 extern crate fix;
 
 use std::rc::Rc;
+use std::sync::Mutex;
 
 use fixclient::{FixSessionConfig, FixDictionary};
 use fixclient::connector::statemachine::*;
@@ -193,14 +194,14 @@ fn test_detecting_gap_from_server() {
 //}
 
 
-fn create_store<F>( f : F ) -> Rc<MemoryMessageStore>
+fn create_store<F>( f : F ) -> Rc<Mutex<MemoryMessageStore>>
     where F : FnOnce(&mut MemoryMessageStore) -> () {
 
     let cfg = FixSessionConfig::new( "qualifier", "sender", "target", "hostname",
                                      1234, 60, "log", "store", FixDictionary::Fix42 );
     let mut store = MemoryMessageStore::new( &cfg ).unwrap();
     f(&mut store);
-    let store = Rc::new( store );
+    let store = Rc::new( Mutex::new(store) );
     store
 }
 

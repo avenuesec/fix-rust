@@ -314,6 +314,12 @@ impl MessageStore for FSMessageStore {
         self.persist_seqs()?;
         Ok( () )
     }
+
+    fn overwrite_sender_seq(&mut self, new_seq: i32) -> io::Result<()> {
+        self.state.sender_seq = new_seq;
+        self.persist_seqs()?;
+        Ok( () )
+    }
 }
 
 

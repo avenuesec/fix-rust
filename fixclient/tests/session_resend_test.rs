@@ -3,8 +3,8 @@ extern crate fixclient;
 extern crate mio;
 extern crate mio_more;
 
-
 use std::default::Default;
+use std::sync::Mutex;
 
 use mio_more::{channel};
 use mio_more::channel::Receiver;
@@ -55,9 +55,6 @@ fn test_logon_handshake() {
 
 }
 
-//use std::thread;
-//use std::time;
-
 #[test]
 fn test_resend_req_from_server() {
     // Arrange
@@ -69,12 +66,10 @@ fn test_resend_req_from_server() {
         store.add_to_store( builder::build_heartbeat( 6, Some("test") ) );
         store.add_to_store( builder::build_new_order_single( 7, false, "cl4", "YHOO",  100.0, 53.0,   FieldSideEnum::Buy, FieldOrdTypeEnum::Market) );
         store.add_to_store( builder::build_heartbeat( 8, Some("test2") ) );
-        // thread::sleep(time::Duration::from_millis(500));
     } );
     confirm_logon( 1, &mut session );
 
     // Act
-
     session.received( &builder::build_resend_req(2, 2, 0) ).unwrap();
 
     // Assert
@@ -92,9 +87,7 @@ fn test_resend_req_from_server() {
         }
     }
     assert!( session.is_operational() );
-
 }
-
 
 
 fn extract_outgoing(rx : &Receiver<Command>) -> Vec<FixFrame> {

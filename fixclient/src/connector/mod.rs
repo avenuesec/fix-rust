@@ -122,6 +122,7 @@ pub trait MessageStore {
     }
 
     fn overwrite_target_seq(&mut self, new_seq: i32) -> io::Result<()>;
+    fn overwrite_sender_seq(&mut self, new_seq: i32) -> io::Result<()>;
 }
 
 pub trait SessionState {

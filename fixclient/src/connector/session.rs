@@ -1,6 +1,7 @@
 use std::io;
 use std::borrow::Cow;
 use std::rc::Rc;
+use std::sync::Mutex;
 use super::SessionState;
 
 use chrono::{Utc, DateTime};
@@ -23,7 +24,7 @@ pub struct SessionStateImpl <Store>
     where Store : MessageStore {
 
     config: FixSessionConfig,
-    store: Rc<Store>,
+    store: Rc<Mutex<Store>>,
     last_sent: Option<DateTime<Utc>>,
     last_recv: Option<DateTime<Utc>>,
     sender: Option<Sender>,
@@ -41,7 +42,7 @@ impl <Store> SessionStateImpl <Store>
 
     pub fn new( cfg: &FixSessionConfig, store: Store ) -> SessionStateImpl<Store> {
 
-        let store = Rc::new(store);
+        let store = Rc::new( Mutex::new(store) );
 
         SessionStateImpl {
             config: cfg.clone(),
@@ -117,7 +118,10 @@ impl <Store> SessionStateImpl <Store>
         if flds.reset_seq_num_flag.unwrap_or(false) && !self.config.reset_seq_num {
             info!("reseting seqs nums as per server request");
 
-            let _ = Rc::get_mut(&mut self.store).unwrap().reset_seqs();
+            // let _ = Rc::get_mut(&mut self.store).unwrap().reset_seqs();
+            if let Ok(mut store) = self.store.try_lock() {
+                store.reset_seqs();
+            }
         }
 
         if flds.heart_bt_int != self.config.heart_beat as i32 {
@@ -180,53 +184,9 @@ impl <Store> SessionStateImpl <Store>
     /// we may send them or generate a sequence reset if there's a gap
     fn ack_resend_request(&mut self, start : i32, end : i32) -> io::Result<()> {
 
-        let mut entries = Rc::get_mut(&mut self.store).unwrap().query(start, end)?;
+        let mut entries = self.state_machine.build_resend_request_response( start, end );
 
-        let mut new_start_seq = 0;
-        let mut expected_seq = start;
-        let mut seq = 0;
 
-        for frame in entries.drain(0..) {
-
-            seq = frame.header.msg_seq_num;
-
-            if new_start_seq == 0 && seq != expected_seq  {
-                new_start_seq = seq;
-            }
-
-            if is_admin_message( &frame.message ) && frame.message.msg_type() != FieldMsgTypeEnum::Reject {
-                // we cannot resend admin messages (with the exception of reject)
-                // so we need to adjust the new start seq
-
-                if new_start_seq == 0 {
-                    new_start_seq = seq;
-                }
-
-            } else {
-
-                if new_start_seq != 0 {
-
-                    self.send_sequence_reset( new_start_seq, seq )?;
-                }
-
-                self.resend( frame ); // re-sends old message
-
-                new_start_seq = 0; // reset start
-            }
-
-            expected_seq = seq + 1;
-        }
-
-        if new_start_seq != 0 {
-            self.send_sequence_reset( new_start_seq, seq + 1 )?;
-        }
-        if end > seq {
-            // we didnt have all requested messages (maybe they were admin messages)
-            let next_expected = self.store.next_sender_seq_num();
-            self.send_sequence_reset( new_start_seq, next_expected )?;
-        }
-
-        // self.state_machine.confirm_resent_sent()?; // transition to valid state
 
         Ok( () )
     }
@@ -268,13 +228,22 @@ impl <Store> SessionState for SessionStateImpl <Store> where Store : MessageStor
 
     fn init(&mut self, sender: Sender) {
 
-        Rc::get_mut(&mut self.store).unwrap().init( sender.clone() );
+        // Rc::get_mut(&mut self.store).unwrap().init( sender.clone() );
+        if let Ok(mut store) = self.store.try_lock() {
+            store.init( sender.clone() );
+        }
+
         self.sender = Some(sender);
 
         let reset_seq_num_flag = self.config.reset_seq_num;
 
         if reset_seq_num_flag {
-            Rc::get_mut(&mut self.store).unwrap().reset_seqs();
+            // Rc::get_mut(&mut self.store).unwrap().reset_seqs();
+            if let Ok(mut store) = self.store.try_lock() {
+                store.reset_seqs();
+            } else {
+                panic!( "could not obtain lock" );
+            }
         }
 
         // Start login process
@@ -292,10 +261,17 @@ impl <Store> SessionState for SessionStateImpl <Store> where Store : MessageStor
 
     fn build(&mut self, message: FixMessage, fill_seq: bool) -> io::Result<FixFrame> {
 
-        let next_seq = if fill_seq {
-            Rc::get_mut(&mut self.store).unwrap().incr_sender_seq_num()?
-        } else {
-            0
+        let next_seq = {
+            if fill_seq {
+                // Rc::get_mut(&mut self.store).unwrap().incr_sender_seq_num()?
+                if let Ok(mut store) = self.store.try_lock() {
+                    store.incr_sender_seq_num()?
+                } else {
+                    return Err( io::Error::new(io::ErrorKind::Other, "could not obtain lock") );
+                }
+            } else {
+                0
+            }
         };
 
         let frame = FixFrame {
@@ -325,7 +301,11 @@ impl <Store> SessionState for SessionStateImpl <Store> where Store : MessageStor
 
     fn received(&mut self, frame: &FixFrame) -> io::Result<()> {
         // record incoming
-        Rc::get_mut(&mut self.store).unwrap().received( frame )?;
+        if let Ok(mut store) = self.store.try_lock() {
+            store.received( frame )?
+        } else {
+            return Err( io::Error::new(io::ErrorKind::Other, "could not obtain lock") );
+        }
 
         self.update_last_recv();
 
@@ -351,31 +331,31 @@ impl <Store> SessionState for SessionStateImpl <Store> where Store : MessageStor
         }
 
         // we have to process admin level messages, and pass thru app level messages
-        match &frame.message {
-            &FixMessage::Logon(ref flds) => {
-                self.ack_logon_received( flds.as_ref() );
-            },
-            &FixMessage::Logout(ref flds) => {
-                self.ack_logout_received(flds.as_ref());
-            },
-            &FixMessage::ResendRequest(ref flds) => {
-                self.ack_resend_request(flds.begin_seq_no, flds.end_seq_no)?;
-            },
-            &FixMessage::SequenceReset(ref flds) => {
-                self.ack_sequence_reset( flds.new_seq_no, flds.gap_fill_flag )?;
-            },
-            &FixMessage::TestRequest(ref flds) => {
-                self.validate_incoming(&frame)?;
-                self.send_hearbeat_in_response(&flds.test_req_id)
-            },
-            &FixMessage::Heartbeat(ref flds) => {
-                self.validate_incoming(&frame)?;
-                self.ack_hearbeat_received(&flds.test_req_id);
-            }
-            _ => {
-                self.validate_incoming(&frame)?;
-            }
-        }
+//        match &frame.message {
+//            &FixMessage::Logon(ref flds) => {
+//                self.ack_logon_received( flds.as_ref() );
+//            },
+//            &FixMessage::Logout(ref flds) => {
+//                self.ack_logout_received(flds.as_ref());
+//            },
+//            &FixMessage::ResendRequest(ref flds) => {
+//                self.ack_resend_request(flds.begin_seq_no, flds.end_seq_no)?;
+//            },
+//            &FixMessage::SequenceReset(ref flds) => {
+//                self.ack_sequence_reset( flds.new_seq_no, flds.gap_fill_flag )?;
+//            },
+//            &FixMessage::TestRequest(ref flds) => {
+//                self.validate_incoming(&frame)?;
+//                self.send_hearbeat_in_response(&flds.test_req_id)
+//            },
+//            &FixMessage::Heartbeat(ref flds) => {
+//                self.validate_incoming(&frame)?;
+//                self.ack_hearbeat_received(&flds.test_req_id);
+//            }
+//            _ => {
+//                self.validate_incoming(&frame)?;
+//            }
+//        }
 
         Ok( () )
     }
@@ -406,7 +386,12 @@ impl <Store> SessionState for SessionStateImpl <Store> where Store : MessageStor
 
         self.update_last_sent();
 
-        Rc::get_mut(&mut self.store).unwrap().sent( frame )?;
+        // Rc::get_mut(&mut self.store).unwrap().sent( frame )?;
+        if let Ok(mut store) = self.store.try_lock() {
+            store.sent( frame )?
+        } else {
+            return Err( io::Error::new(io::ErrorKind::Other, "could not obtain lock") );
+        }
 
         Ok( () )
     }
@@ -450,8 +435,10 @@ impl <Store> SessionState for SessionStateImpl <Store> where Store : MessageStor
     fn close(self) -> io::Result<()> {
         info!("session close");
 
-        if let Ok(store) = Rc::try_unwrap(self.store) {
-            store.close();
+        drop(self.state_machine);
+
+        if let Ok(mut store) = Rc::try_unwrap(self.store) {
+            store.into_inner().unwrap().close();
         }
 
         Ok( () )

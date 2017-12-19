@@ -1,6 +1,7 @@
 use std::string::ToString;
 use std::result::Result;
 use std::io;
+use std::sync::Mutex;
 use std::fmt::{Display, Error, Formatter};
 use std::rc::Rc;
 
@@ -43,7 +44,7 @@ enum FixPartyState {
 pub struct FixSyncState <Store : MessageStore> {
     them:       FixPartyState,
     us:         FixPartyState,
-    store:      Rc<Store>,
+    store:      Rc<Mutex<Store>>,
     sent_count: u32,
     recv_count: u32,
     their_gap : Option<(i32, i32)>,
@@ -68,7 +69,7 @@ pub enum TransitionAction {
 
 impl <Store : MessageStore> FixSyncState <Store> {
 
-    pub fn new( store: Rc<Store> ) -> FixSyncState <Store> {
+    pub fn new( store: Rc<Mutex<Store>> ) -> FixSyncState <Store> {
         FixSyncState {
             us:   FixPartyState::Connected,
             them: FixPartyState::Connected,
@@ -159,7 +160,9 @@ impl <Store : MessageStore> FixSyncState <Store> {
                     // other party instructed reset
 
                     let recv_seq = frame.header.msg_seq_num;
-                    Rc::get_mut(&mut self.store).unwrap().overwrite_target_seq(recv_seq);
+                    if let Ok(mut store) = self.store.try_lock() {
+                        store.overwrite_target_seq(recv_seq);
+                    }
 
                     // no point in trying to determine gap, so transition
                     self.them = FixPartyState::Operational;
@@ -184,13 +187,17 @@ impl <Store : MessageStore> FixSyncState <Store> {
                     warn!("Disaster recovery SequenceReset received. {} new seq: {}", gap_filling, new_seq);
                 }
 
-                if new_seq < self.store.next_target_seq_num() {
+                let next_target_seq_num = self.get_next_target_seq_num();
+
+                if new_seq < next_target_seq_num {
                     // Seq reset can only increase the seq, never go backwards
                     error!("SequenceReset incorrectly instructed lower seq, which by the spec definition should not be allowed. \
-                            Current expected {} new seq: {}", self.store.next_target_seq_num(), new_seq);
+                            Current expected {} new seq: {}", next_target_seq_num, new_seq);
                 }
 
-                Rc::get_mut(&mut self.store).unwrap().overwrite_target_seq(new_seq);
+                if let Ok(mut store) = self.store.try_lock() {
+                    store.overwrite_target_seq(new_seq);
+                }
 
                 if let Some(gap) = self.their_gap {
                     if new_seq >= gap.0 {
@@ -212,10 +219,18 @@ impl <Store : MessageStore> FixSyncState <Store> {
         Ok( TransitionAction::None )
     }
 
-    /// gathers the messages that need to be
+    /// gathers the messages that need to be resent
     pub fn build_resend_request_response(&mut self, start: i32, end: i32) -> io::Result<Vec<MessageToReSend>> {
 
-        let mut entries = Rc::get_mut(&mut self.store).unwrap().query(start, end)?;
+        // let mut entries = Rc::get_mut(&mut self.store).unwrap().query(start, end)?;
+        let mut entries = {
+            if let Ok(mut store) = self.store.try_lock() {
+                store.query(start, end)?
+            } else {
+                return Err( io::Error::new(io::ErrorKind::Other, "could not obtain lock") );
+            }
+        };
+
         let mut result = Vec::with_capacity( entries.len() );
 
         let mut temp_gap_to_fill : Option<i32> = None;
@@ -239,12 +254,12 @@ impl <Store : MessageStore> FixSyncState <Store> {
                 }
 
             } else {
-                // It's a valid message that can be re-send
+                // It's a valid message that can be re-sent
 
                 // is there gap?
                 if temp_gap_to_fill.is_some() {
                     let new_start_seq = temp_gap_to_fill.take().unwrap();
-                    result.push( FixSyncState::<Store>::build_gap_fill( cur_seq, new_start_seq ) );
+                    result.push( FixSyncState::<Store>::build_gap_fill( new_start_seq, cur_seq ) );
                 }
 
                 result.push( FixSyncState::<Store>::build_resend( frame ) );
@@ -254,14 +269,27 @@ impl <Store : MessageStore> FixSyncState <Store> {
         }
 
         if temp_gap_to_fill.is_some() {
-//            let new_start_seq = temp_gap_to_fill.take().unwrap();
-//            result.push( FixSyncState::<Store>::build_gap_fill( cur_seq, new_start_seq ) );
+            // gap left to be filled
+            let new_start_seq = temp_gap_to_fill.take().unwrap();
+            result.push( FixSyncState::<Store>::build_gap_fill( new_start_seq, expected_seq ) );
         }
 
-        if end > cur_seq {
-            // we didnt have all requested messages
-            let next_expected = self.store.next_sender_seq_num();
-            // self.send_sequence_reset( new_start_seq, next_expected )?;
+        let new_end = {
+            if end > cur_seq {
+                // we didnt have all requested messages. fill the gap
+                let new_end = end + 1;
+                result.push( FixSyncState::<Store>::build_gap_fill( expected_seq, new_end ) );
+                new_end
+            } else {
+                end
+            }
+        };
+
+        if new_end > self.get_next_sender_seq_num() {
+            if let Ok(mut store) = self.store.try_lock() {
+                info!("overwrite_sender_seq to new seq {}", new_end);
+                store.overwrite_sender_seq( new_end );
+            }
         }
 
         Ok( result )
@@ -315,11 +343,26 @@ impl <Store : MessageStore> FixSyncState <Store> {
         self.us = FixPartyState::Operational;
     }
 
+    fn get_next_sender_seq_num(&self) -> i32 {
+        if let Ok(mut store) = self.store.try_lock() {
+            store.next_sender_seq_num()
+        } else {
+            panic!("could not obtain lock");
+        }
+    }
+    fn get_next_target_seq_num(&self) -> i32 {
+        if let Ok(mut store) = self.store.try_lock() {
+            store.next_target_seq_num()
+        } else {
+            panic!("could not obtain lock");
+        }
+    }
+
     fn acknoledge_our_gap(&mut self, start: i32, end: i32) {
         // what's the gap range?
         let end =
             if end == 0 {
-                self.store.next_sender_seq_num() - 1
+                self.get_next_sender_seq_num() - 1
             } else {
                 end
             };
@@ -340,7 +383,14 @@ impl <Store : MessageStore> FixSyncState <Store> {
         assert_eq!(header.poss_dup_flag.map_or(false, |v| v), false);
 
         // incr_target_seq_num mutates the store
-        let expected_seq = Rc::get_mut(&mut self.store).map(|s| s.incr_target_seq_num() ).unwrap().unwrap();
+        let expected_seq = {
+            if let Ok(mut store) = self.store.try_lock() {
+                store.incr_target_seq_num().unwrap()
+            } else {
+                panic!("could not obtain lock");
+            }
+        };
+
         let recv_target_seq_num = header.msg_seq_num;
 
         if recv_target_seq_num > expected_seq {
