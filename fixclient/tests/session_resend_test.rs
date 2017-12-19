@@ -41,7 +41,7 @@ fn basic_init<F>( f : F ) -> (SessionStateImpl <MemoryMessageStore>, Receiver<Co
     (session, rx)
 }
 
-#[test]
+// #[test]
 fn test_logon_handshake() {
 
     // Arrange
@@ -55,7 +55,7 @@ fn test_logon_handshake() {
 
 }
 
-#[test]
+// #[test]
 fn test_resend_req_from_server() {
     // Arrange
     let (mut session, rx) = basic_init( |store| {

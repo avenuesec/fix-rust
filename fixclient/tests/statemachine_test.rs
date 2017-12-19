@@ -7,6 +7,7 @@ use std::sync::Mutex;
 use fixclient::{FixSessionConfig, FixDictionary};
 use fixclient::connector::statemachine::*;
 use fixclient::connector::memstore::*;
+use fixclient::connector::MessageStore;
 use fixclient::builder;
 use fix::fixmessagegen::*;
 
@@ -140,10 +141,8 @@ fn test_detecting_gap_from_server() {
     let store = create_store(|_| {});
     let mut sm = FixSyncState::new( store );
 
-    sm.register_sent( &builder::build_logon( 1, None ) ).expect("success");
+    let _  = sm.register_sent( &builder::build_logon( 1, None ) ).expect("success");
     let rc = sm.register_recv( &builder::build_logon( 10, None ) ).expect("success");
-    // sm.register_sent( &builder::build_resend_req( 2, 2, 5 ) ).expect("success");
-    // sm.register_sent( &builder::build_new_order_single(2, 11, Some(true) ) );
 
     assert_eq!("us operational - them resync", format!("{}", sm));
     match rc {
@@ -154,45 +153,47 @@ fn test_detecting_gap_from_server() {
     }
 }
 
-//#[test]
-//fn test_processing_resends_not_complete() {
-//    let store = create_store(|_| {});
-//    let mut sm = FixSyncState::new( store );
-//
-//    let send_res = sm.register_sent( &builder::build_logon( 1, None ) ).expect("success");
-//    sm.register_recv( &builder::build_logon( 1, None ) ).expect("success");
-//    sm.register_recv( &builder::build_resend_req( 2, 2, 5 ) ).expect("success");
-//    sm.register_sent( &builder::build_new_order_single(2, 11, Some(true) ) );
-//
-//    assert_eq!("us operational - them operational", format!("{}", sm));
-//}
-//
-//#[test]
-//fn test_processing_resends_complete() {
-//    let store = create_store(|_| {});
-//    let mut sm = FixSyncState::new( store );
-//
-//    let send_res = sm.register_sent( &builder::build_logon( 1, None ) ).expect("success");
-//    sm.register_recv( &builder::build_logon( 1, None ) ).expect("success");
-//    sm.register_recv( &builder::build_resend_req( 2, 2, 5 ) ).expect("success");
-//    sm.register_sent( &builder::build_new_order_single(2, 11, Some(true) ) );
-//
-//    assert_eq!("us operational - them operational", format!("{}", sm));
-//}
-//
-//#[test]
-//fn test_processing_resends_via_sequence_reset() {
-//    let store = create_store(|_| {});
-//    let mut sm = FixSyncState::new( store );
-//
-//    let send_res = sm.register_sent( &builder::build_logon( 1, None ) ).expect("success");
-//    sm.register_recv( &builder::build_logon( 1, None ) ).expect("success");
-//    sm.register_recv( &builder::build_resend_req( 2, 2, 5 ) ).expect("success");
-//    sm.register_sent( &builder::build_new_order_single(2, 11, Some(true) ) );
-//
-//    assert_eq!("us operational - them operational", format!("{}", sm));
-//}
+#[test]
+fn test_logon_with_reset() {
+    let store = create_store(|s| { s.overwrite_seqs(10, 20); });
+    let mut sm = FixSyncState::new( store.clone() );
 
+    assert_eq!(store.lock().unwrap().next_sender_seq_num(), 10);
+    assert_eq!(store.lock().unwrap().next_target_seq_num(), 20);
+
+    let _ = sm.register_sent( &builder::build_logon( 1, Some(true) ) ).expect("success");
+    let _ = sm.register_recv( &builder::build_logon( 1, Some(true) ) ).expect("success");
+
+    assert_eq!(store.lock().unwrap().next_sender_seq_num(), 10);
+    assert_eq!(store.lock().unwrap().next_target_seq_num(), 2);
+    assert_eq!("us operational - them operational", format!("{}", sm));
+}
+
+
+#[test]
+fn test_processing_resends_not_complete() {
+    let store = create_store(|_| {});
+    let mut sm = FixSyncState::new( store );
+
+    let _ = sm.register_sent( &builder::build_logon( 1, None ) ).expect("success");
+    let _ = sm.register_recv( &builder::build_logon( 1, None ) ).expect("success");
+    let _ = sm.register_recv( &builder::build_resend_req( 2, 2, 5 ) ).expect("success");
+
+    assert_eq!("us resync - them operational", format!("{}", sm));
+}
+
+#[test]
+fn test_processing_resends_with_seq_reset() {
+    let store = create_store(|_| {});
+    let mut sm = FixSyncState::new( store );
+
+    let _ = sm.register_sent( &builder::build_logon( 1, None ) ).expect("success");
+    let _ = sm.register_recv( &builder::build_logon( 1, None ) ).expect("success");
+    let _ = sm.register_recv( &builder::build_resend_req( 2, 2, 5 ) ).expect("success");
+    let _ = sm.register_sent( &builder::build_sequence_reset( 2, 6, Some(true) ) ).expect("success");
+
+    assert_eq!("us operational - them operational", format!("{}", sm));
+}
 
 fn create_store<F>( f : F ) -> Rc<Mutex<MemoryMessageStore>>
     where F : FnOnce(&mut MemoryMessageStore) -> () {
