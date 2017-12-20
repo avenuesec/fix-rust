@@ -11,7 +11,6 @@ use fixclient::connector::MessageStore;
 use fixclient::builder;
 use fix::fixmessagegen::*;
 
-
 #[test]
 fn test_initial_state() {
     let store = create_store(|_| {});
@@ -31,7 +30,7 @@ fn test_logon_sent_state() {
 }
 
 #[test]
-fn test_logon_handshake_state() {
+fn test_logon_handshake_completed_should_transition_to_operational() {
     let store = create_store(|_| {});
     let mut sm = FixSyncState::new( store );
 
@@ -50,7 +49,7 @@ fn test_logon_handshake_state() {
 }
 
 #[test]
-fn test_vanilla_communication_no_gaps() {
+fn test_vanilla_communication_no_gaps_should_always_be_operational() {
     let store = create_store(|_| {});
     let mut sm = FixSyncState::new( store );
 
@@ -72,7 +71,7 @@ fn test_vanilla_communication_no_gaps() {
 }
 
 #[test]
-fn test_server_sending_a_resend_request() {
+fn test_server_sending_a_resend_request_should_put_us_on_resync() {
     let store = create_store(|_| {});
     let mut sm = FixSyncState::new( store );
 
@@ -93,7 +92,7 @@ fn test_server_sending_a_resend_request() {
 }
 
 #[test]
-fn test_responding_to_a_resend_request_with_a_full_gap_fill() {
+fn test_responding_to_a_resend_request_with_a_full_gap_fill_should_make_us_operational() {
     let store = create_store(|_| {});
     let mut sm = FixSyncState::new( store );
 
@@ -106,7 +105,7 @@ fn test_responding_to_a_resend_request_with_a_full_gap_fill() {
 }
 
 #[test]
-fn test_responding_to_a_resend_request_with_individual_messages() {
+fn test_responding_to_a_resend_request_with_individual_messages_should_make_us_operational() {
     let store = create_store(|_| {});
     let mut sm = FixSyncState::new( store );
 
@@ -121,7 +120,7 @@ fn test_responding_to_a_resend_request_with_individual_messages() {
 }
 
 #[test]
-fn test_responding_to_a_resend_request_with_individual_messages_complete() {
+fn test_responding_to_a_resend_request_with_individual_messages_completeshould_make_us_operational() {
     let store = create_store(|_| {});
     let mut sm = FixSyncState::new( store );
 
@@ -137,7 +136,7 @@ fn test_responding_to_a_resend_request_with_individual_messages_complete() {
 }
 
 #[test]
-fn test_detecting_gap_from_server() {
+fn test_detecting_gap_from_server_should_transition_them_to_resync() {
     let store = create_store(|_| {});
     let mut sm = FixSyncState::new( store );
 
@@ -154,7 +153,100 @@ fn test_detecting_gap_from_server() {
 }
 
 #[test]
-fn test_logon_with_reset() {
+fn test_when_server_in_resync_receiving_seq_reset_should_make_them_operational() {
+    let store = create_store(|_| {});
+    let mut sm = FixSyncState::new( store );
+
+    let _ = sm.register_sent( &builder::build_logon( 1, None ) ).expect("success");
+    let _ = sm.register_recv( &builder::build_logon( 10, None ) ).expect("success");
+    let _ = sm.register_sent( &builder::build_resend_req( 1, 1, 0 ) ).expect("success");
+    let a = sm.register_recv( &builder::build_sequence_reset( 11, 12, Some(true) ) ).expect("success");
+
+    println!("{:?}", a);
+    assert_eq!("us operational - them operational", format!("{}", sm));
+}
+
+#[test]
+fn test_when_server_in_resync_receiving_out_of_order_should_adjust_gap() {
+    let store = create_store(|_| {});
+    let mut sm = FixSyncState::new( store );
+
+    let _    = sm.register_sent( &builder::build_logon( 1, None ) ).expect("success");
+    let gap1 = sm.register_recv( &builder::build_logon( 5, None ) ).expect("success");
+    let _    = sm.register_sent( &builder::build_resend_req( 2, 1, 0 ) ).expect("success");
+    let gap2 = sm.register_recv( &builder::build_new_order_single( 6, false, "cl1", "AAPL",  100.0, 172.2,  FieldSideEnum::Buy, FieldOrdTypeEnum::Market) ).expect("success");
+
+    assert_eq!("us operational - them resync", format!("{}", sm));
+    match gap1 {
+        TransitionAction::RequestResendRange(range) => {
+            assert_eq!( (1, 5), range );
+        },
+        _ => panic!("expecting RequestResendRange")
+    }
+    match gap2 {
+        TransitionAction::RequestResendRange(range) => {
+            assert_eq!( (1, 6), range );
+        },
+        _ => panic!("expecting RequestResendRange")
+    }
+}
+
+#[test]
+fn test_when_server_in_resync_receiving_ordered_should_fill_gap() {
+    let store = create_store(|_| {});
+    let mut sm = FixSyncState::new( store );
+
+    let _  = sm.register_sent( &builder::build_logon( 1, None ) ).expect("success");
+    let _  = sm.register_recv( &builder::build_logon( 5, None ) ).expect("success");
+    let _  = sm.register_sent( &builder::build_resend_req( 2, 1, 0 ) ).expect("success");
+    let r1 = sm.register_recv( &builder::build_new_order_single( 1, true, "cl1", "AAPL",  100.0, 172.2,  FieldSideEnum::Buy, FieldOrdTypeEnum::Market) ).expect("success");
+    let r2 = sm.register_recv( &builder::build_new_order_single( 2, true, "cl2", "AAPL",  100.0, 172.2,  FieldSideEnum::Buy, FieldOrdTypeEnum::Market) ).expect("success");
+    let r3 = sm.register_recv( &builder::build_new_order_single( 3, true, "cl3", "AAPL",  100.0, 172.2,  FieldSideEnum::Buy, FieldOrdTypeEnum::Market) ).expect("success");
+    let r4 = sm.register_recv( &builder::build_new_order_single( 4, true, "cl4", "AAPL",  100.0, 172.2,  FieldSideEnum::Buy, FieldOrdTypeEnum::Market) ).expect("success");
+    let r5 = sm.register_recv( &builder::build_new_order_single( 5, true, "cl5", "AAPL",  100.0, 172.2,  FieldSideEnum::Buy, FieldOrdTypeEnum::Market) ).expect("success");
+    let r6 = sm.register_recv( &builder::build_new_order_single( 6, false, "cl6", "AAPL",  100.0, 172.2,  FieldSideEnum::Buy, FieldOrdTypeEnum::Market) ).expect("success");
+
+    println!("1 {:?}", r1);
+    println!("2 {:?}", r2);
+    println!("3 {:?}", r3);
+    println!("4 {:?}", r4);
+    println!("5 {:?}", r5);
+    println!("6 {:?}", r6);
+
+    assert_eq!("us operational - them operational", format!("{}", sm));
+//    match gap1 {
+//        TransitionAction::RequestResendRange(range) => {
+//            assert_eq!( (1, 5), range );
+//        },
+//        _ => panic!("expecting RequestResendRange")
+//    }
+//    match gap2 {
+//        TransitionAction::RequestResendRange(range) => {
+//            assert_eq!( (1, 6), range );
+//        },
+//        _ => panic!("expecting RequestResendRange")
+//    }
+}
+
+#[test]
+fn test_when_server_in_resync_receiving_gap_should_make_them_operational() {
+    let store = create_store(|_| {});
+    let mut sm = FixSyncState::new( store );
+
+    let _ = sm.register_sent( &builder::build_logon( 1, None ) ).expect("success");
+    let _ = sm.register_recv( &builder::build_logon( 5, None ) ).expect("success");
+    let _ = sm.register_sent( &builder::build_resend_req( 2, 1, 0 ) ).expect("success");
+    let _ = sm.register_recv( &builder::build_new_order_single( 1, true, "cl1", "AAPL",  100.0, 172.2,  FieldSideEnum::Buy, FieldOrdTypeEnum::Market) ).expect("success");
+    let _ = sm.register_recv( &builder::build_new_order_single( 2, true, "cl2", "AAPL",  100.0, 172.2,  FieldSideEnum::Buy, FieldOrdTypeEnum::Market) ).expect("success");
+    let _ = sm.register_recv( &builder::build_new_order_single( 3, true, "cl3", "AAPL",  100.0, 172.2,  FieldSideEnum::Buy, FieldOrdTypeEnum::Market) ).expect("success");
+    let _ = sm.register_recv( &builder::build_new_order_single( 4, true, "cl4", "AAPL",  100.0, 172.2,  FieldSideEnum::Buy, FieldOrdTypeEnum::Market) ).expect("success");
+    let _ = sm.register_recv( &builder::build_new_order_single( 5, true, "cl5", "AAPL",  100.0, 172.2,  FieldSideEnum::Buy, FieldOrdTypeEnum::Market) ).expect("success");
+
+    assert_eq!("us operational - them operational", format!("{}", sm));
+}
+
+#[test]
+fn test_logon_with_reset_should_reset_target_seq_as_requested() {
     let store = create_store(|s| { s.overwrite_seqs(10, 20); });
     let mut sm = FixSyncState::new( store.clone() );
 
@@ -169,7 +261,6 @@ fn test_logon_with_reset() {
     assert_eq!("us operational - them operational", format!("{}", sm));
 }
 
-
 #[test]
 fn test_processing_resends_not_complete() {
     let store = create_store(|_| {});
@@ -183,7 +274,7 @@ fn test_processing_resends_not_complete() {
 }
 
 #[test]
-fn test_processing_resends_with_seq_reset() {
+fn test_responding_to_a_resend_request_with_a_full_gap_fill_should_make_us_operational_2() {
     let store = create_store(|_| {});
     let mut sm = FixSyncState::new( store );
 
@@ -193,6 +284,19 @@ fn test_processing_resends_with_seq_reset() {
     let _ = sm.register_sent( &builder::build_sequence_reset( 2, 6, Some(true) ) ).expect("success");
 
     assert_eq!("us operational - them operational", format!("{}", sm));
+}
+
+#[test]
+fn test_processing_resends_with_partial_seq_reset_should_not_consider_it_operational() {
+    let store = create_store(|_| {});
+    let mut sm = FixSyncState::new( store );
+
+    let _ = sm.register_sent( &builder::build_logon( 1, None ) ).expect("success");
+    let _ = sm.register_recv( &builder::build_logon( 1, None ) ).expect("success");
+    let _ = sm.register_recv( &builder::build_resend_req( 2, 2, 5 ) ).expect("success");
+    let _ = sm.register_sent( &builder::build_sequence_reset( 2, 5, Some(true) ) ).expect("success");
+
+    assert_eq!("us resync - them operational", format!("{}", sm));
 }
 
 fn create_store<F>( f : F ) -> Rc<Mutex<MemoryMessageStore>>
