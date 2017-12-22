@@ -17,6 +17,7 @@ pub mod session;
 pub mod fsstore;
 pub mod memstore;
 pub mod statemachine;
+pub mod statemac2;
 
 
 #[derive(Clone)]

@@ -146,7 +146,7 @@ impl <Store : MessageStore> FixSyncState <Store> {
                         let new_seq = flds.new_seq_no;
 
                         if self.our_gap.update_gap( new_seq, true ) {
-                            self.us_notify_resend_completed();
+                            self.us = FixPartyState::Operational;
                         }
 
 //                        if self.update_our_gap( new_seq, true ) {
@@ -157,7 +157,7 @@ impl <Store : MessageStore> FixSyncState <Store> {
                 }
             } else if is_resend {
                 if self.our_gap.update_gap( msg_seq, false ) {
-                    self.us_notify_resend_completed();
+                    self.us = FixPartyState::Operational;
                 }
 //                if self.update_our_gap( msg_seq, false ) {
 //                    self.us_notify_resend_completed();
@@ -392,12 +392,6 @@ impl <Store : MessageStore> FixSyncState <Store> {
         self.recv_count = self.recv_count + 1;
     }
 
-
-
-    fn us_notify_resend_completed(&mut self) {
-        self.us = FixPartyState::Operational;
-    }
-
     fn get_next_sender_seq_num(&self) -> i32 {
         if let Ok(mut store) = self.store.try_lock() {
             store.next_sender_seq_num()
@@ -412,12 +406,6 @@ impl <Store : MessageStore> FixSyncState <Store> {
             panic!("could not obtain lock");
         }
     }
-
-
-//    fn acknoledge_their_gap(&mut self, start: i32, end: i32 ) {
-//        self.them = FixPartyState::MessageSynchronization;
-//        self.their_gap = Some( (start, end) );
-//    }
 
     /// check if there's a gap in the incoming messages
     fn detect_gap_and_choose_action(&mut self, header: &FixHeader, message: &FixMessage) -> TransitionAction {
@@ -435,6 +423,7 @@ impl <Store : MessageStore> FixSyncState <Store> {
 
             // self.acknoledge_their_gap( expected_seq, recv_target_seq_num );
             self.their_gap.ack_gap( expected_seq, recv_target_seq_num, 0 );
+            self.them = FixPartyState::MessageSynchronization;
 
             match message {
                 // another special case:
