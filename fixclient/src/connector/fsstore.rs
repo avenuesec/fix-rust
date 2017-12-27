@@ -322,10 +322,6 @@ impl MessageStore for FSMessageStore {
     }
 }
 
-
-
-
-
 fn to_path( store: &str, file_name: &str ) -> io::Result<PathBuf> {
     let mut path_buf = PathBuf::new();
     path_buf.push( store );

@@ -1,7 +1,9 @@
+extern crate core;
 
 use std::io;
 use std::rc::Rc;
 use std::sync::Mutex;
+use std::fmt::{Display, Formatter, Error};
 
 use super::MessageStore;
 
@@ -26,7 +28,7 @@ enum FixPartyState {
     Operational,
 }
 
-pub struct FixSyncState2 <Store : MessageStore> {
+pub struct FixSyncState <Store : MessageStore> {
     store:  Rc<Mutex<Store>>,
     sender: PartyState,
     target: PartyState,
@@ -44,10 +46,9 @@ pub struct MessageGap {
     gap: Option<(i32, i32)>,
 }
 
-impl <Store : MessageStore> FixSyncState2 <Store> {
-
-    pub fn new( store: Rc<Mutex<Store>> ) -> FixSyncState2 <Store> {
-        FixSyncState2 {
+impl <Store : MessageStore> FixSyncState <Store> {
+    pub fn new( store: Rc<Mutex<Store>> ) -> FixSyncState <Store> {
+        FixSyncState {
             store,
             sender: PartyState::new(),
             target: PartyState::new(),
@@ -57,25 +58,40 @@ impl <Store : MessageStore> FixSyncState2 <Store> {
     }
 
     pub fn register_sent(&mut self, frame: &FixFrame) -> io::Result<()> {
-
         self.incr_sent();
+
+        let is_poss_dup = frame.header.poss_dup_flag.map_or(false, |v| v);
 
         // sender: if we're in sync, has the gap been filled?
         if self.sender.has_sync_pending() {
+            let msg_seq = frame.header.msg_seq_num;
+            assert_eq!( is_poss_dup, true );
+            let fill_range = FixSyncState::<Store>::extract_range( &frame )?;
+            println!("sender: filling range {:?} gap {:?}", fill_range, self.sender.gap);
+            self.sender.fill_range( fill_range );
+        }
 
-        } else {
+        if is_poss_dup == false {
+            let next = self.increment_sender_seq_num()?;
+            // assert_eq!( next, frame.header.msg_seq_num );
 
-            self.increment_sender_seq_num();
+            match &frame.message {
+                &FixMessage::Logon(ref flds) => {
+                    self.outgoing_logon()?;
+
+                    if flds.reset_seq_num_flag.map_or(false, |v| v) {
+                        self.store.lock().unwrap().overwrite_sender_seq(1)?;
+                    }
+                },
+                _ => { /*nothing to do*/ }
+            }
         }
 
         Ok( () )
     }
 
     pub fn register_recv(&mut self, frame: &FixFrame) -> io::Result<TransitionAction> {
-
         self.incr_recv();
-
-        let is_poss_dup = frame.header.poss_dup_flag.map_or(false, |v| v);
 
         // first, is there a gap?
         let action_if_gap_in_target = {
@@ -87,6 +103,8 @@ impl <Store : MessageStore> FixSyncState2 <Store> {
                 self.try_detect_gap_and_select_transition( &frame )?
             }
         };
+
+        let is_poss_dup = frame.header.poss_dup_flag.map_or(false, |v| v);
 
         // now process the message
         let composed_action = {
@@ -109,6 +127,25 @@ impl <Store : MessageStore> FixSyncState2 <Store> {
             }
         };
 
+        if is_poss_dup == false {
+            match &frame.message {
+                // Logon needs to be processed
+                // even if a gap was detected
+                &FixMessage::Logon(ref flds) => {
+                    self.incoming_logon()?;
+
+                    if flds.reset_seq_num_flag.map_or(false, |v| v) {
+                        // other party instructed reset
+                        // let recv_seq = frame.header.msg_seq_num;
+                        if let Ok(mut store) = self.store.try_lock() {
+                            store.overwrite_target_seq(1)?;
+                        }
+                    }
+                },
+                _ => {}
+            }
+        }
+
         Ok( composed_action )
     }
 
@@ -122,22 +159,39 @@ impl <Store : MessageStore> FixSyncState2 <Store> {
                     } else {
                         self.expected_sender_seq_num()
                     };
-                self.sender.gap.start_gap(start, end);
+                self.sender.gap_detected(start, end);
                 Ok( self.sender.gap_as_range() )
             },
             _ => unreachable!("nope")
         }
     }
 
-    /// other party requested a reset
-    fn process_target_seq_reset(&mut self, frame: &FixFrame) -> io::Result<TransitionAction> {
+    fn extract_range(frame: &FixFrame) -> io::Result<(i32, i32)> {
+        // if message is seqreset-gapfill, range is (seq..new_begin)
+        // if message is something else,   range is (seq..seq)
 
-        Ok( TransitionAction::None )
+        let seq = frame.header.msg_seq_num;
+
+        let range = {
+            match &frame.message {
+                &FixMessage::SequenceReset(ref flds) => {
+                    let gap_fill = flds.gap_fill_flag.map_or(false, |v| v);
+
+                    assert_eq!(gap_fill, true); // assert not a seqreset-hard_reset
+
+                    (seq, flds.new_seq_no - 1)
+                },
+                _ => {
+                    (seq, seq)
+                }
+            }
+        };
+
+        Ok( range )
     }
 
     /// compare `received seq` with `expected` and determines action if different
     fn try_detect_gap_and_select_transition(&mut self, frame: &FixFrame) -> io::Result<TransitionAction> {
-
         let recv_target_seq_num = frame.header.msg_seq_num;
         let expected_seq        = self.expected_target_seq_num();
 
@@ -146,6 +200,7 @@ impl <Store : MessageStore> FixSyncState2 <Store> {
                 warn!("try_detect_gap_and_select_transition: expecting seq {} but received {}. \
                        Initiating resend request, holding recv/sending until synchronization is complete", expected_seq, recv_target_seq_num);
 
+                println!("target : gap_detected e {} r {}", expected_seq, recv_target_seq_num );
                 self.target.gap_detected( expected_seq, recv_target_seq_num );
 
                 TransitionAction::RequestResendRange( self.target.gap_as_range() )
@@ -155,24 +210,23 @@ impl <Store : MessageStore> FixSyncState2 <Store> {
                 error!("detect_gap_and_choose_action: expecting seq {} but received {}. \
                         Too low detected, disconnecting.", expected_seq, recv_target_seq_num);
 
+                println!("msg seq too low: expected {} recv {}", expected_seq, recv_target_seq_num);
+
                 TransitionAction::LogoutWith( "msg seq too low" )
 
             } else {
 
-//                if self.target.has_sync_pending() && self.target.update_gap_check_filled(recv_target_seq_num, false) {
-//                    self.target.sync_completed();
-//                }
-
-                // all good! transition to valid state if necessary
-                if self.target.has_sync_pending() {
-                    self.target.sync_completed();
-                    // TODO: flush queued messaged if any
-                }
-
                 // since we're good, increment seq
                 let new_seq = self.increment_target_seq_num()?;
 
-                assert_eq!(new_seq, expected_seq + 1);
+                // assert_eq!(new_seq + 1, expected_seq + 1);
+                println!("increment_target_seq_num  new_seq: {}", new_seq);
+
+                // transition if necessary
+                if self.target.has_sync_pending() {
+                    self.target.sync_completed();
+                    // flush queue (TODO)
+                }
 
                 TransitionAction::None
             }
@@ -182,6 +236,7 @@ impl <Store : MessageStore> FixSyncState2 <Store> {
     }
 
     fn process_incoming_gap_fill(&mut self, frame: &FixFrame) -> io::Result<TransitionAction> {
+        assert_eq!(self.target.has_sync_pending(), true);
 
         // a seqreset-RESET mode is especially handled as per spec:
         match &frame.message {
@@ -191,12 +246,9 @@ impl <Store : MessageStore> FixSyncState2 <Store> {
                 if is_reset {
                     // very serious situation where the target is saying we need
                     // to treat this as disaster recovery. we then forcefully overwrite
-                    // the sequence going backwards or forward
-
+                    // the sequence
                     let new_sequence = flds.new_seq_no;
-
                     self.store.lock().unwrap().overwrite_target_seq( new_sequence )?;
-
                     self.target.sync_completed();
 
                     return Ok( TransitionAction::None );
@@ -207,41 +259,29 @@ impl <Store : MessageStore> FixSyncState2 <Store> {
 
         // now we handle SeqReset gap fill and ordinary messages.
         // the other party should be a good citizen:
-        // the gap should be filled in order, either by proper app messages, reject or seq-resets:
+        // - the gap should be filled in order, either by proper app messages, reject or seq-resets
+        // - they must be poss_dup = true
 
         let is_poss_dup = frame.header.poss_dup_flag.map_or(false, |v| v);
+        if is_poss_dup {
+            let fill_range = FixSyncState::<Store>::extract_range( &frame )?;
 
-        assert_eq!(is_poss_dup, true);
+            println!("target: filling range {:?} gap {:?} next {}", fill_range, self.target.gap.gap, self.expected_target_seq_num() );
+            let next = self.target.fill_range( fill_range );
 
-        match &frame.message {
-            &FixMessage::SequenceReset(ref flds) => {
-                let is_gap_fill = flds.gap_fill_flag.map_or(false, |v| v) == true;
+            self.store.lock().unwrap().overwrite_target_seq( next )?;
 
-                assert_eq!( is_gap_fill, true ); // must be gap fill at this point
+            Ok( TransitionAction::None )
 
-                let new_sequence = flds.new_seq_no;
+        } else {
+            // in this case, during gap fill (bad citizen)
+            // we received an ordinary msg (not poss_dup)
+            // so we adjust the gap
 
-                if new_sequence < self.expected_target_seq_num() {
-                    // Seq reset can only increase the seq, never go backwards
-                    error!("SequenceReset incorrectly instructed lower seq, which by the spec definition should not be allowed. \
-                            Current expected {} new seq: {}", new_sequence, self.expected_target_seq_num() );
-                }
+            self.target.gap_adjust( frame.header.msg_seq_num );
 
-                // jumps ahead
-                self.store.lock().unwrap().overwrite_target_seq( new_sequence )?;
-
-            },
-            _ => { /* nothing to do */ }
+            Ok( TransitionAction::RequestResendRange( self.target.gap_as_range() ) )
         }
-
-//            } else {
-//            // we should not be receiving ordinary messages while we're gap-filling, so what to do?
-//            error!("received message with poss_dup_flag = false during gap filling process: {:?}", frame.message.msg_type());
-//            // should we crash, reject, or save the message for later?
-//            panic!("unexpected message received during gap filling process")
-//            }
-
-        Ok( TransitionAction::None )
     }
 
     fn expected_target_seq_num(&self) -> i32 {
@@ -250,20 +290,46 @@ impl <Store : MessageStore> FixSyncState2 <Store> {
     fn expected_sender_seq_num(&self) -> i32 {
         self.store.lock().unwrap().next_sender_seq_num()
     }
-
     fn increment_sender_seq_num(&mut self) -> io::Result<i32> {
         self.store.lock().unwrap().incr_sender_seq_num()
     }
-
     fn increment_target_seq_num(&mut self) -> io::Result<i32> {
         self.store.lock().unwrap().incr_target_seq_num()
     }
-
     fn incr_sent(&mut self) {
         self.sent_count = self.sent_count + 1;
     }
     fn incr_recv(&mut self) {
         self.recv_count = self.recv_count + 1;
+    }
+
+    /// logon message sent
+    fn outgoing_logon(&mut self ) -> io::Result<()> {
+        if self.sender.state == FixPartyState::Connected {
+            self.sender.state = FixPartyState::Logon;
+            self.target.state = FixPartyState::Logon;
+            Ok( () )
+        } else {
+            Err( io::Error::new(io::ErrorKind::Other, format!("cannot not go to logon_sent from {}", self.to_string()).as_str() ) )
+        }
+    }
+
+    /// logon message recv (confirmation)
+    fn incoming_logon(&mut self ) -> io::Result<()> {
+        if self.target.state == FixPartyState::Logon {
+            self.target.state = FixPartyState::Operational;
+        }
+        if self.sender.state == FixPartyState::Logon {
+            // there's room for a race condition here:
+            // The spec actually recommends that we send a TestRequest or wait a few seconds
+            // before considering the connection op, as the server may still be figuring out
+            // if there's a gap, and sending a ResendRequest soon.
+            // For now, let's be optimistic.
+            self.sender.state = FixPartyState::Operational;
+            Ok( () )
+        } else {
+            Err( io::Error::new(io::ErrorKind::Other, format!("logon_recv without sending a logon? current: {}", self).as_str() ) )
+        }
     }
 }
 
@@ -285,25 +351,43 @@ impl MessageGap {
         MessageGap { gap : None }
     }
 
+    fn clear(&mut self) {
+        self.gap = None;
+    }
+
     fn start_gap(&mut self, start: i32, end: i32) {
         self.gap = Some( (start, end) );
     }
 
-    fn update_gap(&mut self, new_begin : i32, is_seq_reset: bool) -> bool {
-        if let Some( (_start, end) ) = self.gap {
+    fn update_gap(&mut self, range : (i32, i32) ) -> bool {
+        let (rstart, rend) = range;
+
+        if let Some( (start, end) ) = self.gap {
+            if rstart != start {
+                let msg = format!("Expecting start to match current start of gap: expecting {} got {}", start, rstart);
+                panic!(msg);
+            }
             // is it fully filled?
-            if (is_seq_reset && new_begin > end) || (!is_seq_reset && new_begin == end) {
+            if rend == end {
                 // reset it
                 self.gap = None;
                 return true
             } else {
-                self.gap = Some( (new_begin, end) );
+                self.gap = Some( (rend + 1, end) );
             }
         } else {
             // Shouldn't happen!
             panic!("update_gap without a gap pre-established");
         }
         return false;
+    }
+
+    fn update_gap_end(&mut self, new_end: i32) {
+        if let Some( (start, end) ) = self.gap {
+            if new_end > end {
+                self.gap = Some((start, new_end));
+            }
+        }
     }
 
     fn as_range(&self) -> (i32, i32) {
@@ -328,13 +412,19 @@ impl PartyState {
         self.state = FixPartyState::MessageSynchronization;
     }
 
-    fn update_gap_check_filled(&mut self, latest_seq: i32, is_seq_reset: bool) -> bool {
-        if self.gap.update_gap( latest_seq, is_seq_reset ) {
+    fn gap_adjust(&mut self, new_end: i32) {
+        self.gap.update_gap_end( new_end );
+    }
+
+    fn fill_range(&mut self, fill_range : (i32, i32) ) -> i32 {
+        assert_eq!( self.has_sync_pending(), true );
+
+        if self.gap.update_gap( fill_range ) {
             self.state = FixPartyState::Operational;
-            true
-        } else {
-            false
         }
+
+        let expected_next = fill_range.1 + 1;
+        expected_next
     }
 
     fn has_sync_pending(&self) -> bool {
@@ -345,7 +435,7 @@ impl PartyState {
     }
 
     fn sync_completed(&mut self) {
-        self.gap = None;
+        self.gap.clear();
         self.state = FixPartyState::Operational;
     }
 
@@ -360,6 +450,29 @@ impl TransitionAction {
         match self {
             &TransitionAction::None => true,
             _ => false
+        }
+    }
+}
+
+impl <Store : MessageStore> Display for FixSyncState <Store> {
+    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
+        f.write_str( &format!("sender {} - target {}", self.sender, self.target) )
+    }
+}
+
+impl Display for PartyState {
+    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
+        f.write_str( format!("{}{}", self.state.to_string(), self.gap).as_str() )
+    }
+}
+
+impl Display for MessageGap {
+    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
+        if self.gap.is_none() {
+            f.write_str( "" )
+        } else {
+            let range = self.gap.as_ref().unwrap();
+            f.write_str( format!(" {:?}", range).as_str() )
         }
     }
 }

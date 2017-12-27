@@ -5,7 +5,7 @@ use std::rc::Rc;
 use std::sync::Mutex;
 
 use fixclient::{FixSessionConfig, FixDictionary};
-use fixclient::connector::statemachine::*;
+use fixclient::connector::statemac2::*;
 use fixclient::connector::memstore::*;
 use fixclient::connector::MessageStore;
 use fixclient::builder;
@@ -16,7 +16,7 @@ fn test_initial_state() {
     let store = create_store(|_| {});
     let sm = FixSyncState::new( store );
 
-    assert_eq!("us connected - them connected", format!("{}", sm));
+    assert_eq!("sender connected - target connected", format!("{}", sm));
 }
 
 #[test]
@@ -26,7 +26,7 @@ fn test_logon_sent_state() {
 
     let _ = sm.register_sent( &builder::build_logon( 1, None ) ).expect("success");
 
-    assert_eq!("us logon - them logon", format!("{}", sm));
+    assert_eq!("sender logon - target logon", format!("{}", sm));
 }
 
 #[test]
@@ -37,7 +37,7 @@ fn test_logon_handshake_completed_should_transition_to_operational() {
     let _        = sm.register_sent( &builder::build_logon( 1, None ) ).expect("success");
     let recv_res = sm.register_recv( &builder::build_logon( 1, None ) ).expect("success");
 
-    assert_eq!("us operational - them operational", format!("{}", sm));
+    assert_eq!("sender operational - target operational", format!("{}", sm));
     match recv_res {
         TransitionAction::None => {
             // expected
@@ -55,19 +55,19 @@ fn test_vanilla_communication_no_gaps_should_always_be_operational() {
 
     let _  = sm.register_sent( &builder::build_logon( 1, None ) ).expect("success");
     assert!( sm.register_recv( &builder::build_logon( 1, None ) ).expect("success").is_none() );
-    assert_eq!("us operational - them operational", format!("{}", sm));
+    assert_eq!("sender operational - target operational", format!("{}", sm));
 
     let _  = sm.register_sent( &builder::build_test_req(2, "TEST") ).expect("success");
     assert!( sm.register_recv( &builder::build_heartbeat(2, Some("TEST") ) ).expect("success").is_none() );
-    assert_eq!("us operational - them operational", format!("{}", sm));
+    assert_eq!("sender operational - target operational", format!("{}", sm));
 
     assert!( sm.register_recv( &builder::build_test_req(3, "TEST2" ) ).expect("success").is_none() );
     let _  = sm.register_sent( &builder::build_heartbeat(3, Some("TEST2") ) ).expect("success");
-    assert_eq!("us operational - them operational", format!("{}", sm));
+    assert_eq!("sender operational - target operational", format!("{}", sm));
 
     let _ = sm.register_sent( &builder::build_new_order_single(4, false, "cl1", "AAPL", 100.0, 594.2, FieldSideEnum::Buy, FieldOrdTypeEnum::Limit ) );
     assert!( sm.register_recv( &builder::build_exec_report(4, false, "cl1", "ord1", "exec1", "AAPL", 0.0, 100.0, 594.2, FieldSideEnum::Buy, FieldExecTypeEnum::Fill, FieldExecTransTypeEnum::Status, FieldOrdStatusEnum::Filled ) ).expect("success").is_none() );
-    assert_eq!("us operational - them operational", format!("{}", sm));
+    assert_eq!("sender operational - target operational", format!("{}", sm));
 }
 
 #[test]
@@ -79,7 +79,7 @@ fn test_server_sending_a_resend_request_should_put_us_on_resync() {
     let _ = sm.register_recv( &builder::build_logon( 1, None ) ).expect("success");
     let recv_res = sm.register_recv( &builder::build_resend_req( 2, 1, 10 ) ).expect("success");
 
-    assert_eq!("us resync - them operational", format!("{}", sm));
+    assert_eq!("sender resync (1, 10) - target operational", format!("{}", sm));
     match recv_res {
         TransitionAction::DoResendRange( range ) => {
             assert_eq!( (1,10), range );
@@ -98,14 +98,14 @@ fn test_responding_to_a_resend_request_with_a_full_gap_fill_should_make_us_opera
 
     let _ = sm.register_sent( &builder::build_logon( 1, None ) ).expect("success");
     let _ = sm.register_recv( &builder::build_logon( 1, None ) ).expect("success");
-    let _ = sm.register_recv( &builder::build_resend_req( 2, 1, 10 ) ).expect("success");
+    let _ = sm.register_recv( &builder::build_resend_req( 2, 2, 10 ) ).expect("success");
     let _ = sm.register_sent( &builder::build_sequence_reset(2, 11, Some(true) ) );
 
-    assert_eq!("us operational - them operational", format!("{}", sm));
+    assert_eq!("sender operational - target operational", format!("{}", sm));
 }
 
 #[test]
-fn test_responding_to_a_resend_request_with_individual_messages_should_make_us_operational() {
+fn test_responding_to_a_resend_request_with_individual_messages_should_fill_gap() {
     let store = create_store(|_| {});
     let mut sm = FixSyncState::new( store );
 
@@ -116,7 +116,7 @@ fn test_responding_to_a_resend_request_with_individual_messages_should_make_us_o
     let _ = sm.register_sent( &builder::build_new_order_single(3, true, "cl2", "AAPL", 100.0, 594.2, FieldSideEnum::Buy, FieldOrdTypeEnum::Limit ) );
     let _ = sm.register_sent( &builder::build_new_order_single(4, true, "cl3", "AAPL", 100.0, 594.2, FieldSideEnum::Buy, FieldOrdTypeEnum::Limit ) );
 
-    assert_eq!("us resync - them operational", format!("{}", sm));
+    assert_eq!("sender resync (5, 5) - target operational", format!("{}", sm));
 }
 
 #[test]
@@ -132,7 +132,7 @@ fn test_responding_to_a_resend_request_with_individual_messages_completeshould_m
     let _ = sm.register_sent( &builder::build_new_order_single(4, true, "cl3", "AAPL", 100.0, 594.2, FieldSideEnum::Buy, FieldOrdTypeEnum::Limit ) );
     let _ = sm.register_sent( &builder::build_new_order_single(5, true, "cl4", "AAPL", 100.0, 594.2, FieldSideEnum::Buy, FieldOrdTypeEnum::Limit ) );
 
-    assert_eq!("us operational - them operational", format!("{}", sm));
+    assert_eq!("sender operational - target operational", format!("{}", sm));
 }
 
 #[test]
@@ -143,7 +143,7 @@ fn test_detecting_gap_from_server_should_transition_them_to_resync() {
     let _  = sm.register_sent( &builder::build_logon( 1, None ) ).expect("success");
     let rc = sm.register_recv( &builder::build_logon( 10, None ) ).expect("success");
 
-    assert_eq!("us operational - them resync", format!("{}", sm));
+    assert_eq!("sender operational - target resync (1, 10)", format!("{}", sm));
     match rc {
         TransitionAction::RequestResendRange(range) => {
             assert_eq!( (1,10), range );
@@ -160,10 +160,11 @@ fn test_when_server_in_resync_receiving_seq_reset_should_make_them_operational()
     let _ = sm.register_sent( &builder::build_logon( 1, None ) ).expect("success");
     let _ = sm.register_recv( &builder::build_logon( 10, None ) ).expect("success");
     let _ = sm.register_sent( &builder::build_resend_req( 1, 1, 0 ) ).expect("success");
-    let a = sm.register_recv( &builder::build_sequence_reset( 11, 12, Some(true) ) ).expect("success");
+    assert_eq!("sender operational - target resync (1, 10)", format!("{}", sm));
+    let a = sm.register_recv( &builder::build_sequence_reset( 1, 11, Some(true) ) ).expect("success");
 
     println!("{:?}", a);
-    assert_eq!("us operational - them operational", format!("{}", sm));
+    assert_eq!("sender operational - target operational", format!("{}", sm));
 }
 
 #[test]
@@ -174,9 +175,11 @@ fn test_when_server_in_resync_receiving_out_of_order_should_adjust_gap() {
     let _    = sm.register_sent( &builder::build_logon( 1, None ) ).expect("success");
     let gap1 = sm.register_recv( &builder::build_logon( 5, None ) ).expect("success");
     let _    = sm.register_sent( &builder::build_resend_req( 2, 1, 0 ) ).expect("success");
-    let gap2 = sm.register_recv( &builder::build_new_order_single( 6, false, "cl1", "AAPL",  100.0, 172.2,  FieldSideEnum::Buy, FieldOrdTypeEnum::Market) ).expect("success");
 
-    assert_eq!("us operational - them resync", format!("{}", sm));
+    assert_eq!("sender operational - target resync (1, 5)", format!("{}", sm));
+    let gap2 = sm.register_recv( &builder::build_new_order_single( 6, false, "cl1", "AAPL",  100.0, 172.2,  FieldSideEnum::Buy, FieldOrdTypeEnum::Market) ).expect("success");
+    assert_eq!("sender operational - target resync (1, 6)", format!("{}", sm));
+
     match gap1 {
         TransitionAction::RequestResendRange(range) => {
             assert_eq!( (1, 5), range );
@@ -198,7 +201,10 @@ fn test_when_server_in_resync_receiving_ordered_should_fill_gap() {
 
     let _  = sm.register_sent( &builder::build_logon( 1, None ) ).expect("success");
     let _  = sm.register_recv( &builder::build_logon( 5, None ) ).expect("success");
+    assert_eq!("sender operational - target resync (1, 5)", format!("{}", sm));
     let _  = sm.register_sent( &builder::build_resend_req( 2, 1, 0 ) ).expect("success");
+//    assert_eq!("sender operational - target resync (1, 5)", format!("{}", sm));
+
     let r1 = sm.register_recv( &builder::build_new_order_single( 1, true, "cl1", "AAPL",  100.0, 172.2,  FieldSideEnum::Buy, FieldOrdTypeEnum::Market) ).expect("success");
     let r2 = sm.register_recv( &builder::build_new_order_single( 2, true, "cl2", "AAPL",  100.0, 172.2,  FieldSideEnum::Buy, FieldOrdTypeEnum::Market) ).expect("success");
     let r3 = sm.register_recv( &builder::build_new_order_single( 3, true, "cl3", "AAPL",  100.0, 172.2,  FieldSideEnum::Buy, FieldOrdTypeEnum::Market) ).expect("success");
@@ -213,7 +219,7 @@ fn test_when_server_in_resync_receiving_ordered_should_fill_gap() {
     println!("5 {:?}", r5);
     println!("6 {:?}", r6);
 
-    assert_eq!("us operational - them operational", format!("{}", sm));
+    assert_eq!("sender operational - target operational", format!("{}", sm));
 //    match gap1 {
 //        TransitionAction::RequestResendRange(range) => {
 //            assert_eq!( (1, 5), range );
@@ -242,7 +248,7 @@ fn test_when_server_in_resync_receiving_gap_should_make_them_operational() {
     let _ = sm.register_recv( &builder::build_new_order_single( 4, true, "cl4", "AAPL",  100.0, 172.2,  FieldSideEnum::Buy, FieldOrdTypeEnum::Market) ).expect("success");
     let _ = sm.register_recv( &builder::build_new_order_single( 5, true, "cl5", "AAPL",  100.0, 172.2,  FieldSideEnum::Buy, FieldOrdTypeEnum::Market) ).expect("success");
 
-    assert_eq!("us operational - them operational", format!("{}", sm));
+    assert_eq!("sender operational - target operational", format!("{}", sm));
 }
 
 #[test]
@@ -253,12 +259,12 @@ fn test_logon_with_reset_should_reset_target_seq_as_requested() {
     assert_eq!(store.lock().unwrap().next_sender_seq_num(), 10);
     assert_eq!(store.lock().unwrap().next_target_seq_num(), 20);
 
-    let _ = sm.register_sent( &builder::build_logon( 1, Some(true) ) ).expect("success");
-    let _ = sm.register_recv( &builder::build_logon( 1, Some(true) ) ).expect("success");
+    let _ = sm.register_sent( &builder::build_logon( 10, Some(true) ) ).expect("success");
+    let _ = sm.register_recv( &builder::build_logon( 20, Some(true) ) ).expect("success");
 
-    assert_eq!(store.lock().unwrap().next_sender_seq_num(), 10);
-    assert_eq!(store.lock().unwrap().next_target_seq_num(), 2);
-    assert_eq!("us operational - them operational", format!("{}", sm));
+    assert_eq!(store.lock().unwrap().next_target_seq_num(), 1);
+    assert_eq!(store.lock().unwrap().next_sender_seq_num(), 1);
+    assert_eq!("sender operational - target operational", format!("{}", sm));
 }
 
 #[test]
@@ -270,7 +276,7 @@ fn test_processing_resends_not_complete() {
     let _ = sm.register_recv( &builder::build_logon( 1, None ) ).expect("success");
     let _ = sm.register_recv( &builder::build_resend_req( 2, 2, 5 ) ).expect("success");
 
-    assert_eq!("us resync - them operational", format!("{}", sm));
+    assert_eq!("sender resync (2, 5) - target operational", format!("{}", sm));
 }
 
 #[test]
@@ -283,7 +289,7 @@ fn test_responding_to_a_resend_request_with_a_full_gap_fill_should_make_us_opera
     let _ = sm.register_recv( &builder::build_resend_req( 2, 2, 5 ) ).expect("success");
     let _ = sm.register_sent( &builder::build_sequence_reset( 2, 6, Some(true) ) ).expect("success");
 
-    assert_eq!("us operational - them operational", format!("{}", sm));
+    assert_eq!("sender operational - target operational", format!("{}", sm));
 }
 
 #[test]
@@ -296,7 +302,7 @@ fn test_processing_resends_with_partial_seq_reset_should_not_consider_it_operati
     let _ = sm.register_recv( &builder::build_resend_req( 2, 2, 5 ) ).expect("success");
     let _ = sm.register_sent( &builder::build_sequence_reset( 2, 5, Some(true) ) ).expect("success");
 
-    assert_eq!("us resync - them operational", format!("{}", sm));
+    assert_eq!("sender resync (5, 5) - target operational", format!("{}", sm));
 }
 
 fn create_store<F>( f : F ) -> Rc<Mutex<MemoryMessageStore>>

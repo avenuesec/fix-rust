@@ -40,7 +40,9 @@ pub fn build_sequence_reset( seq: i32, new_seq: i32, gap_fill: Option<bool> ) ->
         .. Default::default()
     };
     let msg = FixMessage::SequenceReset(Box::new(flds));
-    FixFrame::new(seq, "sender", "target", "FIX.4.2", msg)
+    let mut frame = FixFrame::new(seq, "sender", "target", "FIX.4.2", msg);
+    frame.header.poss_dup_flag = Some(true);
+    frame
 }
 
 pub fn build_test_req( seq: i32, test_req_id: &str ) -> FixFrame {
