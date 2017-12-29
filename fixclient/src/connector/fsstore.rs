@@ -57,13 +57,13 @@ impl FSMessageStore {
             FSMessageStore::restore_offsets(header_path_buf.as_path())?;
         debug!("initial store state: sender_seq {} - target: {} - session creation {}", sender_seq_num, target_seq_num, session_creation);
 
-        let mut seqs_file = OpenOptions::new().write(true).create(true).open(seqs_path_buf.as_path())?;
+        let seqs_file = OpenOptions::new().write(true).create(true).open(seqs_path_buf.as_path())?;
         let mut messages = OpenOptions::new().create(true).write(true).read(true).open(messages_path_buf.as_path())?;
         let mut headers  = OpenOptions::new().write(true).create(true).append(true).open(header_path_buf.as_path())?;
-        let mut session = OpenOptions::new().write(true).create(true).truncate(true).open(session_path_buf.as_path())?;
+        let session = OpenOptions::new().write(true).create(true).truncate(true).open(session_path_buf.as_path())?;
 
         let messages_pos = messages.seek(SeekFrom::End(0))?;
-        headers.seek(SeekFrom::End(0));
+        headers.seek(SeekFrom::End(0))?;
 
         let state = MessageStoreState::new_with(sender_seq_num, target_seq_num);
 
@@ -243,7 +243,7 @@ impl MessageStore for FSMessageStore {
     fn sent(&mut self, frame: &FixFrame) -> io::Result<()> {
         let offset = self.persist_message(frame)?;
 
-        self.persist_message_offset(offset);
+        self.persist_message_offset(offset)?;
 
         Ok( () )
     }

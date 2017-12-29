@@ -13,7 +13,9 @@ use fix::frame::FixFrame;
 use super::super::FixSessionConfig;
 use super::MessageStore;
 use super::super::Sender;
-use super::statemachine::*;
+// use super::statemachine::*;
+use super::statemac2::*;
+use super::resendresponse::*;
 
 
 const EVKIND_SENDER_TIMEOUT : Token = Token(0);
@@ -59,7 +61,7 @@ impl <Store> SessionStateImpl <Store>
     }
 
     pub fn is_operational(&self) -> bool {
-        self.state_machine.is_operational()
+        self.state_machine.are_both_operational()
     }
 
     fn update_last_sent(&mut self) {
@@ -120,7 +122,7 @@ impl <Store> SessionStateImpl <Store>
 
             // let _ = Rc::get_mut(&mut self.store).unwrap().reset_seqs();
             if let Ok(mut store) = self.store.try_lock() {
-                store.reset_seqs();
+                let _ = store.reset_seqs();
             }
         }
 
@@ -145,9 +147,9 @@ impl <Store> SessionStateImpl <Store>
         self.sender.as_ref().map(move |s| s.send_self(message) );
     }
 
-    fn post_resend(&self, message: FixFrame) {
+    fn post_resend(&self, frame: FixFrame) {
 
-        self.sender.as_ref().map(move |s| s.send_self_frame(message) );
+        self.sender.as_ref().map(move |s| s.send_self_frame(frame) );
     }
 
     fn post_disconnect(&mut self, reason : &str) -> io::Result<()> {
@@ -167,58 +169,42 @@ impl <Store> SessionStateImpl <Store>
         Ok( () )
     }
 
-    fn validate_incoming(&self, frame: &FixFrame) -> io::Result<()> {
-
-        // TODO: validate sender, target, time within session timespan
-        //
-
-        Ok( () )
-    }
-
-    fn ack_sequence_reset(&mut self, new_seq_number: i32, gap_fill : Option<bool>) -> io::Result<()> {
-
-        Ok( () )
-    }
-
-    /// tries to fulfill request from the other side to supply missing messages
-    /// we may send them or generate a sequence reset if there's a gap
-    fn ack_resend_request(&mut self, start : i32, end : i32) -> io::Result<()> {
-
-        let mut entries = self.state_machine.build_resend_request_response( start, end );
-
-
-
-        Ok( () )
-    }
-
-    fn send_sequence_reset(&mut self, seq_to_use: i32, new_seq_no: i32) -> io::Result<()> {
-        let flds = SequenceResetFields {
-            gap_fill_flag: Some(true),
-            new_seq_no,
+    /// resends messages within the given range
+    fn do_resend(&mut self, start : i32, end : i32) -> io::Result<()> {
+        let mut entries = {
+            if let Ok(mut store) = self.store.try_lock() {
+                build_resend_request_response::<Store>( &mut store, start, end )?
+            } else {
+                panic!("could not obtain lock");
+            }
         };
 
-        let message = FixMessage::SequenceReset(Box::new(flds));
-        let frame = self.build(message, false)?;
-        let mut frame = self.build_for_resend(frame)?;
-        frame.header.msg_seq_num = seq_to_use;
-
-        self.post_resend( frame );
+        for entry in entries.drain(0..) {
+            let frame = self.build_frame( entry );
+            self.post_resend( frame );
+        }
 
         Ok( () )
     }
 
-    fn send_resend_request(&mut self, start: i32) -> io::Result<()> {
+    fn build_frame(&mut self, message: MessageToReSend) -> io::Result<FixFrame> {
+        let mut frame = self.build(message.message, false)?;
+        frame.header.msg_seq_num = message.seq;
+        frame.header.orig_sending_time = Some( message.orig_sending_time );
+        frame.header.poss_dup_flag = Some(true);
+        Ok( frame )
+    }
+
+    /// sends a ResendRequest message request a range (gap fill) from the other party
+    fn request_resend(&mut self, start: i32, end: i32) -> io::Result<()> {
         let flds = ResendRequestFields {
             begin_seq_no: start,
+            // end_seq_no: end,
             end_seq_no: 0,
         };
         let message = FixMessage::ResendRequest(Box::new(flds));
-        let frame = self.build(message, true)?;
 
-//        let mut frame = self.build_for_resend(frame)?;
-//        frame.header.msg_seq_num = start;
-
-        // self.post_send( frame );
+        self.post_send(message);
 
         Ok( () )
     }
@@ -240,7 +226,7 @@ impl <Store> SessionState for SessionStateImpl <Store> where Store : MessageStor
         if reset_seq_num_flag {
             // Rc::get_mut(&mut self.store).unwrap().reset_seqs();
             if let Ok(mut store) = self.store.try_lock() {
-                store.reset_seqs();
+                let _ = store.reset_seqs();
             } else {
                 panic!( "could not obtain lock" );
             }
@@ -289,16 +275,6 @@ impl <Store> SessionState for SessionStateImpl <Store> where Store : MessageStor
         Ok ( frame )
     }
 
-    fn build_for_resend(&mut self, original: FixFrame) -> io::Result<FixFrame> {
-
-        let mut copy = original.clone();
-        copy.header.poss_dup_flag = Some(true);
-        copy.header.orig_sending_time = Some(original.header.sending_time.clone());
-        copy.header.sending_time = UtcDateTime::now();
-
-        Ok ( copy )
-    }
-
     fn received(&mut self, frame: &FixFrame) -> io::Result<()> {
         // record incoming
         if let Ok(mut store) = self.store.try_lock() {
@@ -309,18 +285,19 @@ impl <Store> SessionState for SessionStateImpl <Store> where Store : MessageStor
 
         self.update_last_recv();
 
+        // if it's a session level:
         match self.state_machine.register_recv( &frame )? {
             TransitionAction::RequestResendRange( range ) => {
-                // self.send_resend_request( start )?;
+                self.request_resend( range.0, range.1 )?;
                 return Ok( () )
             },
             TransitionAction::DoResendRange( range ) => {
-                // self.resend( range.0, range.1 )?;
+                self.do_resend( range.0, range.1 )?;
                 return Ok( () )
             },
             TransitionAction::DoResendAndRequestRange( (send_range, req_range) ) => {
-                // self.resend( range.0, range.1 )?;
-                // self.send_resend_request( start )?;
+                self.do_resend( send_range.0, send_range.1 )?;
+                self.request_resend( req_range.0, req_range.1 )?;
                 return Ok( () )
             },
             TransitionAction::LogoutWith( reason ) => {
@@ -330,33 +307,6 @@ impl <Store> SessionState for SessionStateImpl <Store> where Store : MessageStor
             TransitionAction::None => {}
         }
 
-        // we have to process admin level messages, and pass thru app level messages
-//        match &frame.message {
-//            &FixMessage::Logon(ref flds) => {
-//                self.ack_logon_received( flds.as_ref() );
-//            },
-//            &FixMessage::Logout(ref flds) => {
-//                self.ack_logout_received(flds.as_ref());
-//            },
-//            &FixMessage::ResendRequest(ref flds) => {
-//                self.ack_resend_request(flds.begin_seq_no, flds.end_seq_no)?;
-//            },
-//            &FixMessage::SequenceReset(ref flds) => {
-//                self.ack_sequence_reset( flds.new_seq_no, flds.gap_fill_flag )?;
-//            },
-//            &FixMessage::TestRequest(ref flds) => {
-//                self.validate_incoming(&frame)?;
-//                self.send_hearbeat_in_response(&flds.test_req_id)
-//            },
-//            &FixMessage::Heartbeat(ref flds) => {
-//                self.validate_incoming(&frame)?;
-//                self.ack_hearbeat_received(&flds.test_req_id);
-//            }
-//            _ => {
-//                self.validate_incoming(&frame)?;
-//            }
-//        }
-
         Ok( () )
     }
 
@@ -364,25 +314,6 @@ impl <Store> SessionState for SessionStateImpl <Store> where Store : MessageStor
 
         // record outgoing
         self.state_machine.register_sent( &frame )?;
-
-//        match &frame.message {
-//
-//            &FixMessage::Logon(ref flds) => {
-//                // self.state_machine.outgoing_logon()?;
-//            },
-//            &FixMessage::Logout(_) => {
-//                // self.state_machine.outgoing_logout()?;
-//            },
-//            &FixMessage::ResendRequest(_) => {
-//                // self.state_machine.outgoing_resend()?;
-//            },
-//            &FixMessage::SequenceReset(_) => {
-//                // self.state_machine.outgoing_seqreset()?;
-//            },
-//            _ => {
-//                // nothing to do
-//            }
-//        }
 
         self.update_last_sent();
 
@@ -437,8 +368,8 @@ impl <Store> SessionState for SessionStateImpl <Store> where Store : MessageStor
 
         drop(self.state_machine);
 
-        if let Ok(mut store) = Rc::try_unwrap(self.store) {
-            store.into_inner().unwrap().close();
+        if let Ok(store) = Rc::try_unwrap(self.store) {
+            let _ = store.into_inner().unwrap().close();
         }
 
         Ok( () )

@@ -57,6 +57,10 @@ impl <Store : MessageStore> FixSyncState <Store> {
         }
     }
 
+    pub fn are_both_operational(&self) -> bool {
+        self.sender.is_operational() && self.sender.is_operational()
+    }
+
     pub fn register_sent(&mut self, frame: &FixFrame) -> io::Result<()> {
         self.incr_sent();
 
@@ -404,6 +408,13 @@ impl PartyState {
         PartyState {
             state: FixPartyState::Connected,
             gap: MessageGap::new(),
+        }
+    }
+
+    fn is_operational(&self) -> bool {
+        match self.state {
+            FixPartyState::Operational => true,
+            _ => false
         }
     }
 

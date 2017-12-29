@@ -149,10 +149,10 @@ pub trait FixHandler {
     /// This is trigged when a message is send through [Sender::send_self_frame]
     fn before_resend(&mut self, message: fix::frame::FixFrame);
 
-    /// Hook to allow app code to confirm or deny resending messages
-    fn confirm_resend(&mut self, message: &fix::frame::FixFrame) -> bool {
-        true
-    }
+    // Hook to allow app code to confirm or deny resending messages
+//    fn confirm_resend(&mut self, message: &fix::frame::FixFrame) -> bool {
+//        true
+//    }
 }
 
 // Super cool way of adapting a Fn to a trait

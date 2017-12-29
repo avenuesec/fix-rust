@@ -203,7 +203,7 @@ fn test_when_server_in_resync_receiving_ordered_should_fill_gap() {
     let _  = sm.register_recv( &builder::build_logon( 5, None ) ).expect("success");
     assert_eq!("sender operational - target resync (1, 5)", format!("{}", sm));
     let _  = sm.register_sent( &builder::build_resend_req( 2, 1, 0 ) ).expect("success");
-//    assert_eq!("sender operational - target resync (1, 5)", format!("{}", sm));
+    assert_eq!("sender operational - target resync (1, 5)", format!("{}", sm));
 
     let r1 = sm.register_recv( &builder::build_new_order_single( 1, true, "cl1", "AAPL",  100.0, 172.2,  FieldSideEnum::Buy, FieldOrdTypeEnum::Market) ).expect("success");
     let r2 = sm.register_recv( &builder::build_new_order_single( 2, true, "cl2", "AAPL",  100.0, 172.2,  FieldSideEnum::Buy, FieldOrdTypeEnum::Market) ).expect("success");
@@ -212,26 +212,13 @@ fn test_when_server_in_resync_receiving_ordered_should_fill_gap() {
     let r5 = sm.register_recv( &builder::build_new_order_single( 5, true, "cl5", "AAPL",  100.0, 172.2,  FieldSideEnum::Buy, FieldOrdTypeEnum::Market) ).expect("success");
     let r6 = sm.register_recv( &builder::build_new_order_single( 6, false, "cl6", "AAPL",  100.0, 172.2,  FieldSideEnum::Buy, FieldOrdTypeEnum::Market) ).expect("success");
 
-    println!("1 {:?}", r1);
-    println!("2 {:?}", r2);
-    println!("3 {:?}", r3);
-    println!("4 {:?}", r4);
-    println!("5 {:?}", r5);
-    println!("6 {:?}", r6);
-
     assert_eq!("sender operational - target operational", format!("{}", sm));
-//    match gap1 {
-//        TransitionAction::RequestResendRange(range) => {
-//            assert_eq!( (1, 5), range );
-//        },
-//        _ => panic!("expecting RequestResendRange")
-//    }
-//    match gap2 {
-//        TransitionAction::RequestResendRange(range) => {
-//            assert_eq!( (1, 6), range );
-//        },
-//        _ => panic!("expecting RequestResendRange")
-//    }
+    assert!( r1.is_none() );
+    assert!( r2.is_none() );
+    assert!( r3.is_none() );
+    assert!( r4.is_none() );
+    assert!( r5.is_none() );
+    assert!( r6.is_none() );
 }
 
 #[test]

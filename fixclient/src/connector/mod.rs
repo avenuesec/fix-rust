@@ -16,8 +16,9 @@ pub mod handler;
 pub mod session;
 pub mod fsstore;
 pub mod memstore;
-pub mod statemachine;
+//pub mod statemachine;
 pub mod statemac2;
+pub mod resendresponse;
 
 
 #[derive(Clone)]
@@ -45,6 +46,10 @@ pub trait UserHandlerFactory {
 }
 pub trait UserHandler {
     fn on_new_order_single(&mut self, message: &NewOrderSingleFields) -> io::Result<()>;
+
+    fn should_resend(&self, message: &FixFrame) -> bool {
+        true
+    }
 }
 
 // Super cool way of adapting a Fn to a trait
@@ -132,7 +137,7 @@ pub trait SessionState {
 
     fn build(&mut self, message: FixMessage, fill_seq: bool) -> io::Result<FixFrame>;
 
-    fn build_for_resend(&mut self, original: FixFrame) -> io::Result<FixFrame>;
+    // fn build_for_resend(&mut self, original: FixFrame) -> io::Result<FixFrame>;
 
     fn sent(&mut self, frame: &FixFrame) -> io::Result<()>;
 

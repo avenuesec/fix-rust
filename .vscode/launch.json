@@ -8,8 +8,8 @@
             "type": "lldb",
             "request": "launch",
             "name": "Debug",
-            "program": "/Users/hammett/dev/fix-rust/target/debug/message_building-d37788a1bf1cee7b",
-            "args": [],
+            "program": "/Users/hammett/dev/fix-rust/target/debug/deps/statemachine_test-d7ab8b2d18d7fb67",
+            "args": ["test_detecting_gap_from_server"],
             "cwd": "/Users/hammett/dev/fix-rust/fixclient"
         }
     ]

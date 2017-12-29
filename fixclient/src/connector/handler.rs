@@ -1,4 +1,3 @@
-
 //! default handler that delegates to pipelines and coordinates session state and message persistence
 
 // use std::sync::Arc;
@@ -21,12 +20,13 @@ use super::super::{FixHandler, FixSessionConfig};
 
 pub struct DefaultHandler <State,UserF>
     where State : SessionState,
-          UserF : UserHandlerFactory {
+          UserF : UserHandlerFactory{
     sender: Sender,
     user_handler: UserF::Handler,
     user_handler_factory: PhantomData<UserF>,
     state : State,
     heart_bt: i32,
+    // callback_resend: Fn( &FixFrame ) -> bool, // Box<Fn( &FixFrame ) -> bool>,
 }
 
 impl <State,UserF> DefaultHandler <State,UserF>
@@ -35,10 +35,13 @@ impl <State,UserF> DefaultHandler <State,UserF>
 
     pub fn new(sender: Sender, settings: FixSessionConfig, state: State, mut user_handler_f: UserF) -> Self {
         // info!("send new");
-
         let user_handler = { 
             user_handler_f.build(UserSender { sender: sender.clone() }) 
         };
+
+//        let fn_a : Fn(&FixFrame) -> bool = | frame: &FixFrame | {
+//            user_handler.should_resend( frame )
+//        };
 
         DefaultHandler {
             sender: sender.clone(), 
@@ -46,6 +49,7 @@ impl <State,UserF> DefaultHandler <State,UserF>
             user_handler_factory: PhantomData::default(),
             heart_bt: settings.heart_beat as i32,
             state,
+            // callback_resend: fn_a,
         }
     }
 
@@ -53,7 +57,6 @@ impl <State,UserF> DefaultHandler <State,UserF>
         info!("DefaultHandler init");
 
         self.state.init( self.sender.clone() );
-
     }
 
     fn send(&mut self, message: FixMessage) -> io::Result<()> {
@@ -71,11 +74,12 @@ impl <State,UserF> DefaultHandler <State,UserF>
     fn resend(&mut self, frame: FixFrame) -> io::Result<()> {
         info!("DefaultHandler resend");
 
-        let frame = self.state.build_for_resend(frame)?;
+        // must have these filled up
+        assert_eq!(true, frame.header.poss_dup_flag.map_or(false, |v| v));
+        assert_eq!(true, frame.header.orig_sending_time.is_some());
 
-        // should we persist resends?
-        // self.state.sent(&frame)?;
-
+        // let frame = self.state.build_for_resend(frame)?;
+        self.state.sent(&frame)?;
         self.sender.send(frame)?;
 
         Ok( () )
@@ -118,13 +122,13 @@ impl <State,UserF> FixHandler for DefaultHandler <State,UserF>
 
         // indicates the handler is about to be destroyed, so we should close everything
 
-        self.state.close();
+        let _ = self.state.close();
     }
 
     fn on_disconnected(self) {
         info!("DefaultHandler handler on_disconnected");
 
-        self.state.close();
+        let _ = self.state.close();
     }
 
     /// invoked when someone calls Sender.send(fixmessage)
