@@ -57,7 +57,7 @@ impl<T : FixHandler> Conn<T> {
         let total = self.read_all()?;
 
         if total == 0 {
-            self.disconnected();
+            // self.disconnected();
             return Err(io::Error::new(io::ErrorKind::ConnectionReset, "connection closed by server"))
         } else {
             debug!("total read {}", total);
@@ -170,12 +170,12 @@ impl<T : FixHandler> Conn<T> {
     pub fn disconnect(self) {
         let h = self.handler;
         h.on_disconnected();
-        self.socket.shutdown(Shutdown::Both);
+        let _ = self.socket.shutdown(Shutdown::Both);
     }
 
-    fn disconnected(&mut self) {
-
-    }
+//    fn disconnected(&mut self) {
+//
+//    }
 
     fn handle_frames(&mut self) {
         // generators would be awesome here :-\ (yield frame) etc..

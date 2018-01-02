@@ -14,7 +14,7 @@ pub struct MemoryMessageStore {
 
 impl MemoryMessageStore {
 
-    pub fn new( cfg: &FixSessionConfig ) -> io::Result<MemoryMessageStore> {
+    pub fn new( _cfg: &FixSessionConfig ) -> io::Result<MemoryMessageStore> {
         Ok( MemoryMessageStore {
             state : MessageStoreState::new(),
             messages: vec![],
@@ -33,7 +33,7 @@ impl MemoryMessageStore {
 
 impl MessageStore for MemoryMessageStore {
 
-    fn init(&mut self, sender: Sender) {
+    fn init(&mut self, _sender: Sender) {
     }
 
     fn overwrite_target_seq(&mut self, new_seq: i32) -> io::Result<()> {
@@ -51,7 +51,7 @@ impl MessageStore for MemoryMessageStore {
         Ok( () )
     }
 
-    fn received(&mut self, frame: &FixFrame) -> io::Result<()> {
+    fn received(&mut self, _frame: &FixFrame) -> io::Result<()> {
         Ok( () )
     }
 

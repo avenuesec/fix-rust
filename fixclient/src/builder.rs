@@ -98,6 +98,7 @@ pub fn build_exec_report( seq: i32, poss_dup: bool, cl_ord_id: &str, order_id: &
         leaves_qty, cum_qty, avg_px,
         ord_status,
         exec_type,
+        side,
         .. Default::default()
     };
     let msg = FixMessage::ExecutionReport(Box::new(flds));

@@ -1,3 +1,5 @@
+//! Manages fix party status and handles message synchronization
+
 extern crate core;
 
 use std::io;
@@ -68,7 +70,7 @@ impl <Store : MessageStore> FixSyncState <Store> {
 
         // sender: if we're in sync, has the gap been filled?
         if self.sender.has_sync_pending() {
-            let msg_seq = frame.header.msg_seq_num;
+            // let msg_seq = frame.header.msg_seq_num;
             assert_eq!( is_poss_dup, true );
             let fill_range = FixSyncState::<Store>::extract_range( &frame )?;
             println!("sender: filling range {:?} gap {:?}", fill_range, self.sender.gap);
@@ -76,7 +78,7 @@ impl <Store : MessageStore> FixSyncState <Store> {
         }
 
         if is_poss_dup == false {
-            let next = self.increment_sender_seq_num()?;
+            self.increment_sender_seq_num()?;
             // assert_eq!( next, frame.header.msg_seq_num );
 
             match &frame.message {

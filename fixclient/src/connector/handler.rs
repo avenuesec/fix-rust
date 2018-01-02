@@ -1,6 +1,5 @@
 //! default handler that delegates to pipelines and coordinates session state and message persistence
 
-// use std::sync::Arc;
 use std::io;
 use std::marker::PhantomData;
 
@@ -12,7 +11,7 @@ use mio_more::timer;
 use fix::frame::*;
 use fix::fixmessagegen::*;
 use super::super::Sender;
-use super::{SessionState, UserHandlerFactory, UserSender};
+use super::{SessionState, UserHandler, UserHandlerFactory, UserSender};
 
 // needs to be driven by:
 use super::super::{FixHandler, FixSessionConfig};
@@ -39,17 +38,12 @@ impl <State,UserF> DefaultHandler <State,UserF>
             user_handler_f.build(UserSender { sender: sender.clone() }) 
         };
 
-//        let fn_a : Fn(&FixFrame) -> bool = | frame: &FixFrame | {
-//            user_handler.should_resend( frame )
-//        };
-
         DefaultHandler {
             sender: sender.clone(), 
             user_handler,
             user_handler_factory: PhantomData::default(),
             heart_bt: settings.heart_beat as i32,
             state,
-            // callback_resend: fn_a,
         }
     }
 
@@ -62,10 +56,12 @@ impl <State,UserF> DefaultHandler <State,UserF>
     fn send(&mut self, message: FixMessage) -> io::Result<()> {
         info!("DefaultHandler send");
 
-        let frame = self.state.build(message, true)?;
+        let frame = self.state.build_frame(message, true)?;
+
+        assert_eq!(false, frame.header.poss_dup_flag.map_or(false, |v| v));
+        assert_eq!(false, frame.header.orig_sending_time.is_some());
 
         self.state.sent(&frame)?;
-
         self.sender.send(frame)?;
 
         Ok( () )
@@ -78,7 +74,6 @@ impl <State,UserF> DefaultHandler <State,UserF>
         assert_eq!(true, frame.header.poss_dup_flag.map_or(false, |v| v));
         assert_eq!(true, frame.header.orig_sending_time.is_some());
 
-        // let frame = self.state.build_for_resend(frame)?;
         self.state.sent(&frame)?;
         self.sender.send(frame)?;
 
@@ -113,6 +108,26 @@ impl <State,UserF> FixHandler for DefaultHandler <State,UserF>
         info!("DefaultHandler on_message called for {:?}", frame);
 
         self.state.received(&frame)?;
+
+        // Calls UserHandler's callbacks
+        match &frame.message {
+            &FixMessage::Reject(ref flds) => {
+                if let Err(err) = self.user_handler.on_reject(flds) {
+                    error!("Error handling reject by user handler: {:?}", err);
+                }
+            },
+            &FixMessage::ExecutionReport(ref flds) => {
+                if let Err(err) = self.user_handler.on_execution_report(flds) {
+                    error!("Error handling execution_report by user handler: {:?}", err);
+                }
+            },
+            &FixMessage::NewOrderSingle(ref flds) => {
+                if let Err(err) = self.user_handler.on_new_order_single(flds) {
+                    error!("Error handling new_order_single by user handler: {:?}", err);
+                }
+            },
+            _ => {  }
+        }
 
         Ok( () )
     }

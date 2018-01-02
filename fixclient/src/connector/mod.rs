@@ -16,8 +16,7 @@ pub mod handler;
 pub mod session;
 pub mod fsstore;
 pub mod memstore;
-//pub mod statemachine;
-pub mod statemac2;
+pub mod syncstate;
 pub mod resendresponse;
 
 
@@ -45,9 +44,13 @@ pub trait UserHandlerFactory {
     fn build(&mut self, sender: UserSender) -> Self::Handler;
 }
 pub trait UserHandler {
+    fn on_reject(&mut self, message: &RejectFields) -> io::Result<()>;
+
+    fn on_execution_report(&mut self, message: &ExecutionReportFields) -> io::Result<()>;
+
     fn on_new_order_single(&mut self, message: &NewOrderSingleFields) -> io::Result<()>;
 
-    fn should_resend(&self, message: &FixFrame) -> bool {
+    fn should_resend(&self, _message: &FixFrame) -> bool {
         true
     }
 }
@@ -102,7 +105,6 @@ impl MessageStoreState {
 }
 
 pub trait MessageStore {
-
     fn init(&mut self, sender: Sender);
 
     fn sent(&mut self, frame: &FixFrame) -> io::Result<()>;
@@ -132,12 +134,9 @@ pub trait MessageStore {
 }
 
 pub trait SessionState {
-
     fn init(&mut self, sender: Sender);
 
-    fn build(&mut self, message: FixMessage, fill_seq: bool) -> io::Result<FixFrame>;
-
-    // fn build_for_resend(&mut self, original: FixFrame) -> io::Result<FixFrame>;
+    fn build_frame(&mut self, message: FixMessage, fill_seq: bool) -> io::Result<FixFrame>;
 
     fn sent(&mut self, frame: &FixFrame) -> io::Result<()>;
 

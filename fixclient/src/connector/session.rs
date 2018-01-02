@@ -13,14 +13,11 @@ use fix::frame::FixFrame;
 use super::super::FixSessionConfig;
 use super::MessageStore;
 use super::super::Sender;
-// use super::statemachine::*;
-use super::statemac2::*;
+use super::syncstate::*;
 use super::resendresponse::*;
-
 
 const EVKIND_SENDER_TIMEOUT : Token = Token(0);
 const EVKIND_RCV_TIMEOUT    : Token = Token(1);
-
 
 pub struct SessionStateImpl <Store>
     where Store : MessageStore {
@@ -43,9 +40,7 @@ impl <Store> SessionStateImpl <Store>
     where Store : MessageStore {
 
     pub fn new( cfg: &FixSessionConfig, store: Store ) -> SessionStateImpl<Store> {
-
         let store = Rc::new( Mutex::new(store) );
-
         SessionStateImpl {
             config: cfg.clone(),
             store: store.clone(),
@@ -68,11 +63,7 @@ impl <Store> SessionStateImpl <Store>
         if !self.is_operational() {
             return
         }
-//        if !self.logon_sent || !self.logon_recv {
-//            return
-//        }
         self.last_sent = Some(Utc::now()); // sys call? need to check
-
         // Cancel existing, if any
         if let Some(timeout) = self.send_timeout.take() {
             self.sender.as_ref().map(move |s| s.cancel_timeout(timeout));
@@ -84,11 +75,7 @@ impl <Store> SessionStateImpl <Store>
         if !self.is_operational() {
             return
         }
-//        if !self.logon_sent || !self.logon_recv {
-//            return
-//        }
         self.last_recv = Some(Utc::now()); // sys call? need to check
-
         // Cancel existing, if any
         if let Some(timeout) = self.recv_timeout.take() {
             self.sender.as_ref().map(move |s| s.cancel_timeout(timeout));
@@ -110,27 +97,23 @@ impl <Store> SessionStateImpl <Store>
         info!("received heartbeat with {:?}", test_req_id );
     }
 
-    fn ack_logout_received(&mut self, flds: &LogoutFields) {
+    fn ack_logout_received(&mut self, _flds: &LogoutFields) {
 
     }
 
     fn ack_logon_received(&mut self, flds: &LogonFields) {
         info!("received server logon with {:?}", flds );
 
-        if flds.reset_seq_num_flag.unwrap_or(false) && !self.config.reset_seq_num {
-            info!("reseting seqs nums as per server request");
-
-            // let _ = Rc::get_mut(&mut self.store).unwrap().reset_seqs();
-            if let Ok(mut store) = self.store.try_lock() {
-                let _ = store.reset_seqs();
-            }
-        }
+//        if flds.reset_seq_num_flag.unwrap_or(false) && !self.config.reset_seq_num {
+//            info!("reseting seqs nums as per server request");
+//            if let Ok(mut store) = self.store.try_lock() {
+//                let _ = store.reset_seqs();
+//            }
+//        }
 
         if flds.heart_bt_int != self.config.heart_beat as i32 {
             info!("server asked for a different hearbeat. our cfg {} - server {}", self.config.heart_beat, flds.heart_bt_int);
         }
-
-//        self.logon_recv = true;
 
         // enable heartbeats/test reqs
 
@@ -143,30 +126,22 @@ impl <Store> SessionStateImpl <Store>
     }
 
     fn post_send(&self, message: FixMessage) {
-
         self.sender.as_ref().map(move |s| s.send_self(message) );
     }
 
     fn post_resend(&self, frame: FixFrame) {
-
         self.sender.as_ref().map(move |s| s.send_self_frame(frame) );
     }
 
-    fn post_disconnect(&mut self, reason : &str) -> io::Result<()> {
-
-        // TODO: Send logout with given reason, then disconnect
-
-        Ok( () )
-    }
-
-    fn resend(&mut self, mut message: FixFrame) -> io::Result<()> {
-        message.header.poss_dup_flag = Some(true);
-        message.header.orig_sending_time = Some( message.header.sending_time.clone() );
-        message.header.sending_time = UtcDateTime::new( Utc::now() );
-
-        self.post_resend( message );
-
-        Ok( () )
+    /// Gracefully disconnects by sending a logout message
+    /// with the reason and then closing the socket
+    fn post_disconnect(&mut self, reason : &str) {
+        let flds = LogoutFields {
+            text: Some(reason.to_owned()),
+            .. Default::default()
+        };
+        self.post_send( FixMessage::Logout(Box::new(flds)) );
+        self.sender.as_ref().map(move |s| s.disconnect() );
     }
 
     /// resends messages within the given range
@@ -180,15 +155,15 @@ impl <Store> SessionStateImpl <Store>
         };
 
         for entry in entries.drain(0..) {
-            let frame = self.build_frame( entry );
+            let frame = self.build_frame_for_resend( entry )?;
             self.post_resend( frame );
         }
 
         Ok( () )
     }
 
-    fn build_frame(&mut self, message: MessageToReSend) -> io::Result<FixFrame> {
-        let mut frame = self.build(message.message, false)?;
+    fn build_frame_for_resend(&mut self, message: MessageToReSend) -> io::Result<FixFrame> {
+        let mut frame = self.build_frame(message.message, false)?;
         frame.header.msg_seq_num = message.seq;
         frame.header.orig_sending_time = Some( message.orig_sending_time );
         frame.header.poss_dup_flag = Some(true);
@@ -199,13 +174,11 @@ impl <Store> SessionStateImpl <Store>
     fn request_resend(&mut self, start: i32, end: i32) -> io::Result<()> {
         let flds = ResendRequestFields {
             begin_seq_no: start,
-            // end_seq_no: end,
-            end_seq_no: 0,
+            end_seq_no: end,
+//            end_seq_no: 0,
         };
         let message = FixMessage::ResendRequest(Box::new(flds));
-
         self.post_send(message);
-
         Ok( () )
     }
 }
@@ -213,8 +186,6 @@ impl <Store> SessionStateImpl <Store>
 impl <Store> SessionState for SessionStateImpl <Store> where Store : MessageStore {
 
     fn init(&mut self, sender: Sender) {
-
-        // Rc::get_mut(&mut self.store).unwrap().init( sender.clone() );
         if let Ok(mut store) = self.store.try_lock() {
             store.init( sender.clone() );
         }
@@ -224,7 +195,6 @@ impl <Store> SessionState for SessionStateImpl <Store> where Store : MessageStor
         let reset_seq_num_flag = self.config.reset_seq_num;
 
         if reset_seq_num_flag {
-            // Rc::get_mut(&mut self.store).unwrap().reset_seqs();
             if let Ok(mut store) = self.store.try_lock() {
                 let _ = store.reset_seqs();
             } else {
@@ -245,11 +215,9 @@ impl <Store> SessionState for SessionStateImpl <Store> where Store : MessageStor
         self.post_send( logon_message );
     }
 
-    fn build(&mut self, message: FixMessage, fill_seq: bool) -> io::Result<FixFrame> {
-
+    fn build_frame(&mut self, message: FixMessage, fill_seq: bool) -> io::Result<FixFrame> {
         let next_seq = {
             if fill_seq {
-                // Rc::get_mut(&mut self.store).unwrap().incr_sender_seq_num()?
                 if let Ok(mut store) = self.store.try_lock() {
                     store.incr_sender_seq_num()?
                 } else {
@@ -285,6 +253,14 @@ impl <Store> SessionState for SessionStateImpl <Store> where Store : MessageStor
 
         self.update_last_recv();
 
+        // Logon needs special treatment
+        if frame.message.msg_type() == FieldMsgTypeEnum::Logon {
+            match &frame.message {
+                &FixMessage::Logon(ref flds) => { self.ack_logon_received(flds); },
+                _ => { }
+            }
+        }
+
         // if it's a session level:
         match self.state_machine.register_recv( &frame )? {
             TransitionAction::RequestResendRange( range ) => {
@@ -301,10 +277,17 @@ impl <Store> SessionState for SessionStateImpl <Store> where Store : MessageStor
                 return Ok( () )
             },
             TransitionAction::LogoutWith( reason ) => {
-                // self.post_disconnect( reason )?;
+                self.post_disconnect( reason );
                 return Ok( () )
             },
             TransitionAction::None => {}
+        }
+
+        match &frame.message {
+            &FixMessage::Logout(ref flds)      => self.ack_logout_received( flds ),
+            &FixMessage::TestRequest(ref flds) => self.send_hearbeat_in_response( &flds.test_req_id ),
+            &FixMessage::Heartbeat(ref flds)   => self.ack_hearbeat_received( &flds.test_req_id ),
+            _ => { }
         }
 
         Ok( () )
@@ -317,7 +300,6 @@ impl <Store> SessionState for SessionStateImpl <Store> where Store : MessageStor
 
         self.update_last_sent();
 
-        // Rc::get_mut(&mut self.store).unwrap().sent( frame )?;
         if let Ok(mut store) = self.store.try_lock() {
             store.sent( frame )?
         } else {

@@ -203,8 +203,7 @@ impl FSMessageStore {
         write!( &mut self.headers, "{},{},{} ", seq, pos, len)
     }
 
-    fn load_message(&mut self, seq: i32, offset: (usize, usize) ) -> io::Result<FixFrame> {
-
+    fn load_message(&mut self, offset: (usize, usize) ) -> io::Result<FixFrame> {
         // TODO: try cache first, then file
 
         let (pos, len) = offset;
@@ -282,7 +281,7 @@ impl MessageStore for FSMessageStore {
                 };
 
             if offset.is_some() {
-                if let Ok(frame) = self.load_message( seq, offset.unwrap() ) {
+                if let Ok(frame) = self.load_message( offset.unwrap() ) {
                     messages.push( frame );
                 }
             }

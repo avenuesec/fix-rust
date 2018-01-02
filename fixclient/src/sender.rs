@@ -101,4 +101,14 @@ impl Sender {
         }
         Ok( () )
     }
+
+    pub fn disconnect(&self) -> io::Result<()> {
+        debug!("sender {:?} - disconnect ", self.token);
+
+        let cmd = Command::new( self.token, CommandAction::Disconnect );
+        if let Err(err) = self.queue_tx.send( cmd ) {
+            return Err(io::Error::new( io::ErrorKind::Other, err) )
+        }
+        Ok( () )
+    }
 }

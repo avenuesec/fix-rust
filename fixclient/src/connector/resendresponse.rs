@@ -2,7 +2,6 @@
 use std::io;
 
 use super::MessageStore;
-use super::UserHandler;
 
 use fix::frame::FixFrame;
 use fix::fixmessagegen::*;
@@ -12,7 +11,6 @@ pub struct MessageToReSend {
     pub orig_sending_time: UtcDateTime,
     pub message: FixMessage,
 }
-
 
 /// gathers the messages that need to be resent
 pub fn build_resend_request_response<Store>(store : &mut Store, /*f : F,*/ start: i32, end: i32) -> io::Result<Vec<MessageToReSend>>
@@ -74,12 +72,10 @@ pub fn build_resend_request_response<Store>(store : &mut Store, /*f : F,*/ start
         }
     };
 
-//    if new_end > self.get_next_sender_seq_num() {
-//        if let Ok(mut store) = self.store.try_lock() {
-//            info!("overwrite_sender_seq to new seq {}", new_end);
-//            store.overwrite_sender_seq( new_end );
-//        }
-//    }
+    if new_end > store.next_sender_seq_num() {
+        info!("overwrite_sender_seq to new seq {}", new_end);
+        store.overwrite_sender_seq( new_end )?;
+    }
 
     Ok( result )
 }

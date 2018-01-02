@@ -5,7 +5,7 @@ use std::rc::Rc;
 use std::sync::Mutex;
 
 use fixclient::{FixSessionConfig, FixDictionary};
-use fixclient::connector::statemac2::*;
+use fixclient::connector::syncstate::*;
 use fixclient::connector::memstore::*;
 use fixclient::connector::MessageStore;
 use fixclient::builder;
