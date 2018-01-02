@@ -50,9 +50,9 @@ pub trait UserHandler {
 
     fn on_new_order_single(&mut self, message: &NewOrderSingleFields) -> io::Result<()>;
 
-    fn should_resend(&self, _message: &FixFrame) -> bool {
-        true
-    }
+//    fn should_resend(&self, _message: &FixFrame) -> bool {
+//        true
+//    }
 }
 
 // Super cool way of adapting a Fn to a trait
