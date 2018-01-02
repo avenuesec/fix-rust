@@ -22,7 +22,7 @@ use fixmessage::*;
 
 use std::fmt::{self, Debug, Formatter, Display, Error};
 
-#[derive(PartialEq,Debug,Serialize,Deserialize,Default,Clone)]
+#[derive(PartialEq,Serialize,Deserialize,Default,Clone)]
 pub struct FixHeader {
     pub begin_string : Cow<'static, str>,
     {{#each header.fields as |f| }}
@@ -38,7 +38,7 @@ impl Debug for FixHeader {
         d.field("sender", &self.sender_comp_id);
         d.field("target", &self.target_comp_id);
         d.field("seq", &self.msg_seq_num);
-        d.field("orig_sending_time", &self.orig_sending_time);
+        d.field("sending_time", &self.sending_time);
 
         if self.on_behalf_of_comp_id.is_some() {
             d.field("on_behalf_of_comp_id", &self.on_behalf_of_comp_id);
@@ -46,8 +46,8 @@ impl Debug for FixHeader {
         if self.poss_dup_flag.is_some() {
             d.field("poss_dup_flag", &self.poss_dup_flag);
         }
-        if self.sending_time.is_some() {
-            d.field("sending_time", &self.sending_time);
+        if self.orig_sending_time.is_some() {
+            d.field("orig_sending_time", &self.orig_sending_time);
         }
 
         d.finish();
