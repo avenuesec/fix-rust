@@ -79,9 +79,6 @@ impl <Store : MessageStore> FixSyncState <Store> {
         }
 
         if is_poss_dup == false {
-            // self.increment_sender_seq_num()?;
-            // assert_eq!( next, frame.header.msg_seq_num );
-
             match &frame.message {
                 &FixMessage::Logon(ref flds) => {
                     self.outgoing_logon()?;
@@ -297,11 +294,6 @@ impl <Store : MessageStore> FixSyncState <Store> {
     fn expected_sender_seq_num(&self) -> i32 {
         self.store.lock().unwrap().next_sender_seq_num()
     }
-//    fn increment_sender_seq_num(&mut self) -> io::Result<i32> {
-//        let new = self.store.lock().unwrap().incr_sender_seq_num()?;
-//        info!("increment_sender_seq_num called: {}", new);
-//        Ok( new )
-//    }
     fn increment_target_seq_num(&mut self) -> io::Result<i32> {
         let new = self.store.lock().unwrap().incr_target_seq_num()?;
         info!("increment_target_seq_num called: {}", new);

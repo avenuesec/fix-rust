@@ -117,15 +117,6 @@ impl <Store> SessionStateImpl <Store>
         if flds.heart_bt_int != self.config.heart_beat as i32 {
             info!("server asked for a different hearbeat. our cfg {} - server {}", self.config.heart_beat, flds.heart_bt_int);
         }
-
-        // enable heartbeats/test reqs
-
-        if self.recv_timeout.is_none() {
-            self.update_last_recv();
-        }
-        if self.send_timeout.is_none() {
-            self.update_last_sent();
-        }
     }
 
     fn post_send(&self, message: FixMessage) {
@@ -183,6 +174,16 @@ impl <Store> SessionStateImpl <Store>
         let message = FixMessage::ResendRequest(Box::new(flds));
         self.post_send(message);
         Ok( () )
+    }
+
+    fn enable_timeouts(&mut self) {
+        // enable heartbeats/test reqs
+        if self.recv_timeout.is_none() {
+            self.update_last_recv();
+        }
+        if self.send_timeout.is_none() {
+            self.update_last_sent();
+        }
     }
 }
 
@@ -287,6 +288,7 @@ impl <Store> SessionState for SessionStateImpl <Store> where Store : MessageStor
         }
 
         match &frame.message {
+            &FixMessage::Logon(_)              => self.enable_timeouts(),
             &FixMessage::Logout(ref flds)      => self.ack_logout_received( flds ),
             &FixMessage::TestRequest(ref flds) => self.send_hearbeat_in_response( &flds.test_req_id ),
             &FixMessage::Heartbeat(ref flds)   => self.ack_hearbeat_received( &flds.test_req_id ),

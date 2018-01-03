@@ -51,7 +51,7 @@ fn main() {
             break;
         }
 
-        match cmd.as_str() {
+        match &cmd[..cmd.len() - 1] {
             "test_req" => {
                 let flds = TestRequestFields {
                     test_req_id: "TEST".to_owned()
@@ -66,8 +66,9 @@ fn main() {
                     handl_inst: FieldHandlInstEnum::AutomatedExecutionOrderPublicBrokerInterventionOk,
                     symbol: "AAPL".to_owned(),
                     side: FieldSideEnum::Buy,
-                    ord_type: FieldOrdTypeEnum::Market,
-
+                    ord_type: FieldOrdTypeEnum::Limit,
+                    price: Some(300.2),
+                    order_qty: Some(100.0),
                     .. Default::default()
                 };
                 let msg = FixMessage::NewOrderSingle(Box::new(flds));
@@ -77,8 +78,14 @@ fn main() {
                 println!("Bye");
                 break;
             },
+            "?" => {
+                println!("enter command and press enter. Commands available: ");
+                println!("new_order  - sends a new LIMIT order");
+                println!("test_req   - sends a TestRequest");
+                println!("exit");
+            }
             _ => {
-                println!("Huh? Try again.");
+                println!("Huh? Try again. Didn't recognized {}", cmd.as_str() );
             }
         }
     }

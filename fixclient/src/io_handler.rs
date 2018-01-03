@@ -126,7 +126,7 @@ impl<F> IoHandler <F>
             let entry = self.token_2conn.vacant_entry(); // <- needs to be more robust
             let token = entry.key();
 
-            debug!("new conn token created: {:?}", token);
+            // debug!("new conn token created: {:?}", token);
 
             // on_connected - creates handler with a sender
             let sender = Sender::new(Token(token), self.queue_tx.clone());
@@ -195,7 +195,7 @@ impl<F> IoHandler <F>
     }
 
     fn handle_event(&mut self, token: Token, events: Ready) {
-        debug!("handle event for {:?} events: {:?}", token, events);
+        // debug!("handle event for {:?} events: {:?}", token, events);
         
         match token {
 
@@ -259,7 +259,7 @@ impl<F> IoHandler <F>
     }
 
     fn handle_received_command(&mut self, cmd: Command) {
-        debug!("handle_received_command");
+        // debug!("handle_received_command");
         
         match cmd.action {
             CommandAction::Message(payload) => {
@@ -357,7 +357,7 @@ impl<F> IoHandler <F>
                 // so for now we get the first available.
                 // TODO: caller needs to give a hint on which fix session she wants to use
                 let mut tk = Token(0);
-                for t in 0..100 { // 0 to 99 is totally arbitrary
+                for t in RESERVED_TOKENS ..100 { // 4 to 99 is totally arbitrary
                     tk = Token(t);
                     if self.token_2conn.contains( tk.0 ) {
                         break;
@@ -397,7 +397,7 @@ impl<F> IoHandler <F>
     }
 
     fn schedule(&self, conn: &conn::Conn<F::Handler>) -> io::Result<()> {
-        debug!("scheduling {:?} for {:?}", conn.token, conn.events);
+        // debug!("scheduling {:?} for {:?}", conn.token, conn.events);
         Ok( self.poll.reregister( &conn.socket, conn.token, conn.events, PollOpt::edge() | PollOpt::oneshot() )? )
     }
 }

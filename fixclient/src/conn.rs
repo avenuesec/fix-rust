@@ -60,7 +60,7 @@ impl<T : FixHandler> Conn<T> {
             // self.disconnected();
             return Err(io::Error::new(io::ErrorKind::ConnectionReset, "connection closed by server"))
         } else {
-            debug!("total read {}", total);
+            // debug!("total read {}", total);
             self.handle_frames();
         }
         self.adjust_socket_events();
@@ -68,7 +68,7 @@ impl<T : FixHandler> Conn<T> {
     }
 
     pub fn write(&mut self) -> io::Result<usize> {
-        debug!("writing {} to {:?}", self.outbound.len(), self.token);
+        // debug!("writing {} to {:?}", self.outbound.len(), self.token);
 
         let mut written : usize = 0;
         let total_to_write = self.outbound.len();
@@ -91,7 +91,7 @@ impl<T : FixHandler> Conn<T> {
                 }
             }
         };
-        debug!("writing done {:?} to {:?}", res, self.token);
+        // debug!("writing done {:?} to {:?}", res, self.token);
 
         self.adjust_socket_events();
         res

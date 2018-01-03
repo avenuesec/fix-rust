@@ -25,7 +25,6 @@ pub struct DefaultHandler <State,UserF>
     user_handler_factory: PhantomData<UserF>,
     state : State,
     heart_bt: i32,
-    // callback_resend: Fn( &FixFrame ) -> bool, // Box<Fn( &FixFrame ) -> bool>,
 }
 
 impl <State,UserF> DefaultHandler <State,UserF>

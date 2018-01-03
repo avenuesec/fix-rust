@@ -15,16 +15,12 @@ pub struct AdvSender {
     queue_tx: channel::SyncSender<Command>,
 }
 impl AdvSender {
-
     pub fn new(resolve_token: Token, queue_tx: channel::SyncSender<Command>) -> AdvSender {
-        AdvSender {
-            resolve_token: resolve_token,
-            queue_tx: queue_tx,
-        }
+        AdvSender { resolve_token, queue_tx }
     }
 
     pub fn send(&self, message: FixMessage) -> io::Result<()> {
-        debug!("AdvSender sending SendBackToHandler {:?}", message);
+        // debug!("AdvSender sending SendBackToHandler {:?}", message);
         let cmd = Command::new( self.resolve_token, CommandAction::SendBackToHandler( message ) );
         if let Err(err) = self.queue_tx.send( cmd ) {
              return Err(io::Error::new( io::ErrorKind::Other, err) )
