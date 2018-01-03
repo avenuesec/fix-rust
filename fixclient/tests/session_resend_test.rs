@@ -125,7 +125,7 @@ fn redispath_to_session( rx : &Receiver<Command>, session: &mut SessionStateImpl
         _ => unreachable!(),
     };
 
-    let final_message = session.build(message, true).unwrap();
+    let final_message = session.build_frame(message, true).unwrap();
 
     session.sent( &final_message ).unwrap();
 }

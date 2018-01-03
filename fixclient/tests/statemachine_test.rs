@@ -1,8 +1,8 @@
 extern crate fixclient;
 extern crate fix;
 
-use std::rc::Rc;
-use std::sync::Mutex;
+// use std::rc::Rc;
+use std::sync::{Arc, Mutex};
 
 use fixclient::{FixSessionConfig, FixDictionary};
 use fixclient::connector::syncstate::*;
@@ -292,14 +292,14 @@ fn test_processing_resends_with_partial_seq_reset_should_not_consider_it_operati
     assert_eq!("sender resync (5, 5) - target operational", format!("{}", sm));
 }
 
-fn create_store<F>( f : F ) -> Rc<Mutex<MemoryMessageStore>>
+fn create_store<F>( f : F ) -> Arc<Mutex<MemoryMessageStore>>
     where F : FnOnce(&mut MemoryMessageStore) -> () {
 
     let cfg = FixSessionConfig::new( "qualifier", "sender", "target", "hostname",
                                      1234, 60, "log", "store", FixDictionary::Fix42 );
     let mut store = MemoryMessageStore::new( &cfg ).unwrap();
     f(&mut store);
-    let store = Rc::new( Mutex::new(store) );
+    let store = Arc::new( Mutex::new(store) );
     store
 }
 

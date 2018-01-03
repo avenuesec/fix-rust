@@ -3,7 +3,8 @@
 extern crate core;
 
 use std::io;
-use std::rc::Rc;
+// use std::rc::Rc;
+use std::sync::Arc;
 use std::sync::Mutex;
 use std::fmt::{Display, Formatter, Error};
 
@@ -31,7 +32,7 @@ enum FixPartyState {
 }
 
 pub struct FixSyncState <Store : MessageStore> {
-    store:  Rc<Mutex<Store>>,
+    store:  Arc<Mutex<Store>>,
     sender: PartyState,
     target: PartyState,
     sent_count: u32,
@@ -49,7 +50,7 @@ pub struct MessageGap {
 }
 
 impl <Store : MessageStore> FixSyncState <Store> {
-    pub fn new( store: Rc<Mutex<Store>> ) -> FixSyncState <Store> {
+    pub fn new( store: Arc<Mutex<Store>> ) -> FixSyncState <Store> {
         FixSyncState {
             store,
             sender: PartyState::new(),
@@ -69,7 +70,7 @@ impl <Store : MessageStore> FixSyncState <Store> {
         let is_poss_dup = frame.header.poss_dup_flag.map_or(false, |v| v);
 
         // sender: if we're in sync, has the gap been filled?
-        if self.sender.has_sync_pending() {
+        if self.sender.has_sync_pending() && frame.message.msg_type() != FieldMsgTypeEnum::Logout {
             // let msg_seq = frame.header.msg_seq_num;
             assert_eq!( is_poss_dup, true );
             let fill_range = FixSyncState::<Store>::extract_range( &frame )?;
@@ -78,7 +79,7 @@ impl <Store : MessageStore> FixSyncState <Store> {
         }
 
         if is_poss_dup == false {
-            self.increment_sender_seq_num()?;
+            // self.increment_sender_seq_num()?;
             // assert_eq!( next, frame.header.msg_seq_num );
 
             match &frame.message {
@@ -223,10 +224,10 @@ impl <Store : MessageStore> FixSyncState <Store> {
             } else {
 
                 // since we're good, increment seq
-                let new_seq = self.increment_target_seq_num()?;
+                let _ = self.increment_target_seq_num()?;
 
                 // assert_eq!(new_seq + 1, expected_seq + 1);
-                println!("increment_target_seq_num  new_seq: {}", new_seq);
+                // println!("increment_target_seq_num  new_seq: {}", new_seq);
 
                 // transition if necessary
                 if self.target.has_sync_pending() {
@@ -296,11 +297,15 @@ impl <Store : MessageStore> FixSyncState <Store> {
     fn expected_sender_seq_num(&self) -> i32 {
         self.store.lock().unwrap().next_sender_seq_num()
     }
-    fn increment_sender_seq_num(&mut self) -> io::Result<i32> {
-        self.store.lock().unwrap().incr_sender_seq_num()
-    }
+//    fn increment_sender_seq_num(&mut self) -> io::Result<i32> {
+//        let new = self.store.lock().unwrap().incr_sender_seq_num()?;
+//        info!("increment_sender_seq_num called: {}", new);
+//        Ok( new )
+//    }
     fn increment_target_seq_num(&mut self) -> io::Result<i32> {
-        self.store.lock().unwrap().incr_target_seq_num()
+        let new = self.store.lock().unwrap().incr_target_seq_num()?;
+        info!("increment_target_seq_num called: {}", new);
+        Ok( new )
     }
     fn incr_sent(&mut self) {
         self.sent_count = self.sent_count + 1;

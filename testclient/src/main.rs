@@ -1,4 +1,3 @@
-
 #[macro_use] extern crate log;
 
 extern crate env_logger;
@@ -6,9 +5,14 @@ extern crate fix;
 extern crate fixclient;
 extern crate chrono;
 
-
 use std::io;
 use std::net::{SocketAddr, ToSocketAddrs};
+use std::env;
+use std::default::Default;
+use std::thread;
+use env_logger::LogBuilder;
+use log::{LogRecord, LogLevelFilter};
+use chrono::{Local};
 
 use fix::fixmessagegen::*;
 
@@ -30,16 +34,58 @@ fn main() {
 
     let mut fix_app = FixApp::new(factory);
 
+    let adv_sender = fix_app.create_adv_sender();
+
     let _ = fix_app.connect(&addr);
 
-    let _ = fix_app.run(); // blocks
+    thread::spawn(move || {
+        let _ = fix_app.run(); // blocks
+    });
 
+    println!("> Type ? for help");
+
+    loop {
+        let mut cmd = String::new();
+        if let Err(e) = io::stdin().read_line(&mut cmd) {
+            // something's wrong
+            break;
+        }
+
+        match cmd.as_str() {
+            "test_req" => {
+                let flds = TestRequestFields {
+                    test_req_id: "TEST".to_owned()
+                };
+                let msg = FixMessage::TestRequest(Box::new(flds));
+                adv_sender.send( msg );
+            },
+            "new_order" => {
+                let flds = NewOrderSingleFields {
+                    cl_ord_id: "cldordid1".to_owned(),
+                    account: Some("account".to_owned()),
+                    handl_inst: FieldHandlInstEnum::AutomatedExecutionOrderPublicBrokerInterventionOk,
+                    symbol: "AAPL".to_owned(),
+                    side: FieldSideEnum::Buy,
+                    ord_type: FieldOrdTypeEnum::Market,
+
+                    .. Default::default()
+                };
+                let msg = FixMessage::NewOrderSingle(Box::new(flds));
+                adv_sender.send( msg );
+            },
+            "exit" => {
+                println!("Bye");
+                break;
+            },
+            _ => {
+                println!("Huh? Try again.");
+            }
+        }
+    }
+
+    // adv_sender.shutdown();
 }
 
-use std::env;
-use env_logger::LogBuilder;
-use log::{LogRecord, LogLevelFilter};
-use chrono::{Local};
 
 fn set_up_logger() {
     let format = |record: &LogRecord| {

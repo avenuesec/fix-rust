@@ -1,6 +1,7 @@
 use std::io;
 use std::borrow::Cow;
-use std::rc::Rc;
+// use std::rc::Rc;
+use std::sync::Arc;
 use std::sync::Mutex;
 use super::SessionState;
 
@@ -23,7 +24,7 @@ pub struct SessionStateImpl <Store>
     where Store : MessageStore {
 
     config: FixSessionConfig,
-    store: Rc<Mutex<Store>>,
+    store: Arc<Mutex<Store>>,
     last_sent: Option<DateTime<Utc>>,
     last_recv: Option<DateTime<Utc>>,
     sender: Option<Sender>,
@@ -40,7 +41,7 @@ impl <Store> SessionStateImpl <Store>
     where Store : MessageStore {
 
     pub fn new( cfg: &FixSessionConfig, store: Store ) -> SessionStateImpl<Store> {
-        let store = Rc::new( Mutex::new(store) );
+        let store = Arc::new( Mutex::new(store) );
         SessionStateImpl {
             config: cfg.clone(),
             store: store.clone(),
@@ -60,6 +61,7 @@ impl <Store> SessionStateImpl <Store>
     }
 
     fn update_last_sent(&mut self) {
+        debug!("update_last_sent is operational? {}", self.is_operational());
         if !self.is_operational() {
             return
         }
@@ -72,6 +74,7 @@ impl <Store> SessionStateImpl <Store>
         self.sender.as_ref().map(move |s| s.set_timeout(hb_in_ms, EVKIND_SENDER_TIMEOUT));
     }
     fn update_last_recv(&mut self) {
+        debug!("update_last_recv is operational? {}", self.is_operational());
         if !self.is_operational() {
             return
         }
@@ -314,6 +317,7 @@ impl <Store> SessionState for SessionStateImpl <Store> where Store : MessageStor
     }
 
     fn on_timeout(&mut self, event_kind: Token) {
+        debug!("on_timeout - kind {:?}", event_kind);
 
         if event_kind == EVKIND_SENDER_TIMEOUT {
 
@@ -350,7 +354,7 @@ impl <Store> SessionState for SessionStateImpl <Store> where Store : MessageStor
 
         drop(self.state_machine);
 
-        if let Ok(store) = Rc::try_unwrap(self.store) {
+        if let Ok(store) = Arc::try_unwrap(self.store) {
             let _ = store.into_inner().unwrap().close();
         }
 
