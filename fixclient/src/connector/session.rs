@@ -61,11 +61,11 @@ impl <Store> SessionStateImpl <Store>
     }
 
     fn update_last_sent(&mut self) {
+        self.last_sent = Some(Utc::now()); // sys call? need to check
         debug!("update_last_sent is operational? {}", self.is_operational());
         if !self.is_operational() {
             return
         }
-        self.last_sent = Some(Utc::now()); // sys call? need to check
         // Cancel existing, if any
         if let Some(timeout) = self.send_timeout.take() {
             self.sender.as_ref().map(move |s| s.cancel_timeout(timeout));
@@ -74,11 +74,11 @@ impl <Store> SessionStateImpl <Store>
         self.sender.as_ref().map(move |s| s.set_timeout(hb_in_ms, EVKIND_SENDER_TIMEOUT));
     }
     fn update_last_recv(&mut self) {
+        self.last_recv = Some(Utc::now()); // sys call? need to check
         debug!("update_last_recv is operational? {}", self.is_operational());
         if !self.is_operational() {
             return
         }
-        self.last_recv = Some(Utc::now()); // sys call? need to check
         // Cancel existing, if any
         if let Some(timeout) = self.recv_timeout.take() {
             self.sender.as_ref().map(move |s| s.cancel_timeout(timeout));
@@ -314,8 +314,17 @@ impl <Store> SessionState for SessionStateImpl <Store> where Store : MessageStor
         Ok( () )
     }
 
-    fn new_timeout(&mut self, _timeout: &timer::Timeout, _event_kind: Token) {
+    fn new_timeout(&mut self, timeout: &timer::Timeout, event_kind: Token) {
 
+        match event_kind {
+            EVKIND_SENDER_TIMEOUT => {
+                self.send_timeout = Some(timeout.clone());
+            },
+            EVKIND_RCV_TIMEOUT => {
+                self.recv_timeout = Some(timeout.clone());
+            },
+            _ => { }
+        }
     }
 
     fn on_timeout(&mut self, event_kind: Token) {

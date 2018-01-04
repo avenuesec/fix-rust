@@ -229,12 +229,14 @@ impl MessageStore for FSMessageStore {
 
     fn incr_sender_seq_num(&mut self) -> io::Result<i32> {
         let temp = self.state.incr_sender_seq_num();
+        debug!("fs_store: incr_sender_seq_num {}", temp);
         self.persist_seqs()?;
         Ok(temp)
     }
 
     fn incr_target_seq_num(&mut self) -> io::Result<i32> {
         let temp = self.state.incr_target_seq_num();
+        debug!("fs_store: incr_target_seq_num {}", temp);
         self.persist_seqs()?;
         Ok(temp)
     }
@@ -309,12 +311,14 @@ impl MessageStore for FSMessageStore {
     }
 
     fn overwrite_target_seq(&mut self, new_seq: i32) -> io::Result<()> {
+        debug!("fs_store overwrite_target_seq from {} to {} ", self.state.target_seq, new_seq);
         self.state.target_seq = new_seq;
         self.persist_seqs()?;
         Ok( () )
     }
 
     fn overwrite_sender_seq(&mut self, new_seq: i32) -> io::Result<()> {
+        debug!("fs_store overwrite_sender_seq from {} to {} ", self.state.sender_seq, new_seq);
         self.state.sender_seq = new_seq;
         self.persist_seqs()?;
         Ok( () )

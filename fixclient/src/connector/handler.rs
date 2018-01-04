@@ -84,7 +84,7 @@ impl <State,UserF> FixHandler for DefaultHandler <State,UserF>
     where State : SessionState,
           UserF : UserHandlerFactory {
 
-    // cancelled with a timeout has been set on the timer
+    // called when a new timeout has been set on the timer
     fn new_timeout(&mut self, timeout: timer::Timeout, event_kind: Token ) {
 
         info!("DefaultHandler new_timeout called for event_kind: {:?}", event_kind);
@@ -92,7 +92,7 @@ impl <State,UserF> FixHandler for DefaultHandler <State,UserF>
         self.state.new_timeout(&timeout, event_kind);
     }
 
-    // cancelled when a timeout has been triggered
+    // called when a timeout has been triggered
     fn on_timeout(&mut self, event_kind: Token) -> io::Result<()> {
         
         let now = Utc::now();

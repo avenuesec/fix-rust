@@ -74,7 +74,7 @@ impl <Store : MessageStore> FixSyncState <Store> {
             // let msg_seq = frame.header.msg_seq_num;
             assert_eq!( is_poss_dup, true );
             let fill_range = FixSyncState::<Store>::extract_range( &frame )?;
-            println!("sender: filling range {:?} gap {:?}", fill_range, self.sender.gap);
+            debug!("sender: filling range {:?} gap {:?}", fill_range, self.sender.gap);
             self.sender.fill_range( fill_range );
         }
 
@@ -204,7 +204,7 @@ impl <Store : MessageStore> FixSyncState <Store> {
                 warn!("try_detect_gap_and_select_transition: expecting seq {} but received {}. \
                        Initiating resend request, holding recv/sending until synchronization is complete", expected_seq, recv_target_seq_num);
 
-                println!("target : gap_detected e {} r {}", expected_seq, recv_target_seq_num );
+                debug!("target : gap_detected expected {}  received {}", expected_seq, recv_target_seq_num );
                 self.target.gap_detected( expected_seq, recv_target_seq_num );
 
                 TransitionAction::RequestResendRange( self.target.gap_as_range() )
@@ -214,7 +214,7 @@ impl <Store : MessageStore> FixSyncState <Store> {
                 error!("detect_gap_and_choose_action: expecting seq {} but received {}. \
                         Too low detected, disconnecting.", expected_seq, recv_target_seq_num);
 
-                println!("msg seq too low: expected {} recv {}", expected_seq, recv_target_seq_num);
+                debug!("msg seq too low: expected {} received {}", expected_seq, recv_target_seq_num);
 
                 TransitionAction::LogoutWith( "msg seq too low" )
 
@@ -224,7 +224,7 @@ impl <Store : MessageStore> FixSyncState <Store> {
                 let _ = self.increment_target_seq_num()?;
 
                 // assert_eq!(new_seq + 1, expected_seq + 1);
-                // println!("increment_target_seq_num  new_seq: {}", new_seq);
+                // debug!("increment_target_seq_num  new_seq: {}", new_seq);
 
                 // transition if necessary
                 if self.target.has_sync_pending() {
@@ -270,7 +270,7 @@ impl <Store : MessageStore> FixSyncState <Store> {
         if is_poss_dup {
             let fill_range = FixSyncState::<Store>::extract_range( &frame )?;
 
-            println!("target: filling range {:?} gap {:?} next {}", fill_range, self.target.gap.gap, self.expected_target_seq_num() );
+            debug!("target: filling range {:?} gap {:?} next {}", fill_range, self.target.gap.gap, self.expected_target_seq_num() );
             let next = self.target.fill_range( fill_range );
 
             self.store.lock().unwrap().overwrite_target_seq( next )?;
