@@ -41,6 +41,29 @@ fn test_logon_message() {
     }
 }
 
+#[test]
+#[cfg(feature="fix42")]
+fn test_buffer_with_multiple_messages_should_parse_them_in_order() {
+    let line = b"8=FIX.4.2\x019=70\x0135=A\x0134=1\x0149=SOME1\x0152=20171129-22:28:53.000\x0156=SINGU\x0198=0\x01108=60\x01141=Y\x0110=226\x018=FIX.4.2\x019=70\x0135=A\x0134=2\x0149=SOME2\x0152=20171129-22:28:53.000\x0156=SINGU\x0198=0\x01108=60\x01141=Y\x0110=226\x01";
+
+    let res = frame::parse(line);
+    if let IResult::Done(remaining, b) = res {
+        assert_eq!(remaining.len(), 93);
+        assert_eq!(1, b.header.msg_seq_num);
+
+        let res = frame::parse(remaining);
+        if let IResult::Done(remaining, b) = res {
+            assert_eq!(remaining.len(), 0);
+            assert_eq!(2, b.header.msg_seq_num);
+        } else {
+            panic!("did not get DONE! {:?}", res);
+        }
+
+    } else {
+        panic!("did not get DONE! {:?}", res);
+    }
+}
+
 /// It's mandatory that incomplete frames yield IResult::Incomplete by the parser
 #[test]
 #[cfg(feature="fix42")]
@@ -56,9 +79,8 @@ fn test_fragments_should_yield_not_complete() {
                 IResult::Done(_, _) => {
                     // all good!
                 }
-                _ => panic!("expecting complete frame to parse successfully")
+                _ => panic!("expecting complete frame to parse successfully but got {:?}", b)
             }
-
         } else {
             match b {
                 IResult::Incomplete(_) => {
@@ -89,5 +111,4 @@ fn test_heartbeat_message() {
 fn test_new_order_single_message() {
     let line = "8=FIX.4.4|9=206|35=D|34=2|49=CCLRA301|52=20170627-19:32:13.105|56=OE101C|1=4004|11=30011_0|38=100|40=2|44=5|54=1|55=PETR4|59=0|60=20170627-16:32:13|453=3|448=CCLRA301|447=D|452=36|448=308|447=D|452=7|448=DMA1|447=D|452=31|10=207|\r\n".replace("|", "\x01");
 	let b = frame::parse(line.as_bytes());
-
 }

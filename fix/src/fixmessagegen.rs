@@ -60,8 +60,8 @@ impl Debug for FixHeader {
 
         d.field("seq", &self.msg_seq_num);
         d.field("time", &self.sending_time);
-//        d.field("sender", &self.sender_comp_id);
-//        d.field("target", &self.target_comp_id);
+        d.field("sender", &self.sender_comp_id);
+        d.field("target", &self.target_comp_id);
 
         if self.on_behalf_of_comp_id.is_some() {
             d.field("on_behalf_of_comp_id", &self.on_behalf_of_comp_id);
