@@ -265,17 +265,18 @@ impl<F> IoHandler <F>
         
         match cmd.action {
             CommandAction::Message(payload) => {
-                if let Some(conn) = self.token_2conn.get_mut(cmd.token.0).unwrap().as_mut() {
-                    if let Err(err) = conn.send( payload ) {
-                        conn.error( err );
+                if let Some(wrapper) = self.token_2conn.get_mut(cmd.token.0) {
+                    if let Some(conn) = wrapper.as_mut() {
+                        if let Err(err) = conn.send( payload ) {
+                            conn.error( err );
+                        }
+                    } else {
+                        // connection removed?
                     }
-                } else {
-                    // connection removed?
                 }
             },
 
             CommandAction::Disconnect => {
-
                 if self.token_2conn.contains(cmd.token.0) {
                     if let Some(conn) = self.token_2conn.remove(cmd.token.0) {
                         conn.disconnect();
@@ -284,29 +285,31 @@ impl<F> IoHandler <F>
             },
 
             CommandAction::SetTimeout { timeout_in_ms, event_kind } => {
-                if let Some(conn) = self.token_2conn.get_mut(cmd.token.0).unwrap().as_mut() {
-                    let duration = Duration::from_millis(timeout_in_ms as u64);
-                    let timeout_info = ConnetionTimeoutSettings { 
-                        connection_token: Some(cmd.token),
-                        // interval: duration 
-                        event_kind
-                    };
-                    match self.timer.set_timeout( duration, timeout_info.clone() ) {
-                        Ok(timeout) => {
+                if let Some(wrapper) = self.token_2conn.get_mut(cmd.token.0) {
+                    if let Some(conn) = wrapper.as_mut() {
+                        let duration = Duration::from_millis(timeout_in_ms as u64);
+                        let timeout_info = ConnetionTimeoutSettings {
+                            connection_token: Some(cmd.token),
+                            // interval: duration
+                            event_kind
+                        };
+                        match self.timer.set_timeout( duration, timeout_info.clone() ) {
+                            Ok(timeout) => {
 
-                            // saves association for later
-                            self.timeout_map.insert( timeout_info, timeout.clone() );
+                                // saves association for later
+                                self.timeout_map.insert( timeout_info, timeout.clone() );
 
-                            // confirm with handler?
-                            conn.handler.new_timeout( timeout, event_kind );
-                        }, 
-                        Err(err) => {
-                            // then what?
-                            error!("Error setting timeout: {:?}", err);
+                                // confirm with handler?
+                                conn.handler.new_timeout( timeout, event_kind );
+                            },
+                            Err(err) => {
+                                // then what?
+                                error!("Error setting timeout: {:?}", err);
+                            }
                         }
+                    } else {
+                        // connection removed?
                     }
-                } else {
-                    // connection removed?
                 }
             },
 
@@ -320,8 +323,8 @@ impl<F> IoHandler <F>
 
                 let token_to_use = self.resolve_connection_token(cmd.token);
 
-                if let Some(opt) = self.token_2conn.get_mut(token_to_use.0) {
-                    if let Some(conn) = opt.as_mut() {
+                if let Some(wrapper) = self.token_2conn.get_mut(cmd.token.0) {
+                    if let Some(conn) = wrapper.as_mut() {
                         // sends back to handler
                         conn.handler.before_send( message );
                     } else {
@@ -382,14 +385,16 @@ impl<F> IoHandler <F>
         let event_kind = conn_timeout_settings.event_kind;
 
         if let Some(t) = conn_timeout_settings.connection_token {
-            if let Some(conn) = self.token_2conn.get_mut(t.0).unwrap().as_mut() {
-                if let Err(_err) = conn.handler.on_timeout(event_kind) {
-                    // TODO: should we close the connection?
-                }
-            } else {
-                // no connection? remove timeout
-                if let Some(t) = self.timeout_map.remove( &conn_timeout_settings ) {
-                    self.timer.cancel_timeout( &t );
+            if let Some(wrapper) = self.token_2conn.get_mut(t.0) {
+                if let Some(conn) = wrapper.as_mut() {
+                    if let Err(_err) = conn.handler.on_timeout(event_kind) {
+                        // TODO: should we close the connection?
+                    }
+                } else {
+                    // no connection? remove timeout
+                    if let Some(t) = self.timeout_map.remove( &conn_timeout_settings ) {
+                        self.timer.cancel_timeout( &t );
+                    }
                 }
             }
         } else {

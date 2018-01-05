@@ -294,7 +294,7 @@ impl <Store> SessionState for SessionStateImpl <Store> where Store : MessageStor
     }
 
     fn on_timeout(&mut self, event_kind: Token) {
-        debug!("on_timeout - kind {:?}", event_kind);
+        // debug!("on_timeout - kind {:?}", event_kind);
 
         if event_kind == EVKIND_HEARTBEAT && self.is_operational() {
             let threshold = (self.config.heart_beat as f32 * 0.75) as i64;
@@ -302,7 +302,7 @@ impl <Store> SessionState for SessionStateImpl <Store> where Store : MessageStor
             if let Some(last) = self.last_sent {
                 let now = Utc::now();
                 let duration_since_last_sent = now.signed_duration_since(last);
-                debug!("duration_since_last_sent {} past threshold? {}", duration_since_last_sent, duration_since_last_sent.num_seconds() > threshold);
+                // debug!("duration_since_last_sent {} past threshold? {}", duration_since_last_sent, duration_since_last_sent.num_seconds() > threshold);
 
                 if duration_since_last_sent.num_seconds() >= threshold {
                     let flds = TestRequestFields {
@@ -317,7 +317,7 @@ impl <Store> SessionState for SessionStateImpl <Store> where Store : MessageStor
             if let Some(last) = self.last_recv {
                 let now = Utc::now();
                 let duration_since_last_rcv  = now.signed_duration_since(last);
-                debug!("duration_since_last_rcv {} past threshold {}", duration_since_last_rcv, duration_since_last_rcv.num_seconds() > threshold);
+                // debug!("duration_since_last_rcv {} past threshold {}", duration_since_last_rcv, duration_since_last_rcv.num_seconds() > threshold);
 
                 if duration_since_last_rcv.num_seconds() >= threshold {
                     let flds = HeartbeatFields {
