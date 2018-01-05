@@ -323,7 +323,7 @@ impl<F> IoHandler <F>
 
                 let token_to_use = self.resolve_connection_token(cmd.token);
 
-                if let Some(wrapper) = self.token_2conn.get_mut(cmd.token.0) {
+                if let Some(wrapper) = self.token_2conn.get_mut(token_to_use.0) {
                     if let Some(conn) = wrapper.as_mut() {
                         // sends back to handler
                         conn.handler.before_send( message );

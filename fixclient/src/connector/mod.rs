@@ -44,11 +44,11 @@ pub trait UserHandlerFactory {
     fn build(&mut self, sender: UserSender) -> Self::Handler;
 }
 pub trait UserHandler {
-    fn on_reject(&mut self, message: &RejectFields) -> io::Result<()>;
+    fn on_reject(&mut self, message: &RejectFields, header: &FixHeader) -> io::Result<()>;
 
-    fn on_execution_report(&mut self, message: &ExecutionReportFields) -> io::Result<()>;
+    fn on_execution_report(&mut self, message: &ExecutionReportFields, header: &FixHeader) -> io::Result<()>;
 
-    fn on_new_order_single(&mut self, message: &NewOrderSingleFields) -> io::Result<()>;
+    fn on_new_order_single(&mut self, message: &NewOrderSingleFields, header: &FixHeader) -> io::Result<()>;
 
 //    fn should_resend(&self, _message: &FixFrame) -> bool {
 //        true

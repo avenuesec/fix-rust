@@ -190,6 +190,8 @@ impl <Store> SessionState for SessionStateImpl <Store> where Store : MessageStor
         let logon_message = FixMessage::Logon(Box::new(flds));
 
         self.post_send( logon_message );
+
+        self.set_hb_timeout();
     }
 
     fn build_frame(&mut self, message: FixMessage, fill_seq: bool) -> io::Result<FixFrame> {
@@ -261,7 +263,7 @@ impl <Store> SessionState for SessionStateImpl <Store> where Store : MessageStor
         }
 
         match &frame.message {
-            &FixMessage::Logon(_)              => self.set_hb_timeout(),
+            // &FixMessage::Logon(_)              => self.set_hb_timeout(),
             &FixMessage::Logout(ref flds)      => self.ack_logout_received( flds ),
             &FixMessage::TestRequest(ref flds) => self.send_hearbeat_in_response( &flds.test_req_id ),
             &FixMessage::Heartbeat(ref flds)   => self.ack_hearbeat_received( &flds.test_req_id ),
@@ -295,6 +297,10 @@ impl <Store> SessionState for SessionStateImpl <Store> where Store : MessageStor
 
     fn on_timeout(&mut self, event_kind: Token) {
         // debug!("on_timeout - kind {:?}", event_kind);
+
+        if self.is_operational() == false {
+            warn!("on_timeout called but not operational: {}", self.state_machine);
+        }
 
         if event_kind == EVKIND_HEARTBEAT && self.is_operational() {
             let threshold = (self.config.heart_beat as f32 * 0.75) as i64;

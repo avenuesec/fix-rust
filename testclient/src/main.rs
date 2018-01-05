@@ -179,18 +179,18 @@ pub struct ServiceFixHandler {
 
 impl UserHandler for ServiceFixHandler {
 
-    fn on_new_order_single(&mut self, message: &NewOrderSingleFields) -> io::Result<()> {
+    fn on_new_order_single(&mut self, message: &NewOrderSingleFields, header: &FixHeader) -> io::Result<()> {
         info!("on_new_order_single received {:?}", message);
 
         Ok( () )
     }
 
-    fn on_reject(&mut self, message: &RejectFields) -> io::Result<()> {
+    fn on_reject(&mut self, message: &RejectFields, header: &FixHeader) -> io::Result<()> {
         info!("on_reject received {:?}", message);
         Ok( () )
     }
 
-    fn on_execution_report(&mut self, message: &ExecutionReportFields) -> io::Result<()> {
+    fn on_execution_report(&mut self, message: &ExecutionReportFields, header: &FixHeader) -> io::Result<()> {
         info!("on_execution_report received {:?}", message);
         Ok( () )
     }

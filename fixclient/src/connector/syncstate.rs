@@ -431,6 +431,9 @@ impl PartyState {
 
         if self.gap.update_gap( fill_range ) {
             self.state = FixPartyState::Operational;
+            debug!("gap filled!");
+        } else {
+            debug!("gap remains");
         }
 
         let expected_next = fill_range.1 + 1;

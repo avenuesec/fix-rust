@@ -110,17 +110,17 @@ impl <State,UserF> FixHandler for DefaultHandler <State,UserF>
         // Calls UserHandler's callbacks
         match &frame.message {
             &FixMessage::Reject(ref flds) => {
-                if let Err(err) = self.user_handler.on_reject(flds) {
+                if let Err(err) = self.user_handler.on_reject(flds, &frame.header) {
                     error!("Error handling reject by user handler: {:?}", err);
                 }
             },
             &FixMessage::ExecutionReport(ref flds) => {
-                if let Err(err) = self.user_handler.on_execution_report(flds) {
+                if let Err(err) = self.user_handler.on_execution_report(flds, &frame.header) {
                     error!("Error handling execution_report by user handler: {:?}", err);
                 }
             },
             &FixMessage::NewOrderSingle(ref flds) => {
-                if let Err(err) = self.user_handler.on_new_order_single(flds) {
+                if let Err(err) = self.user_handler.on_new_order_single(flds, &frame.header) {
                     error!("Error handling new_order_single by user handler: {:?}", err);
                 }
             },
