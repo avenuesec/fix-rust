@@ -47,13 +47,13 @@ impl <State,UserF> DefaultHandler <State,UserF>
     }
 
     pub fn init(&mut self) {
-        info!("DefaultHandler init");
+        // info!("DefaultHandler init");
 
         self.state.init( self.sender.clone() );
     }
 
     fn send(&mut self, message: FixMessage) -> io::Result<()> {
-        info!("DefaultHandler send");
+        // info!("DefaultHandler send");
 
         let frame = self.state.build_frame(message, true)?;
 
@@ -86,7 +86,6 @@ impl <State,UserF> FixHandler for DefaultHandler <State,UserF>
 
     // called when a new timeout has been set on the timer
     fn new_timeout(&mut self, timeout: timer::Timeout, event_kind: Token ) {
-
         info!("DefaultHandler new_timeout called for event_kind: {:?}", event_kind);
 
         self.state.new_timeout(&timeout, event_kind);

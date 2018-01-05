@@ -3,6 +3,7 @@
 use std::usize;
 use std::io;
 use std::time::Duration;
+use std::collections::HashMap;
 
 use mio::{Poll, PollOpt, Events, Ready, Token};
 use mio::tcp::{TcpStream};
@@ -31,14 +32,14 @@ pub struct IoHandler <F : FixHandlerFactory> {
     token_2conn: Slab<Option<conn::Conn<F::Handler>>>,
     poll: Poll,
     reconnect_queue : Vec<SocketAddr>,
+    timeout_map: HashMap<ConnetionTimeoutSettings, timer::Timeout>,
 }
 
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
 struct ConnetionTimeoutSettings {
     connection_token: Option<Token>,
-    pub event_kind: Token,
-    // interval: Duration,
+    event_kind: Token,
 }
 
 const TIMER_TICK_MILLIS: u64 = 100;
@@ -74,6 +75,7 @@ impl<F> IoHandler <F>
             timer,
             token_2conn : slab,
             reconnect_queue : Vec::new(),
+            timeout_map: HashMap::new(),
         }
     }
 
@@ -289,8 +291,12 @@ impl<F> IoHandler <F>
                         // interval: duration 
                         event_kind
                     };
-                    match self.timer.set_timeout( duration, timeout_info ) {
+                    match self.timer.set_timeout( duration, timeout_info.clone() ) {
                         Ok(timeout) => {
+
+                            // saves association for later
+                            self.timeout_map.insert( timeout_info, timeout.clone() );
+
                             // confirm with handler?
                             conn.handler.new_timeout( timeout, event_kind );
                         }, 
@@ -371,11 +377,19 @@ impl<F> IoHandler <F>
         }
     }
 
-    fn handle_timeout(&mut self, ConnetionTimeoutSettings { connection_token: t, event_kind } : ConnetionTimeoutSettings) {
-        if let Some(t) = t {
+    // fn handle_timeout(&mut self, ConnetionTimeoutSettings { connection_token: t, event_kind } : ConnetionTimeoutSettings) {
+    fn handle_timeout(&mut self, conn_timeout_settings : ConnetionTimeoutSettings) {
+        let event_kind = conn_timeout_settings.event_kind;
+
+        if let Some(t) = conn_timeout_settings.connection_token {
             if let Some(conn) = self.token_2conn.get_mut(t.0).unwrap().as_mut() {
                 if let Err(_err) = conn.handler.on_timeout(event_kind) {
                     // TODO: should we close the connection?
+                }
+            } else {
+                // no connection? remove timeout
+                if let Some(t) = self.timeout_map.remove( &conn_timeout_settings ) {
+                    self.timer.cancel_timeout( &t );
                 }
             }
         } else {

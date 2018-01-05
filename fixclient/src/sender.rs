@@ -78,7 +78,7 @@ impl Sender {
     }
 
     pub fn send_self(&self, message: FixMessage) -> io::Result<()> {
-        debug!("sender {:?} - send_self ", self.token);
+        debug!("sender {:?} - send_self {:?}", self.token, message.msg_type());
 
         let cmd = Command::new( self.token, CommandAction::SendBackToHandler( message ) );
         if let Err(err) = self.queue_tx.send( cmd ) {

@@ -221,7 +221,7 @@ impl<T : FixHandler> Conn<T> {
         };
 
         let _discarded = self.inbound.split_to( consumed );
-        debug!("raw processed {:?} consumed {}", _discarded, consumed);
+        // debug!("raw processed {:?} consumed {}", _discarded, consumed);
 
         Ok( Some(frame) )
     }

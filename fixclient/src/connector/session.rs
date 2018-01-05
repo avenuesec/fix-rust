@@ -17,8 +17,7 @@ use super::super::Sender;
 use super::syncstate::*;
 use super::resendresponse::*;
 
-const EVKIND_SENDER_TIMEOUT : Token = Token(0);
-const EVKIND_RCV_TIMEOUT    : Token = Token(1);
+const EVKIND_HEARTBEAT : Token = Token(0);
 
 pub struct SessionStateImpl <Store>
     where Store : MessageStore {
@@ -29,9 +28,8 @@ pub struct SessionStateImpl <Store>
     last_recv: Option<DateTime<Utc>>,
     sender: Option<Sender>,
 
-    send_timeout: Option<timer::Timeout>,
-    recv_timeout: Option<timer::Timeout>,
-    hearbeat_in_ms: i32, // heartbeat in milliseconds
+    heartbeat_timeout: Option<timer::Timeout>,
+    heartbeat_in_ms: i32, // heartbeat in milliseconds
     begin_string: Cow<'static, str>,
 
     state_machine : FixSyncState <Store>,
@@ -48,9 +46,8 @@ impl <Store> SessionStateImpl <Store>
             last_sent: None,
             last_recv: None,
             sender: None,
-            send_timeout: None,
-            recv_timeout: None,
-            hearbeat_in_ms: (cfg.heart_beat as f32 * 1000.0 * 0.9) as i32, // converts it to ms and also lowers it a bit
+            heartbeat_timeout: None,
+            heartbeat_in_ms: cfg.heart_beat,
             begin_string: Cow::from(cfg.begin_string.to_owned()),
             state_machine : FixSyncState::new( store.clone() ),
         }
@@ -62,29 +59,9 @@ impl <Store> SessionStateImpl <Store>
 
     fn update_last_sent(&mut self) {
         self.last_sent = Some(Utc::now()); // sys call? need to check
-        debug!("update_last_sent is operational? {}", self.is_operational());
-        if !self.is_operational() {
-            return
-        }
-        // Cancel existing, if any
-        if let Some(timeout) = self.send_timeout.take() {
-            self.sender.as_ref().map(move |s| s.cancel_timeout(timeout));
-        }
-        let hb_in_ms = self.hearbeat_in_ms as u32;
-        self.sender.as_ref().map(move |s| s.set_timeout(hb_in_ms, EVKIND_SENDER_TIMEOUT));
     }
     fn update_last_recv(&mut self) {
         self.last_recv = Some(Utc::now()); // sys call? need to check
-        debug!("update_last_recv is operational? {}", self.is_operational());
-        if !self.is_operational() {
-            return
-        }
-        // Cancel existing, if any
-        if let Some(timeout) = self.recv_timeout.take() {
-            self.sender.as_ref().map(move |s| s.cancel_timeout(timeout));
-        }
-        let hb_in_ms = self.hearbeat_in_ms as u32;
-        self.sender.as_ref().map(move |s| s.set_timeout(hb_in_ms, EVKIND_RCV_TIMEOUT));
     }
 
     fn send_hearbeat_in_response(&mut self, test_req_id: &str) {
@@ -176,14 +153,10 @@ impl <Store> SessionStateImpl <Store>
         Ok( () )
     }
 
-    fn enable_timeouts(&mut self) {
-        // enable heartbeats/test reqs
-        if self.recv_timeout.is_none() {
-            self.update_last_recv();
-        }
-        if self.send_timeout.is_none() {
-            self.update_last_sent();
-        }
+    fn set_hb_timeout(&mut self) {
+        // hb timeout
+        let hb = (self.heartbeat_in_ms as u32 / 4) * 1000;
+        self.sender.as_ref().map(|s|  s.set_timeout( hb, EVKIND_HEARTBEAT ) );
     }
 }
 
@@ -288,7 +261,7 @@ impl <Store> SessionState for SessionStateImpl <Store> where Store : MessageStor
         }
 
         match &frame.message {
-            &FixMessage::Logon(_)              => self.enable_timeouts(),
+            &FixMessage::Logon(_)              => self.set_hb_timeout(),
             &FixMessage::Logout(ref flds)      => self.ack_logout_received( flds ),
             &FixMessage::TestRequest(ref flds) => self.send_hearbeat_in_response( &flds.test_req_id ),
             &FixMessage::Heartbeat(ref flds)   => self.ack_hearbeat_received( &flds.test_req_id ),
@@ -315,49 +288,50 @@ impl <Store> SessionState for SessionStateImpl <Store> where Store : MessageStor
     }
 
     fn new_timeout(&mut self, timeout: &timer::Timeout, event_kind: Token) {
-
-        match event_kind {
-            EVKIND_SENDER_TIMEOUT => {
-                self.send_timeout = Some(timeout.clone());
-            },
-            EVKIND_RCV_TIMEOUT => {
-                self.recv_timeout = Some(timeout.clone());
-            },
-            _ => { }
+        if event_kind == EVKIND_HEARTBEAT {
+            self.heartbeat_timeout = Some(timeout.clone());
         }
     }
 
     fn on_timeout(&mut self, event_kind: Token) {
         debug!("on_timeout - kind {:?}", event_kind);
 
-        if event_kind == EVKIND_SENDER_TIMEOUT {
+        if event_kind == EVKIND_HEARTBEAT && self.is_operational() {
+            let threshold = (self.config.heart_beat as f32 * 0.75) as i64;
 
             if let Some(last) = self.last_sent {
                 let now = Utc::now();
                 let duration_since_last_sent = now.signed_duration_since(last);
-                debug!("duration_since_last_sent {}", duration_since_last_sent);
+                debug!("duration_since_last_sent {} past threshold? {}", duration_since_last_sent, duration_since_last_sent.num_seconds() > threshold);
 
-
-                let flds = TestRequestFields {
-                    test_req_id: "TEST".to_owned()
-                };
-                let _ = self.post_send(FixMessage::TestRequest(Box::new(flds)));
+                if duration_since_last_sent.num_seconds() >= threshold {
+                    let flds = TestRequestFields {
+                        test_req_id: "TEST".to_owned()
+                    };
+                    let _ = self.post_send(FixMessage::TestRequest(Box::new(flds)));
+                }
+            } else {
+                warn!("last_sent is empty");
             }
-
-        } else if event_kind == EVKIND_RCV_TIMEOUT {
 
             if let Some(last) = self.last_recv {
                 let now = Utc::now();
                 let duration_since_last_rcv  = now.signed_duration_since(last);
-                debug!("duration_since_last_rcv {}", duration_since_last_rcv);
+                debug!("duration_since_last_rcv {} past threshold {}", duration_since_last_rcv, duration_since_last_rcv.num_seconds() > threshold);
 
-                let flds = HeartbeatFields {
-                    test_req_id: None,
-                    // test_req_id: Some("b".to_owned())
-                };
-                let _ = self.post_send(FixMessage::Heartbeat( Box::new(flds)));
+                if duration_since_last_rcv.num_seconds() >= threshold {
+                    let flds = HeartbeatFields {
+                        test_req_id: None,
+                    };
+                    let _ = self.post_send(FixMessage::Heartbeat(Box::new(flds)));
+                }
+            } else {
+                warn!("last_recv is empty");
             }
         }
+
+        // timeout fired once, needs to be re-set
+        self.set_hb_timeout();
     }
 
     fn close(self) -> io::Result<()> {
