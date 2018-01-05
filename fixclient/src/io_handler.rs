@@ -294,8 +294,9 @@ impl<F> IoHandler <F>
                             // confirm with handler?
                             conn.handler.new_timeout( timeout, event_kind );
                         }, 
-                        Err(_err) => {
+                        Err(err) => {
                             // then what?
+                            error!("Error setting timeout: {:?}", err);
                         }
                     }
                 } else {
@@ -304,7 +305,8 @@ impl<F> IoHandler <F>
             },
 
             CommandAction::CancelTimeout(timeout) => {
-                self.timer.cancel_timeout(&timeout);
+                let cancellation_res = self.timer.cancel_timeout(&timeout);
+                debug!("timeout cancellation: {:?}", cancellation_res);
                 return;
             },
 

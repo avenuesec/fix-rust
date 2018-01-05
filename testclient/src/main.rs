@@ -96,7 +96,7 @@ fn main() {
 
 fn set_up_logger() {
     let format = |record: &LogRecord| {
-        format!("{0} {2} : {1}", record.level(), record.args(), Local::now().format("%m-%d %H:%M:%S%.3f") )
+        format!("{:5} {}: {}", record.level(), Local::now().format("%H:%M:%S%.3f"), record.args() )
     };
 
     let mut builder = LogBuilder::new();
@@ -133,7 +133,7 @@ impl FixHandlerFactory for FixCustomHandlerFactory {
         let settings = FixSessionConfig {
             qualifier:     "mainsess".to_owned(),
             sender_comp:   "SINGU".to_owned(),
-            target_comp:   "SOME".to_owned(),
+            target_comp:   "AAAA".to_owned(),
             hostname:      "127.0.0.1".to_owned(),
             port:          8000,
             heart_beat:    60,

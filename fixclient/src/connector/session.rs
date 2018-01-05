@@ -88,7 +88,7 @@ impl <Store> SessionStateImpl <Store>
     }
 
     fn send_hearbeat_in_response(&mut self, test_req_id: &str) {
-        info!("received test request with {}", test_req_id);
+        info!("received test request with {} sending heartbeat in response", test_req_id);
 
         let hb_flds = HeartbeatFields {
             test_req_id: Some(test_req_id.to_owned()),
