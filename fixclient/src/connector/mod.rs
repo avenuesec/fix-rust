@@ -18,7 +18,7 @@ pub mod fsstore;
 pub mod memstore;
 pub mod syncstate;
 pub mod resendresponse;
-
+pub mod fslogger;
 
 #[derive(Clone)]
 pub struct UserSender {
@@ -149,4 +149,13 @@ pub trait SessionState {
     fn close(self) -> io::Result<()>;
 }
 
+pub trait MessageLogger {
+    fn init(&mut self);
+
+    fn sent(&mut self, frame: &FixFrame) -> io::Result<()>;
+
+    fn received(&mut self, frame: &FixFrame) -> io::Result<()>;
+
+    fn close(self) -> io::Result<()>;
+}
 

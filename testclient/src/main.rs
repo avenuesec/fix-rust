@@ -20,6 +20,7 @@ use fixclient::*;
 use fixclient::sender::{Sender};
 use fixclient::connector::handler::DefaultHandler;
 use fixclient::connector::fsstore::FSMessageStore;
+use fixclient::connector::fslogger::FSLogger;
 use fixclient::connector::session::SessionStateImpl;
 use fixclient::connector::{UserSender,UserHandler,UserHandlerFactory};
 
@@ -125,7 +126,7 @@ fn to_addr<A: ToSocketAddrs>(add_representation : A) -> Result<SocketAddr, io::E
 pub struct FixCustomHandlerFactory { }
 
 impl FixHandlerFactory for FixCustomHandlerFactory {
-    type Handler = DefaultHandler<SessionStateImpl<FSMessageStore>, UserHandlerFactory2>;
+    type Handler = DefaultHandler<SessionStateImpl<FSMessageStore, FSLogger>, UserHandlerFactory2>;
 
     fn on_started(&mut self, _destination: &SocketAddr, sender: Sender) -> Self::Handler {
         // needs to map SocketAddr to fixsessionconfig
@@ -147,7 +148,8 @@ impl FixHandlerFactory for FixCustomHandlerFactory {
         };
 
         let fsstore = FSMessageStore::new( &settings ).unwrap(); // Better error handling here
-        let state   = SessionStateImpl::new( &settings, fsstore );
+        let fslogger = FSLogger::new()
+        let state   = SessionStateImpl::new( &settings, fsstore, fslogger );
 
         let f = UserHandlerFactory2 { };
 

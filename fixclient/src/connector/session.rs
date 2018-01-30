@@ -12,18 +12,20 @@ use mio_more::timer;
 use fix::fixmessagegen::*;
 use fix::frame::FixFrame;
 use super::super::FixSessionConfig;
-use super::MessageStore;
+use super::{MessageStore, MessageLogger};
 use super::super::Sender;
 use super::syncstate::*;
 use super::resendresponse::*;
 
 const EVKIND_HEARTBEAT : Token = Token(0);
 
-pub struct SessionStateImpl <Store>
-    where Store : MessageStore {
+pub struct SessionStateImpl <Store, Logger>
+    where Store : MessageStore,
+          Logger : MessageLogger {
 
     config: FixSessionConfig,
     store: Arc<Mutex<Store>>,
+    logger: Logger,
     last_sent: Option<DateTime<Utc>>,
     last_recv: Option<DateTime<Utc>>,
     sender: Option<Sender>,
@@ -35,14 +37,16 @@ pub struct SessionStateImpl <Store>
     state_machine : FixSyncState <Store>,
 }
 
-impl <Store> SessionStateImpl <Store>
-    where Store : MessageStore {
+impl <Store, Logger> SessionStateImpl <Store, Logger>
+    where Store : MessageStore,
+          Logger : MessageLogger {
 
-    pub fn new( cfg: &FixSessionConfig, store: Store ) -> SessionStateImpl<Store> {
+    pub fn new( cfg: &FixSessionConfig, store: Store, logger: Logger ) -> SessionStateImpl<Store, Logger> {
         let store = Arc::new( Mutex::new(store) );
         SessionStateImpl {
             config: cfg.clone(),
             store: store.clone(),
+            logger,
             last_sent: None,
             last_recv: None,
             sender: None,
@@ -160,7 +164,9 @@ impl <Store> SessionStateImpl <Store>
     }
 }
 
-impl <Store> SessionState for SessionStateImpl <Store> where Store : MessageStore {
+impl <Store, Logger> SessionState for SessionStateImpl <Store, Logger>
+    where Store : MessageStore,
+          Logger : MessageLogger {
 
     fn init(&mut self, sender: Sender) {
         if let Ok(mut store) = self.store.try_lock() {

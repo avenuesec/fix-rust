@@ -1,3 +1,4 @@
+//! MessageStore's implementation that just outputs/restore the state to/from the file system
 
 use std::io::{self, Read, Write, Seek, SeekFrom};
 use std::fs::{self, File, OpenOptions, DirBuilder};
